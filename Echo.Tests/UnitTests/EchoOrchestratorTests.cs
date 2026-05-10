@@ -57,22 +57,24 @@ public sealed class EchoOrchestratorTests
     }
 
     [Fact]
-    public async Task OnRecordingReleased_ProcessesAudioAndInsertsText()
+    public async Task ProcessRecordingPayloadAsync_ProcessesAudioAndInsertsText()
     {
         // Arrange
-        var fakeStream = new MemoryStream();
+        var fakeStream = new MemoryStream(new byte[33000]);
         string expectedText = "Hello, world!";
 
-        _audioMock.Setup(a => a.StopRecording()).Returns(fakeStream);
-        _whisperMock.Setup(w => w.ProcessAudioAsync(fakeStream)).ReturnsAsync(expectedText);
+        _audioMock.Setup(a => a.StopRecording())
+                  .Returns(fakeStream);
 
-        await _orchestrator.StartAsync(CancellationToken.None);
+        // We can safely match the exact stream instance now
+        _whisperMock.Setup(w => w.ProcessAudioAsync(fakeStream))
+                    .ReturnsAsync(expectedText);
+
+        _textMock.Setup(t => t.InsertTextAsync(expectedText))
+                 .Returns(Task.CompletedTask);
 
         // Act
-        _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty);
-
-        // Method uses Task.Run, so we have to wait a bit
-        await Task.Delay(100);
+        await _orchestrator.ProcessRecordingPayloadAsync();
 
         // Assert
         _audioMock.Verify(a => a.StopRecording(), Times.Once);

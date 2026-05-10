@@ -84,22 +84,7 @@ internal sealed class EchoOrchestrator(
         _logger.LogInformation("{WhiteSquareButtonEmoji} Push-to-talk released.",
             LoggerConstants.WhiteSquareButtonEmoji);
 
-        Task.Run(async () =>
-        {
-            try
-            {
-                MemoryStream? audioStream = _audioRecordingService.StopRecording();
-
-                string? textFromAudio = await _whisperInferenceService.ProcessAudioAsync(audioStream);
-
-                await _textInsertionService.InsertTextAsync(textFromAudio);
-            }
-            catch (Exception exc)
-            {
-                _logger.LogError(exc, "{ExplosionEmoji} Error: {ErrorMessage}", 
-                    LoggerConstants.ExplosionEmoji, exc.Message);
-            }
-        });
+        _ = Task.Run(ProcessRecordingPayloadAsync);
     }
 
     /// <inheritdoc/>
@@ -109,5 +94,22 @@ internal sealed class EchoOrchestrator(
         _pushToTalkMonitorService.OnRecordingReleased -= HandlePushToTalkReleased;
 
         base.Dispose();
+    }
+
+    internal async Task ProcessRecordingPayloadAsync()
+    {
+        try
+        {
+            MemoryStream? audioStream = _audioRecordingService.StopRecording();
+
+            string? textFromAudio = await _whisperInferenceService.ProcessAudioAsync(audioStream);
+
+            await _textInsertionService.InsertTextAsync(textFromAudio);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogError(exc, "{ExplosionEmoji} Error: {ErrorMessage}",
+                LoggerConstants.ExplosionEmoji, exc.Message);
+        }
     }
 }
