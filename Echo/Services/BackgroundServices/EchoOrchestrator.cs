@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using System.Reflection;
+using Microsoft.Extensions.Hosting;
 
 namespace Echo.Services.BackgroundServices;
 
@@ -36,7 +37,9 @@ internal sealed class EchoOrchestrator(
     {
         try
         {
-            Log.Warning("...................Ech🦻 is checking dependencies................");
+            Log.Warning(
+                "...................Ech🦻 (v.{Version}) is checking dependencies................",
+                Assembly.GetExecutingAssembly().GetName().Version?.ToString(3));
 
             _assetsProvider.InitializeAssetsDirectory();
 

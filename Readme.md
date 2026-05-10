@@ -1,20 +1,25 @@
-﻿# Ech🦻 Voice Assistant
+﻿[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/)
+
+# Ech🦻 Voice Assistant
 
 Echo is a blazing-fast, privacy-first, push-to-talk voice assistant. It runs locally on your machine, leveraging the power of **OpenAI's Whisper** to transcribe your speech into text and automatically insert it wherever your text cursor is active.
+**It also features seamless auto-translation to english language:** speak in your native language (Russian, Spanish, German, etc.), and Echo will instantly translate it to perfect English. 
+This makes it an ideal tool for bilingual workflows, coding, and writing documentation! *(Note: Auto-translation works best with English-only models like `ggml-base.en.bin`).*
 It features a "Hot Mic" architecture for zero-latency recording and advanced Voice Activity Detection (VAD) to ensure perfect transcriptions without cutting off your first words.
 
 ---
 
 ## 📊 Average Benchmarks
 
-Performance depends on your hardware and the chosen model. Below are average inference times for my standard 10-20 second speaking session:
+Performance depends on your hardware and the chosen model. Below are average inference times for my standard session:
 
-| Hardware | Model | Average Inference Time |
+| Hardware | Model | Average Inference Time (very short session: 10-20 sec) |
 | --- | --- | --- |
-| **CPU** (Fallback) | `ggml-small` | ~500 ms |
+| **CPU** | `ggml-small` | ~500 ms |
 |  | `ggml-base` | ~1 sec |
 |  | `ggml-medium` | ~4 sec |
-| **CUDA** (RTX 3070 Ti) | `ggml-base` | ~400 ms |
+| **CUDA** (tested on RTX 3070 Ti) | `ggml-base` | ~400 ms |
 |  | `ggml-small` | ~500 ms |
 |  | `ggml-medium` | ~600 ms |
 |  | `ggml-large-v3-turbo` | ~500 ms |
