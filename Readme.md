@@ -1,9 +1,9 @@
 ﻿[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/)
 
-# Ech🦻 Voice Assistant
+# Ech🦻 Voice Typing Assistant
 
-Echo is a blazing-fast, privacy-first, push-to-talk voice assistant. It runs locally on your machine, leveraging the power of **OpenAI's Whisper** to transcribe your speech into text and automatically insert it wherever your text cursor is active.
+Echo is a blazing-fast, privacy-first, push-to-talk voice typing assistant. It runs locally on your machine, leveraging the power of **OpenAI's Whisper** to transcribe your speech into text and automatically insert it wherever your text cursor is active.
 **It also features seamless auto-translation to english language:** speak in your native language (Russian, Spanish, German, etc.), and Echo will instantly translate it to perfect English. 
 This makes it an ideal tool for bilingual workflows, coding, and writing documentation! *(Note: Auto-translation works best with English-only models like `ggml-base.en.bin`).*
 It features a "Hot Mic" architecture for zero-latency recording and advanced Voice Activity Detection (VAD) to ensure perfect transcriptions without cutting off your first words.
@@ -47,7 +47,7 @@ Before running the application, ensure you have:
 
 **Option B: Build from Source**
 
-1. Clone the repository: `git clone https://github.com/yourusername/Echo.git`
+1. Clone the repository: `git clone https://github.com/GithubPhobos/Echo`
 2. Navigate to the folder: `cd Echo`
 3. Build the project: `dotnet publish -c Release -r win-x64 --self-contained true`
 
@@ -58,9 +58,9 @@ That folder contains `start-recording.wav` and `stop-recording.wav` for audible 
 2. Place your downloaded Whisper model file (e.g., `ggml-medium.bin`) into the `Assets` folder.
 3. Open `appsettings.json` to customize the application (all settings are documented inline). Key settings include:
 * `WhisperSettings.ModelName`: **Must match** the exact name of the model you placed in the Assets folder.
-* `PushToTalkSettings.Key`: The global hotkey to trigger recording (Default is ```).
+* `PushToTalkSettings.Key`: The global hotkey to trigger recording (Default is "`").
 * `Serilog.MinimumLevel.Default`: Available log levels are `Debug`, `Information`, `Warning`, `Error`.
-
+* `WhisperSettings.Prompt`: The initial context provided to the AI. Use this to specify complex domain terminology, define your preferred punctuation style, or provide a baseline vocabulary to help the model transcribe your speech more accurately.
 
 ### 3. Hardware Acceleration Setup 🚀
 
@@ -71,19 +71,19 @@ For maximum speed, configure the `HardwareBackend` in `appsettings.json` based o
 2. Download the required CUDA redistributable libraries from the [NVIDIA Developer Archive](https://developer.download.nvidia.com/compute/cuda/redist/). 
 You will need files from `cuda_cudart` and `libcublas`.
 3. Extract and place the following specific `.dll` files next to `Echo.exe`:
-* `cublas64_13.dll`
-* `cublasLt64_13.dll`
-* `cudart64_13.dll`
+	* `cublas64_13.dll`
+	* `cublasLt64_13.dll`
+	* `cudart64_13.dll`
 
 
 * **AMD / Intel / Basic NVIDIA (Vulkan)**
-* Works with AMD Adrenalin, Intel Arc Graphics, or standard NVIDIA drivers.
-* You don't need to install anything, because the required `vulkan-1.dll` is automatically installed by Windows with your GPU drivers.
-* Set `"HardwareBackend": "Vulkan"` in `appsettings.json`.
+	1. Works with AMD Adrenalin, Intel Arc Graphics, or standard NVIDIA drivers.
+	2. You don't need to install anything, because the required `vulkan-1.dll` is automatically installed by Windows with your GPU drivers.
+	3. Set `"HardwareBackend": "Vulkan"` in `appsettings.json`.
 
 
 * **CPU Only**
-* Set `"HardwareBackend": "CPU"`. No extra steps required.
+	1. Set `"HardwareBackend": "CPU"`. No extra steps required.
 
 
 

@@ -38,7 +38,8 @@ internal sealed class EchoOrchestrator(
         try
         {
             Log.Warning(
-                "...................Ech🦻 (v.{Version}) is checking dependencies................",
+                "...................Ech{EarEmoji} (v.{Version}) is checking dependencies................",
+                LoggerConstants.EarEmoji,
                 Assembly.GetExecutingAssembly().GetName().Version?.ToString(3));
 
             _assetsProvider.InitializeAssetsDirectory();
@@ -56,7 +57,9 @@ internal sealed class EchoOrchestrator(
 
             await _pushToTalkMonitorService.StartListeningAsync();
 
-            Log.Warning("...................Ech🦻 is ready and running....................");
+            Log.Warning(
+                "...................Ech{EarEmoji} is ready and running....................",
+                LoggerConstants.EarEmoji);
         }
         catch (Exception exc)
         {
