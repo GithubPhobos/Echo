@@ -32,6 +32,8 @@ public sealed class EchoOrchestratorTests
         // Act
         await _orchestrator.StartAsync(CancellationToken.None);
 
+        await Task.Delay(100);
+
         // Assert
         _assetsMock.Verify(a => a.InitializeAssetsDirectory(), Times.Once);
         _audioMock.Verify(a => a.InititalizeAudioRecordingCapabilities(), Times.Once);
