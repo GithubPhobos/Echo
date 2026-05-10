@@ -1,7 +1,7 @@
 ﻿[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/)
 
-# Ech🦻 Voice Typing Assistant
+# Ech👂 Voice Typing Assistant
 
 Echo is a blazing-fast, privacy-first, push-to-talk voice typing assistant. It runs locally on your machine, leveraging the power of **OpenAI's Whisper** to transcribe your speech into text and automatically insert it wherever your text cursor is active.
 **It also features seamless auto-translation to english language:** speak in your native language (Russian, Spanish, German, etc.), and Echo will instantly translate it to perfect English. 
@@ -31,7 +31,8 @@ Performance depends on your hardware and the chosen model. Below are average inf
 Before running the application, ensure you have:
 
 1. A working **Microphone**.
-2. **Whisper Model**: A compatible `.bin` Whisper model file (e.g., `ggml-base.en.bin` or `ggml-medium.bin`). You can download them from HuggingFace: [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp).
+2. **Whisper Model**: A compatible `.bin` Whisper model file (e.g., `ggml-base.en.bin` or `ggml-medium.bin`).
+    - You can download them from HuggingFace: [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp).
 
 ---
 
@@ -57,16 +58,16 @@ Before running the application, ensure you have:
 That folder contains `start-recording.wav` and `stop-recording.wav` for audible push-to-talk feedback.
 2. Place your downloaded Whisper model file (e.g., `ggml-medium.bin`) into the `Assets` folder.
 3. Open `appsettings.json` to customize the application (all settings are documented inline). Key settings include:
-* `WhisperSettings.ModelName`: **Must match** the exact name of the model you placed in the Assets folder.
-* `PushToTalkSettings.Key`: The global hotkey to trigger recording (Default is "`").
-* `Serilog.MinimumLevel.Default`: Available log levels are `Debug`, `Information`, `Warning`, `Error`.
-* `WhisperSettings.Prompt`: The initial context provided to the AI. Use this to specify complex domain terminology, define your preferred punctuation style, or provide a baseline vocabulary to help the model transcribe your speech more accurately.
+	* `WhisperSettings.ModelName`: **Must match** the exact name of the model you placed in the Assets folder.
+	* `PushToTalkSettings.Key`: The global hotkey to trigger recording (Default is "`").
+	* `Serilog.MinimumLevel.Default`: Available log levels are `Debug`, `Information`, `Warning`, `Error`.
+	* `WhisperSettings.Prompt`: The initial context provided to the AI. Use this to specify complex domain terminology, define your preferred punctuation style, or provide a baseline vocabulary to help the model transcribe your speech more accurately.
 
 ### 3. Hardware Acceleration Setup 🚀
 
 For maximum speed, configure the `HardwareBackend` in `appsettings.json` based on your system:
 
-* **NVIDIA (CUDA) - Maximum Speed (Only if you have an NVIDIA graphics card)**
+**NVIDIA (CUDA) - Maximum Speed (Only if you have an NVIDIA graphics card)**
 1. Ensure your NVIDIA graphics drivers are up to date.
 2. Download the required CUDA redistributable libraries from the [NVIDIA Developer Archive](https://developer.download.nvidia.com/compute/cuda/redist/). 
 You will need files from `cuda_cudart` and `libcublas`.
@@ -76,14 +77,14 @@ You will need files from `cuda_cudart` and `libcublas`.
 	* `cudart64_13.dll`
 
 
-* **AMD / Intel / Basic NVIDIA (Vulkan)**
-	1. Works with AMD Adrenalin, Intel Arc Graphics, or standard NVIDIA drivers.
-	2. You don't need to install anything, because the required `vulkan-1.dll` is automatically installed by Windows with your GPU drivers.
-	3. Set `"HardwareBackend": "Vulkan"` in `appsettings.json`.
+**AMD / Intel / Basic NVIDIA (Vulkan)**
+1. Works with AMD Adrenalin, Intel Arc Graphics, or standard NVIDIA drivers.
+2. You don't need to install anything, because the required `vulkan-1.dll` is automatically installed by Windows with your GPU drivers.
+3. Set `"HardwareBackend": "Vulkan"` in `appsettings.json`.
 
 
-* **CPU Only**
-	1. Set `"HardwareBackend": "CPU"`. No extra steps required.
+**CPU Only**
+1. Set `"HardwareBackend": "CPU"`. No extra steps required.
 
 
 
