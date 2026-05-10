@@ -38,7 +38,8 @@ internal sealed class EchoOrchestrator(
         try
         {
             Log.Warning(
-                "...................Ech🦻 (v.{Version}) is checking dependencies................",
+                "...................Ech{EarEmoji} (v.{Version}) is checking dependencies................",
+                LoggerConstants.EarEmoji,
                 Assembly.GetExecutingAssembly().GetName().Version?.ToString(3));
 
             _assetsProvider.InitializeAssetsDirectory();
@@ -56,7 +57,9 @@ internal sealed class EchoOrchestrator(
 
             await _pushToTalkMonitorService.StartListeningAsync();
 
-            Log.Warning("...................Ech🦻 is ready and running....................");
+            Log.Warning(
+                "...................Ech{EarEmoji} is ready and running....................",
+                LoggerConstants.EarEmoji);
         }
         catch (Exception exc)
         {
@@ -81,22 +84,7 @@ internal sealed class EchoOrchestrator(
         _logger.LogInformation("{WhiteSquareButtonEmoji} Push-to-talk released.",
             LoggerConstants.WhiteSquareButtonEmoji);
 
-        Task.Run(async () =>
-        {
-            try
-            {
-                MemoryStream? audioStream = _audioRecordingService.StopRecording();
-
-                string? textFromAudio = await _whisperInferenceService.ProcessAudioAsync(audioStream);
-
-                await _textInsertionService.InsertTextAsync(textFromAudio);
-            }
-            catch (Exception exc)
-            {
-                _logger.LogError(exc, "{ExplosionEmoji} Error: {ErrorMessage}", 
-                    LoggerConstants.ExplosionEmoji, exc.Message);
-            }
-        });
+        _ = Task.Run(ProcessRecordingPayloadAsync);
     }
 
     /// <inheritdoc/>
@@ -106,5 +94,22 @@ internal sealed class EchoOrchestrator(
         _pushToTalkMonitorService.OnRecordingReleased -= HandlePushToTalkReleased;
 
         base.Dispose();
+    }
+
+    internal async Task ProcessRecordingPayloadAsync()
+    {
+        try
+        {
+            MemoryStream? audioStream = _audioRecordingService.StopRecording();
+
+            string? textFromAudio = await _whisperInferenceService.ProcessAudioAsync(audioStream);
+
+            await _textInsertionService.InsertTextAsync(textFromAudio);
+        }
+        catch (Exception exc)
+        {
+            _logger.LogError(exc, "{ExplosionEmoji} Error: {ErrorMessage}",
+                LoggerConstants.ExplosionEmoji, exc.Message);
+        }
     }
 }

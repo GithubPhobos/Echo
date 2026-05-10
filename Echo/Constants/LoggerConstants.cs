@@ -8,6 +8,7 @@ internal class LoggerConstants
     public const string Tab = "    ";
     public const string DoubleTab = $"{Tab}{Tab}";
 
+    public const string EarEmoji = "👂";
     public const string FolderEmoji = "📂";
     public const string LoadingEmoji = "🔄";
     public const string HourglassEmoji = "⏳";
