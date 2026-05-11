@@ -3,6 +3,10 @@
 
 # Ech👂 Voice Typing Assistant
 
+
+https://github.com/user-attachments/assets/bf917071-653f-4bbb-a704-57d1402ab8eb
+
+
 Echo is a blazing-fast, privacy-first, push-to-talk voice typing assistant. It runs locally on your machine, leveraging the power of **OpenAI's Whisper** to transcribe your speech into text and automatically insert it wherever your text cursor is active.
 **It also features seamless auto-translation to english language:** speak in your native language (Russian, Spanish, German, etc.), and Echo will instantly translate it to perfect English. 
 This makes it an ideal tool for bilingual workflows, coding, and writing documentation! *(Note: Auto-translation works best with English-only models like `ggml-base.en.bin`).*
