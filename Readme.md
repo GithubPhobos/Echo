@@ -23,7 +23,7 @@ Performance depends on your hardware and the chosen model. Below are average inf
 | **CPU** | `ggml-small` | ~500 ms |
 |  | `ggml-base` | ~1 sec |
 |  | `ggml-medium` | ~4 sec |
-| **CUDA** (tested on RTX 3070 Ti) | `ggml-base` | ~400 ms |
+| **CUDA** (tested on RTX 5070 Ti) | `ggml-base` | ~400 ms |
 |  | `ggml-small` | ~500 ms |
 |  | `ggml-medium` | ~600 ms |
 |  | `ggml-large-v3-turbo` | ~500 ms |
