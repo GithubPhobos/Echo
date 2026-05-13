@@ -165,14 +165,13 @@ internal sealed class WhisperInferenceService(
         // Skip the 44-byte standard WAV header to process only the raw PCM audio data.
         audioStream.Position = 44;
 
-        // Используем буфер на 4KB (идеальный баланс между CPU и RAM)
+        // We use a 4KB buffer (the perfect balance between CPU and RAM)
         byte[] buffer = new byte[4096];
         int bytesRead;
 
-        // Читаем аудио большими кусками
+        // Reading audio in large chunks
         while ((bytesRead = audioStream.Read(buffer, 0, buffer.Length)) > 0)
         {
-            // Шагаем внутри куска по 2 байта
             for (int i = 0; i < bytesRead - 1; i += 2)
             {
                 short sample = BitConverter.ToInt16(buffer, i);
@@ -191,7 +190,7 @@ internal sealed class WhisperInferenceService(
             maxAmplitude < 500;
     }
 
-    private void LogRecognitionResults(Stopwatch stopwatch, string finalText)
+    private void LogRecognitionResults(Stopwatch stopwatch, string finalResult)
     {
         _logger.LogDebug("{CheckedEmoji} Audio processed:", LoggerConstants.CheckedEmoji);
 
@@ -201,8 +200,8 @@ internal sealed class WhisperInferenceService(
         _logger.LogDebug("{Tab}{TimerEmoji} Recognition time: {Elapsed} ms.",
             LoggerConstants.Tab, LoggerConstants.TimerEmoji, stopwatch.ElapsedMilliseconds);
 
-        _logger.LogDebug("{Tab}{TextEmoji} Финальный текст: {FinalText}",
-            LoggerConstants.Tab, LoggerConstants.TextEmoji, finalText);
+        _logger.LogDebug("{Tab}{TextEmoji} Final result: {FinalResult}",
+            LoggerConstants.Tab, LoggerConstants.TextEmoji, finalResult);
 
         _logger.LogDebug("========================================================================");
     }

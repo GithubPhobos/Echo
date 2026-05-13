@@ -52,7 +52,10 @@ internal sealed class AssetsProvider(ILogger<AssetsProvider> logger) : IAssetsPr
             // 'Path Traversal' protection
             var fullPath = Path.GetFullPath(Path.Combine(_assetsPath, fileName));
             if (!fullPath.StartsWith(_assetsPath))
-                throw new ArgumentException($"{LoggerConstants.ExplosionEmoji} Недопустимое имя файла: {fileName}.");
+            {
+                throw new ArgumentException(
+                    $"{LoggerConstants.ExplosionEmoji} Invalid file name: {fileName}.");
+            }
 
             return fullPath;
         }
