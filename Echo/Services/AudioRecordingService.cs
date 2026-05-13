@@ -150,6 +150,7 @@ internal sealed class AudioRecordingService(
                 _audioStream?.Dispose();
                 _audioStream = null;
             }
+
             throw;
         }
     }
@@ -211,7 +212,7 @@ internal sealed class AudioRecordingService(
                 return;
             }
 
-            // --- Voice Activity Detection (Silence Trimming) ---
+            // Voice Activity Detection (Silence Trimming)
             float maxAmplitude = 0f;
             for (int i = 0; i < e.BytesRecorded; i += 2)
             {
