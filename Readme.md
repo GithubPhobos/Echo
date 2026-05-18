@@ -1,4 +1,4 @@
-﻿[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com/)
 
 # Ech👂 Voice Typing Assistant
@@ -14,6 +14,32 @@ It features a "Hot Mic" architecture for zero-latency recording and advanced Voi
 
 ---
 
+
+## ⚙️ Prerequisites
+
+Before running the application, ensure you have:
+
+1. A working **Microphone**.
+2. **Whisper Model**: A compatible `.bin` Whisper model file.
+
+#### 🧠 **_How to Choose the Right Model:_**  
+Echo uses Whisper GGML models  (e.g. `ggml-medium.bin`). The model you choose determines the speed and accuracy of your dictation.   
+You can download them from HuggingFace: [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp).
+
+**English vs. Multilingual:**
+* If you **only dictate in English**, always download models with the `.en` suffix (e.g., `small.en.bin`). They are faster, more accurate, and hallucinate much less.
+* If you dictate in **other languages** (or mix them), use the standard models (e.g., `small.bin`). *Note: Large models do not have `.en` versions as they are inherently multilingual.*
+
+### Model Hardware Requirements (My advice is to try multiple models)
+
+| Model Size | Approx. VRAM / RAM | Speed | Accuracy | Hardware Recommendation |
+| :--- | :--- | :--- | :--- | :--- |
+| **Tiny** | ~500 MB | Blazing Fast | Basic | Potato PCs, quick testing. |
+| **Base** | ~1 GB | Very Fast | Acceptable | Older laptops or CPU-only inference. |
+| **Small** | ~2 GB | Fast | Good | **Recommended.** Best balance for most modern PCs. |
+| **Medium** | ~3.5 GB | Moderate | Very Good | Dedicated GPUs (e.g., GTX 1060 or better). |
+| **Large** | ~6 GB+ | Slow | Excellent | Modern GPUs (RTX 3060+). Perfect for complex jargon. |
+
 ## 📊 Average Benchmarks
 
 Performance depends on your hardware and the chosen model. Below are average inference times for my standard session:
@@ -27,17 +53,6 @@ Performance depends on your hardware and the chosen model. Below are average inf
 |  | `ggml-small` | ~500 ms |
 |  | `ggml-medium` | ~600 ms |
 |  | `ggml-large-v3-turbo` | ~500 ms |
-
----
-
-## ⚙️ Prerequisites
-
-Before running the application, ensure you have:
-
-1. A working **Microphone**.
-2. **Whisper Model**: A compatible `.bin` Whisper model file (e.g., `ggml-base.en.bin` or `ggml-medium.bin`).
-    - You can download them from HuggingFace: [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp).
-
 ---
 
 ## 🚀 Getting Started
@@ -60,7 +75,7 @@ Before running the application, ensure you have:
 
 1. Ensure there is an **`Assets`** folder in the root directory alongside the `Echo.exe` executable. 
 That folder contains `start-recording.wav` and `stop-recording.wav` for audible push-to-talk feedback.
-2. Place your downloaded Whisper model file (e.g., `ggml-medium.bin`) into the `Assets` folder.
+2. Place your downloaded Whisper model file into the `Assets` folder.
 3. Open `appsettings.json` to customize the application (all settings are documented inline). Key settings include:
 	* `WhisperSettings.ModelName`: **Must match** the exact name of the model you placed in the Assets folder.
 	* `PushToTalkSettings.Key`: The global hotkey to trigger recording (Default is "`").
