@@ -6,22 +6,28 @@ namespace Echo.Services;
 
 /// <inheritdoc cref="ITextInsertionService"/>
 /// <param name="textInsertionSettingsOptions"><see cref="IOptions{TextInsertionSettings}"/></param>
+/// <param name="clipboard">The system clipboard.</param>
+/// <param name="inputSimulator">Presses keys as if the user did.</param>
 internal sealed class TextInsertionService(
-    IOptions<TextInsertionSettings> textInsertionSettingsOptions) : ITextInsertionService
+    IOptions<TextInsertionSettings> textInsertionSettingsOptions,
+    IClipboard clipboard,
+    IInputSimulator inputSimulator) : ITextInsertionService
 {
-    private readonly InputSimulator _inputSimulator = new();
+    private readonly IClipboard _clipboard = clipboard;
+    private readonly IInputSimulator _inputSimulator = inputSimulator;
     private readonly TextInsertionSettings _textInsertionSettings = textInsertionSettingsOptions.Value;
 
     /// <inheritdoc/>
     public async Task InsertTextAsync(string? text)
     {
-        if (!_textInsertionSettings.UseAutoInsert)
-            return;
-
         if (string.IsNullOrWhiteSpace(text))
             return;
 
-        ClipboardService.SetText(text);
+        // The text is always left in the clipboard; without automatic insertion it is pasted by hand
+        await _clipboard.SetTextAsync(text);
+
+        if (!_textInsertionSettings.UseAutoInsert)
+            return;
 
         await Task.Delay(50);
 

@@ -87,13 +87,13 @@ public sealed class WhisperInferenceServiceTests
     {
         // Arrange
         var loggerMock = new Mock<ILogger<WhisperInferenceService>>();
-        var assetsMock = new Mock<IAssetsProvider>();
+        var pathsMock = new Mock<IAppPaths>();
 
         // Creating options with valid mock settings
         var settings = new Echo.Settings.WhisperSettings { ModelName = "dummy.bin" };
         var optionsMock = Microsoft.Extensions.Options.Options.Create(settings);
 
-        using var service = new WhisperInferenceService(assetsMock.Object, loggerMock.Object, optionsMock);
+        using var service = new WhisperInferenceService(pathsMock.Object, loggerMock.Object, optionsMock);
 
         // Create an empty valid stream (will be evaluated as silent)
         using var silentStream = new MemoryStream(new byte[20000]);

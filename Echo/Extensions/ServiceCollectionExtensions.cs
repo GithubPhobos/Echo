@@ -1,7 +1,21 @@
-﻿using Echo.Services.BackgroundServices;
+﻿using Echo.Listening;
+using Echo.Services.BackgroundServices;
+using Echo.Setup;
+using Echo.Setup.Audio;
+using Echo.Setup.Check;
+using Echo.Setup.Downloads;
+using Echo.Setup.Hardware;
+using Echo.Setup.Hotkeys;
+using Echo.Setup.Steps;
+using Echo.UI;
+using GregsStack.InputSimulatorStandard;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog.Core;
+using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
+using Spectre.Console;
+using TextCopy;
 
 namespace Echo.Extensions;
 
@@ -17,31 +31,128 @@ internal static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services"><see cref="IServiceCollection"/></param>
     /// <param name="configuration"><see cref="IConfiguration"/></param>
-    internal static void ConfigureSerilog(this IServiceCollection services, IConfiguration configuration)
+    /// <param name="logsDirectory">Where the files go.</param>
+    internal static void ConfigureSerilog(this IServiceCollection services, IConfiguration configuration, string logsDirectory)
     {
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)
-            .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Error)
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Error)
             .WriteTo.Console(
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}",
                 theme: AnsiConsoleTheme.Code)
+            .WriteTo.Sink(new DailyFileSink(logsDirectory))
             .CreateLogger();
 
         services.AddSerilog();
     }
 
     /// <summary>
-    ///     Builds the application configuration from 'appsettings.json' and binds the sections 
-    ///     to strongly-typed options classes.
+    ///     Configures Serilog for the working screen: messages go to the screen's log and to a file a day,
+    ///     with a detail that can be changed while Echo runs.
     /// </summary>
     /// <param name="services"><see cref="IServiceCollection"/></param>
-    internal static void SetupConfiguration(this IServiceCollection services)
+    /// <param name="configuration"><see cref="IConfiguration"/></param>
+    /// <param name="levelSwitch">The log detail; it starts at the one in the settings.</param>
+    /// <param name="log">The screen's log.</param>
+    /// <param name="logsDirectory">Where the files go.</param>
+    internal static void ConfigureScreenLogging(this IServiceCollection services,
+                                                IConfiguration configuration,
+                                                LoggingLevelSwitch levelSwitch,
+                                                ScreenLog log,
+                                                string logsDirectory)
     {
-        var config = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: true)
-            .Build();
+        Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(configuration)
+            .MinimumLevel.ControlledBy(levelSwitch)
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Error)
+            .Enrich.FromLogContext()
+            .WriteTo.Sink(new ScreenLogSink(log))
+            .WriteTo.Sink(new DailyFileSink(logsDirectory))
+            .CreateLogger();
 
+        services.AddSerilog();
+    }
+
+    /// <summary>
+    ///     The log detail in the settings, or Debug, which Echo ships with.
+    /// </summary>
+    internal static LogEventLevel LogLevelOf(IConfiguration configuration) =>
+        Enum.TryParse(configuration["Serilog:MinimumLevel:Default"], ignoreCase: true, out LogEventLevel level)
+            ? level
+            : LogEventLevel.Debug;
+
+    /// <summary>
+    ///     Registers the command line interface and the setup wizard.
+    /// </summary>
+    /// <param name="services"><see cref="IServiceCollection"/></param>
+    /// <param name="paths"><see cref="IAppPaths"/></param>
+    internal static void RegisterSetup(this IServiceCollection services, IAppPaths paths)
+    {
+        services.AddSingleton(paths);
+        services.AddSingleton(AnsiConsole.Console);
+        services.AddSingleton(SetupTimings.Default);
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton(provider => new SetupUi(
+            provider.GetRequiredService<IAnsiConsole>(),
+            Theme.Detect(provider.GetRequiredService<IAnsiConsole>()),
+            provider.GetRequiredService<SetupTimings>().Tick));
+
+        services.AddSingleton<IUserSettingsStore, UserSettingsStore>();
+        services.AddSingleton<ISystemShell, SystemShell>();
+        services.AddSingleton<IProcessRunner, ProcessRunner>();
+        services.AddSingleton<IHardwareProbe, HardwareProbe>();
+        services.AddSingleton<IFileDownloader>(_ => new FileDownloader(CreateDownloadClient()));
+        services.AddSingleton<ICudaRuntime, CudaRuntime>();
+        services.AddSingleton<IHotkeyCaptureFactory, HotkeyCaptureFactory>();
+        services.AddSingleton<IMicrophoneProbe, MicrophoneProbe>();
+        services.AddSingleton<IDictationTester, DictationTester>();
+
+        // The wizard shows the steps in exactly this order; adding, removing or moving a step is one line here
+        services.AddSingleton<ISetupStep, LanguageStep>();
+        services.AddSingleton<ISetupStep, AccelerationStep>();
+        services.AddSingleton<ISetupStep, ModelStep>();
+        services.AddSingleton<ISetupStep, HotkeyStep>();
+        services.AddSingleton<ISetupStep, CheckStep>();
+        services.AddSingleton<ISetupStep, AdditionalSettingsStep>();
+
+        services.AddSingleton<SetupRunner>();
+    }
+
+    /// <summary>
+    ///     Builds the application configuration: the defaults from the bundled 'appsettings.json',
+    ///     then the user's own settings file, then <paramref name="overrides"/>.
+    /// </summary>
+    /// <param name="paths"><see cref="IAppPaths"/></param>
+    /// <param name="overrides">Values that are not saved anywhere yet, e.g. the draft of the setup wizard.</param>
+    internal static IConfiguration BuildConfiguration(IAppPaths paths,
+                                                      IEnumerable<KeyValuePair<string, string?>>? overrides = null)
+    {
+        IConfigurationBuilder builder = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: true);
+
+        // A damaged settings file counts as no settings at all, as it does for the setup wizard,
+        // which then writes a fresh one: it must not stop anything before that
+        if (UserSettingsStore.IsReadable(paths.SettingsFile))
+        {
+            builder.AddJsonFile(paths.SettingsFile, optional: true);
+
+            // A value a setting cannot take is replaced by the shipped one, the way the setup wizard reads it
+            builder.AddInMemoryCollection(UserSettingsStore.Rejected(paths.SettingsFile));
+        }
+
+        return builder
+            .AddInMemoryCollection(overrides)
+            .Build();
+    }
+
+    /// <summary>
+    ///     Binds the configuration sections to strongly-typed options classes.
+    /// </summary>
+    /// <param name="services"><see cref="IServiceCollection"/></param>
+    /// <param name="config"><see cref="IConfiguration"/></param>
+    internal static void SetupConfiguration(this IServiceCollection services, IConfiguration config)
+    {
         services.Configure<WhisperSettings>(config.GetSection(nameof(WhisperSettings)));
         services.Configure<PushToTalkSettings>(config.GetSection(nameof(PushToTalkSettings)));
         services.Configure<TextInsertionSettings>(config.GetSection(nameof(TextInsertionSettings)));
@@ -57,11 +168,33 @@ internal static class ServiceCollectionExtensions
     {
         services.AddHostedService<EchoOrchestrator>();
 
+        services.RegisterDictationServices();
+    }
+
+    /// <summary>
+    ///     Registers the dictation pipeline itself, without the background service that drives it.
+    ///     The setup wizard uses it to try the settings before they are saved.
+    /// </summary>
+    /// <param name="services"><see cref="IServiceCollection"/></param>
+    internal static void RegisterDictationServices(this IServiceCollection services)
+    {
         services.AddSingleton<IAssetsProvider, AssetsProvider>();
         services.AddSingleton<ISoundPlayService, SoundPlayService>();
+        services.AddSingleton<IClipboard, Clipboard>();
+        services.AddSingleton<IInputSimulator, InputSimulator>();
         services.AddSingleton<ITextInsertionService, TextInsertionService>();
         services.AddSingleton<IAudioRecordingService, AudioRecordingService>();
         services.AddSingleton<IWhisperInferenceService, WhisperInferenceService>();
         services.AddSingleton<IPushToTalkMonitorService, PushToTalkMonitorService>();
+    }
+
+    private static HttpClient CreateDownloadClient()
+    {
+        // No overall timeout: a model is gigabytes, and a stalled connection surfaces as a read error anyway
+        var client = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
+
+        client.DefaultRequestHeaders.UserAgent.ParseAdd($"{ApplicationInfo.CommandName}/{ApplicationInfo.Version}");
+
+        return client;
     }
 }

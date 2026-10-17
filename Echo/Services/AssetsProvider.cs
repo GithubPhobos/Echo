@@ -15,9 +15,8 @@ internal sealed class AssetsProvider(ILogger<AssetsProvider> logger) : IAssetsPr
     {
         _logger.LogDebug("{FolderEmoji} Assets:", LoggerConstants.FolderEmoji);
 
-        var currentDir = Directory.GetCurrentDirectory();
-
-        _assetsPath = Path.Combine(currentDir, AssetsDirName);
+        // Assets live next to the executable, wherever the command is run from
+        _assetsPath = Path.Combine(AppContext.BaseDirectory, AssetsDirName);
 
         _logger.LogDebug("{Tab}{LoadingEmoji} Checking if 'Assets' folder exists...", 
             LoggerConstants.Tab, LoggerConstants.LoadingEmoji);

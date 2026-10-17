@@ -1,19 +1,20 @@
-﻿using Whisper.net;
+﻿using Echo.Setup.Hardware;
+using Whisper.net;
 using Whisper.net.LibraryLoader;
 using Whisper.net.Logger;
 
 namespace Echo.Services;
 
 /// <inheritdoc cref="IWhisperInferenceService"/>
-/// <param name="assetsProvider"><see cref="IAssetsProvider"/></param>
+/// <param name="paths"><see cref="IAppPaths"/></param>
 /// <param name="logger"><see cref="ILogger{WhisperInferenceService}"/></param>
 /// <param name="whisperSettingsOptions"><see cref="IOptions{WhisperSettings}"/></param>
 internal sealed class WhisperInferenceService(
-    IAssetsProvider assetsProvider,
+    IAppPaths paths,
     ILogger<WhisperInferenceService> logger,
     IOptions<WhisperSettings> whisperSettingsOptions) : IWhisperInferenceService
 {
-    private readonly IAssetsProvider _assetsProvider = assetsProvider;
+    private readonly IAppPaths _paths = paths;
     private readonly ILogger<WhisperInferenceService> _logger = logger;
     private readonly WhisperSettings _whisperSettings = whisperSettingsOptions.Value;
 
@@ -30,18 +31,41 @@ internal sealed class WhisperInferenceService(
             _logger.LogDebug("{Tab}{LoadingEmoji} Loading Whisper model...",
                 LoggerConstants.Tab, LoggerConstants.LoadingEmoji);
 
+            // The NVIDIA libraries live in the user's folder, not next to the executable
+            CudaRuntime.RegisterSearchPath(_paths.CudaDirectory);
+
+            // The card number in the settings follows the order of the driver tool, so CUDA must count the same way
+            if (Environment.GetEnvironmentVariable(CudaRequirements.DeviceOrderVariable) is null)
+                Environment.SetEnvironmentVariable(CudaRequirements.DeviceOrderVariable, CudaRequirements.DeviceOrderByBus);
+
+            IReadOnlyList<string> missingCudaLibraries = CudaRuntime.FindMissingLibraries(_paths.CudaDirectory);
+
+            if (missingCudaLibraries.Count > 0 && Acceleration.Parse(_whisperSettings.HardwareBackend) == AccelerationBackend.Cuda)
+            {
+                _logger.LogWarning("{Tab}{WarningEmoji} CUDA is selected, but these NVIDIA libraries are missing: {Libraries}. Falling back to the processor.",
+                    LoggerConstants.Tab, LoggerConstants.WarningEmoji, string.Join(", ", missingCudaLibraries));
+            }
+
+            RuntimeOptions.RuntimeLibraryOrder = Acceleration.LibraryOrder(
+                _whisperSettings.HardwareBackend,
+                isCudaInstalled: missingCudaLibraries.Count == 0,
+                RuntimeOptions.RuntimeLibraryOrder);
+
             _logger.LogDebug("{Tab}{InfoEmoji} Loading order: {Libraries}",
                 LoggerConstants.Tab,
                 LoggerConstants.InfoEmoji,
                 RuntimeOptions.RuntimeLibraryOrder.Select(
                     lib => Enum.GetName(lib)));
 
-            string modelPath = _assetsProvider.GetFilePath(
-                NormalizeModelFileName(_whisperSettings.ModelName));
+            string modelPath = ResolveModelPath();
 
             LogProvider.AddLogger(OnWhisperLog);
 
-            _whisperFactory = WhisperFactory.FromPath(modelPath);
+            _whisperFactory = WhisperFactory.FromPath(modelPath, new WhisperFactoryOptions
+            {
+                UseGpu = Acceleration.UsesGpu(_whisperSettings.HardwareBackend),
+                GpuDevice = _whisperSettings.GpuDeviceIndex
+            });
 
             _processor = BuildWhisperProcessor(_whisperFactory, _whisperSettings);
 
@@ -106,6 +130,25 @@ internal sealed class WhisperInferenceService(
 
         return
             whisperProcessorBuilder.Build();
+    }
+
+    /// <summary>
+    ///     Finds the model file in the user's models folder.
+    /// </summary>
+    private string ResolveModelPath()
+    {
+        // Only the file name is used, so the setting cannot point outside the models folder
+        string fileName = Path.GetFileName(NormalizeModelFileName(_whisperSettings.ModelName));
+        string modelPath = Path.Combine(_paths.ModelsDirectory, fileName);
+
+        if (!File.Exists(modelPath))
+        {
+            throw new FileNotFoundException(
+                $"{LoggerConstants.Tab}{LoggerConstants.WarningEmoji} Model '{fileName}' was not found in '{_paths.ModelsDirectory}'. " +
+                $"Run '{ApplicationInfo.CommandName} {Commands.SetupCommand.Name}' to download a model.");
+        }
+
+        return modelPath;
     }
 
     private static string NormalizeModelFileName(string modelName)
@@ -192,6 +235,9 @@ internal sealed class WhisperInferenceService(
 
     private void LogRecognitionResults(Stopwatch stopwatch, string finalResult)
     {
+        // The working screen shows the recognized phrase in a line of its own; the file keeps these details
+        using IDisposable hidden = Serilog.Context.LogContext.PushProperty(Echo.Listening.ScreenLogSink.HiddenProperty, true);
+
         _logger.LogDebug("{CheckedEmoji} Audio processed:", LoggerConstants.CheckedEmoji);
 
         _logger.LogDebug("{Tab}{RobotEmoji} Model used: {ModelName}.",

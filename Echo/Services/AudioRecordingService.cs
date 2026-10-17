@@ -6,10 +6,20 @@ namespace Echo.Services;
 /// <inheritdoc cref="IAudioRecordingService"/>
 /// <param name="logger">The logger instance.</param>
 /// <param name="recordingDeviceSettingsOptions">The audio device configuration settings.</param>
+/// <param name="activity">The working screen, when Echo runs with one: it shows the level of the microphone.</param>
 internal sealed class AudioRecordingService(
     ILogger<AudioRecordingService> logger,
-    IOptions<RecordingDeviceSettings> recordingDeviceSettingsOptions) : IAudioRecordingService
+    IOptions<RecordingDeviceSettings> recordingDeviceSettingsOptions,
+    IListenActivity? activity = null) : IAudioRecordingService
 {
+    /// <summary>
+    ///     How long closing the microphone may take. Opening the same device again before it has really
+    ///     stopped leaves the next opening hanging, which is what the setup wizard does right after this.
+    /// </summary>
+    private static readonly TimeSpan _stopTimeout = TimeSpan.FromSeconds(2);
+
+    private readonly IListenActivity? _activity = activity;
+
     /// <summary>
     ///     Required audio format for Whisper inference. 
     ///     Strictly 16kHz, 16-bit, Mono.
@@ -200,6 +210,8 @@ internal sealed class AudioRecordingService(
         if (!_isPttActive)
             return;
 
+        _activity?.ReportLevel(PeakOf(e.Buffer, e.BytesRecorded));
+
         lock (_lockObj)
         {
             // Double-check inside lock to ensure StopRecording hasn't disposed the writer
@@ -241,6 +253,19 @@ internal sealed class AudioRecordingService(
     }
 
     /// <summary>
+    ///     The loudest sample of a piece of 16-bit sound, between 0 and 1.
+    /// </summary>
+    private static float PeakOf(byte[] buffer, int length)
+    {
+        float peak = 0f;
+
+        for (int i = 0; i + 1 < length; i += 2)
+            peak = Math.Max(peak, Math.Abs((float)BitConverter.ToInt16(buffer, i) / short.MaxValue));
+
+        return peak;
+    }
+
+    /// <summary>
     ///     Stops hardware listening and releases all allocated memory resources.
     ///     Should only be called when the application is shutting down.
     /// </summary>
@@ -250,8 +275,12 @@ internal sealed class AudioRecordingService(
 
         if (_waveIn is not null)
         {
+            using var stopped = new ManualResetEventSlim();
+
             _waveIn.DataAvailable -= OnRecording;
+            _waveIn.RecordingStopped += (_, _) => stopped.Set();
             _waveIn.StopRecording();
+            stopped.Wait(_stopTimeout);
             _waveIn.Dispose();
             _waveIn = null;
         }

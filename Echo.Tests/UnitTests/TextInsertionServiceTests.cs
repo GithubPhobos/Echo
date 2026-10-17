@@ -1,23 +1,59 @@
-﻿namespace Echo.Tests.UnitTests;
+﻿using GregsStack.InputSimulatorStandard;
+using GregsStack.InputSimulatorStandard.Native;
+using TextCopy;
+
+namespace Echo.Tests.UnitTests;
 
 public sealed class TextInsertionServiceTests
 {
-    [Fact]
-    public async Task InsertTextAsync_AutoInsertDisabled_ReturnsImmediately()
+    private readonly Mock<IClipboard> _clipboardMock = new();
+    private readonly Mock<IInputSimulator> _inputMock = new();
+    private readonly Mock<IKeyboardSimulator> _keyboardMock = new();
+
+    public TextInsertionServiceTests()
+    {
+        _inputMock.SetupGet(input => input.Keyboard).Returns(_keyboardMock.Object);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task InsertTextAsync_AnyText_IsLeftInTheClipboard(bool useAutoInsert)
     {
         // Arrange
-        var settings = new TextInsertionSettings { UseAutoInsert = false };
-        var optionsMock = Options.Create(settings);
-        var service = new TextInsertionService(optionsMock);
+        TextInsertionService service = CreateService(useAutoInsert);
 
-        // Act & Assert
-        // We ensure no exception is thrown and it returns immediately.
-        // Since we don't mock the static ClipboardService, if it tries to execute, 
-        // it might throw an exception in a headless CI environment. 
-        // A clean return means our guard clause works.
-        var exception = await Record.ExceptionAsync(() => service.InsertTextAsync("Some text"));
+        // Act
+        await service.InsertTextAsync("Some text");
 
-        Assert.Null(exception);
+        // Assert
+        _clipboardMock.Verify(clipboard => clipboard.SetTextAsync("Some text", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task InsertTextAsync_AutoInsertEnabled_PressesCtrlV()
+    {
+        // Arrange
+        TextInsertionService service = CreateService(useAutoInsert: true);
+
+        // Act
+        await service.InsertTextAsync("Some text");
+
+        // Assert
+        _keyboardMock.Verify(keyboard => keyboard.ModifiedKeyStroke(VirtualKeyCode.CONTROL, VirtualKeyCode.VK_V), Times.Once);
+    }
+
+    [Fact]
+    public async Task InsertTextAsync_AutoInsertDisabled_PressesNothing()
+    {
+        // Arrange
+        TextInsertionService service = CreateService(useAutoInsert: false);
+
+        // Act
+        await service.InsertTextAsync("Some text");
+
+        // Assert
+        _keyboardMock.VerifyNoOtherCalls();
     }
 
     [Theory]
@@ -27,13 +63,16 @@ public sealed class TextInsertionServiceTests
     public async Task InsertTextAsync_EmptyOrNullText_ReturnsImmediately(string? invalidText)
     {
         // Arrange
-        var settings = new TextInsertionSettings { UseAutoInsert = true };
-        var optionsMock = Options.Create(settings);
-        var service = new TextInsertionService(optionsMock);
+        TextInsertionService service = CreateService(useAutoInsert: true);
 
-        // Act & Assert
-        var exception = await Record.ExceptionAsync(() => service.InsertTextAsync(invalidText));
+        // Act
+        await service.InsertTextAsync(invalidText);
 
-        Assert.Null(exception);
+        // Assert
+        _clipboardMock.VerifyNoOtherCalls();
+        _keyboardMock.VerifyNoOtherCalls();
     }
+
+    private TextInsertionService CreateService(bool useAutoInsert) =>
+        new(Options.Create(new TextInsertionSettings { UseAutoInsert = useAutoInsert }), _clipboardMock.Object, _inputMock.Object);
 }

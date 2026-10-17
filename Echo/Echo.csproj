@@ -2,6 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
+		<AssemblyName>echooo</AssemblyName>
 		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
@@ -22,6 +23,8 @@
 		<PackageReference Include="Serilog.Settings.Configuration" Version="10.0.0" />
 		<PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
 		<PackageReference Include="SharpHook" Version="7.1.1" />
+		<PackageReference Include="Spectre.Console" Version="0.57.2" />
+		<PackageReference Include="Spectre.Console.Cli" Version="0.57.2" />
 		<PackageReference Include="TextCopy" Version="6.2.1" />
 		<PackageReference Include="Whisper.net" Version="1.9.0" />
 		<PackageReference Include="Whisper.net.Runtime" Version="1.9.0" />

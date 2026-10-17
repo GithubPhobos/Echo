@@ -10,6 +10,7 @@ internal sealed class PushToTalkMonitorService : IPushToTalkMonitorService
     private readonly ISoundPlayService _soundPlayService;
     private readonly PushToTalkSettings _pushToTalkSettings;
     private readonly ILogger<PushToTalkMonitorService> _logger;
+    private readonly IListenActivity? _activity;
 
     private KeyCode _key;
     private bool _isRecording;
@@ -28,11 +29,14 @@ internal sealed class PushToTalkMonitorService : IPushToTalkMonitorService
     /// <param name="soundPlayService"><see cref="ISoundPlayService"/></param>
     /// <param name="logger"><see cref="ILogger{PushToTalkMonitorService}"/></param>
     /// <param name="pushToTalkSettingsOptions"><see cref="IOptions{PushToTalkSettings}"/></param>
+    /// <param name="activity">The working screen, when Echo runs with one: it can pause listening to the key.</param>
     public PushToTalkMonitorService(ISoundPlayService soundPlayService,
                                     ILogger<PushToTalkMonitorService> logger,
-                                    IOptions<PushToTalkSettings> pushToTalkSettingsOptions)
+                                    IOptions<PushToTalkSettings> pushToTalkSettingsOptions,
+                                    IListenActivity? activity = null)
     {
         _logger = logger;
+        _activity = activity;
         _hook = new SimpleGlobalHook();
         _soundPlayService = soundPlayService;
         _pushToTalkSettings = pushToTalkSettingsOptions.Value;
@@ -93,8 +97,12 @@ internal sealed class PushToTalkMonitorService : IPushToTalkMonitorService
             LoggerConstants.Tab, LoggerConstants.CheckedEmoji, _pushToTalkSettings.Modifier);
     }
 
-    private void OnKeyPressed(object? sender, KeyboardHookEventArgs e)
+    internal void OnKeyPressed(object? sender, KeyboardHookEventArgs e)
     {
+        // Paused, the key does what it does without Echo, and a recording already under way still ends normally
+        if (_activity?.IsPaused == true && !_isRecording)
+            return;
+
         if (e.Data.KeyCode == _key
             &&
             (
@@ -121,21 +129,20 @@ internal sealed class PushToTalkMonitorService : IPushToTalkMonitorService
         }
     }
 
-    private void OnKeyReleased(object? sender, KeyboardHookEventArgs e)
+    internal void OnKeyReleased(object? sender, KeyboardHookEventArgs e)
     {
-        if (e.Data.KeyCode == _key)
+        // Only the release of a press that was kept from other programs is kept from them too:
+        // otherwise a program would see the key go down and never come up
+        if (e.Data.KeyCode == _key && _isRecording)
         {
             e.SuppressEvent = true;
 
-            if (_isRecording)
-            {
-                if (_pushToTalkSettings.PlaySound)
-                    Task.Run(_soundPlayService.PlayMicrophoneOffSoundAsync);
+            if (_pushToTalkSettings.PlaySound)
+                Task.Run(_soundPlayService.PlayMicrophoneOffSoundAsync);
 
-                Task.Run(() => OnRecordingReleased?.Invoke(this, EventArgs.Empty));
+            Task.Run(() => OnRecordingReleased?.Invoke(this, EventArgs.Empty));
 
-                _isRecording = false;
-            }
+            _isRecording = false;
         }
     }
 
