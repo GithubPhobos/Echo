@@ -295,6 +295,7 @@ internal sealed class ListenCommand(
             new HotkeyChoice(
                 Setting(configuration, nameof(PushToTalkSettings), nameof(PushToTalkSettings.Key)) ?? HotkeyChoice.Default.Key,
                 Setting(configuration, nameof(PushToTalkSettings), nameof(PushToTalkSettings.Modifier)) ?? string.Empty),
+            Setting(configuration, nameof(PushToTalkSettings), nameof(PushToTalkSettings.DesktopShortcut)),
             isShort);
 
     private static string? Setting(IConfiguration configuration, string section, string key) =>

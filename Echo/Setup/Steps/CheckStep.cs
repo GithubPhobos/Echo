@@ -123,7 +123,7 @@ internal sealed class CheckStep : ISetupStep
         {
             UiResult<ConsoleKey> retry = await _ui.ShowAsync(
                 screen,
-                [_ui.Bad(Markup.Escape(Strings.MicrophoneNone)), string.Empty, SetupUi.Dim(Markup.Escape(Strings.MicrophoneNoneHelp))],
+                [_ui.Bad(Markup.Escape(Strings.MicrophoneNone)), string.Empty, SetupUi.Dim(Markup.Escape(OperatingSystem.IsWindows() ? Strings.MicrophoneNoneHelp : Strings.MicrophoneNoneHelpLinux))],
                 [(ConsoleKey.Enter, Strings.HintCheckAgain)],
                 cancellationToken);
 
@@ -439,7 +439,7 @@ internal sealed class CheckStep : ISetupStep
         double elapsedMs = 0;
         int ticks = 0;
 
-        string question = Strings.Format(nameof(Strings.TestQuestion), HotkeyNames.Display(context.Hotkey));
+        string question = Strings.Format(nameof(Strings.TestQuestion), HotkeyNames.Display(context.Hotkey, context.HotkeyLabel));
 
         return _ui.PollAsync<bool>(
             screen,

@@ -693,4 +693,124 @@
   <data name="ProcessorUnsupportedHint" xml:space="preserve">
     <value>Echo 无法在这台电脑上运行：识别需要大约 2013 年及以后的处理器（Intel 第 4 代酷睿、2015 年起的 AMD、所有 Ryzen）。</value>
   </data>
+  <data name="SubSystemCheck" xml:space="preserve">
+    <value>此系统需要的组件</value>
+  </data>
+  <data name="SystemCheckQuestion" xml:space="preserve">
+    <value>Echo 检查了它在这台电脑上需要的组件</value>
+  </data>
+  <data name="SystemCheckNote" xml:space="preserve">
+    <value>安装缺少的组件后按 R 重新检查，或在没有它的情况下继续。</value>
+  </data>
+  <data name="SystemChecking" xml:space="preserve">
+    <value>正在检查系统</value>
+  </data>
+  <data name="RequireDesktop" xml:space="preserve">
+    <value>桌面会话（X11 或 Wayland）</value>
+  </data>
+  <data name="RequireDesktopWithout" xml:space="preserve">
+    <value>没有它就没有按住说话的按键，也无法粘贴。请在桌面的终端中运行 Echo。</value>
+  </data>
+  <data name="RequireSound" xml:space="preserve">
+    <value>声音服务器（PulseAudio 或 PipeWire）</value>
+  </data>
+  <data name="RequireSoundWithout" xml:space="preserve">
+    <value>没有它的库，Echo 无法听到麦克风。</value>
+  </data>
+  <data name="RequireMicrophone" xml:space="preserve">
+    <value>麦克风</value>
+  </data>
+  <data name="RequireMicrophoneWithout" xml:space="preserve">
+    <value>声音服务器没有找到任何麦克风。</value>
+  </data>
+  <data name="RequireMicrophoneFix" xml:space="preserve">
+    <value>请接入麦克风，或检查桌面的声音设置。</value>
+  </data>
+  <data name="RequireClipboard" xml:space="preserve">
+    <value>剪贴板程序（{0}）</value>
+  </data>
+  <data name="RequireClipboardWithout" xml:space="preserve">
+    <value>没有它，文本既无法放入剪贴板，也无法粘贴。</value>
+  </data>
+  <data name="RequireShortcuts" xml:space="preserve">
+    <value>供程序使用的按键（桌面权限“全局快捷键”）</value>
+  </data>
+  <data name="RequireShortcutsWithout" xml:space="preserve">
+    <value>没有它，此桌面不会给 Echo 按住说话的按键。GNOME 48 及更新版本和 KDE Plasma 支持它。</value>
+  </data>
+  <data name="RequirePaste" xml:space="preserve">
+    <value>由程序按键（桌面权限“远程控制”）</value>
+  </data>
+  <data name="RequirePasteWithout" xml:space="preserve">
+    <value>没有它，文本会被复制，由您自己粘贴。</value>
+  </data>
+  <data name="RequireFileChooser" xml:space="preserve">
+    <value>文件选择窗口</value>
+  </data>
+  <data name="RequireFileChooserWithout" xml:space="preserve">
+    <value>没有它，您需要手动把自己的模型和库文件复制到 Echo 的文件夹。</value>
+  </data>
+  <data name="RequireUnpacker" xml:space="preserve">
+    <value>xz，用于解压 NVIDIA 库</value>
+  </data>
+  <data name="RequireUnpackerWithout" xml:space="preserve">
+    <value>没有它，Echo 无法下载 CUDA 库；使用处理器时不需要它们。</value>
+  </data>
+  <data name="RequireInstall" xml:space="preserve">
+    <value>安装：{0}</value>
+  </data>
+  <data name="RequireInstallPackage" xml:space="preserve">
+    <value>请用系统的包管理器安装软件包 {0}。</value>
+  </data>
+  <data name="CudaToolsMissing" xml:space="preserve">
+    <value>Echo 需要这些程序来解压库：{0}。请安装后重试。</value>
+  </data>
+  <data name="SubPastePermission" xml:space="preserve">
+    <value>粘贴</value>
+  </data>
+  <data name="HotkeyDesktopQuestion" xml:space="preserve">
+    <value>在此桌面上，按住说话的按键由桌面本身分配</value>
+  </data>
+  <data name="HotkeyDesktopNote" xml:space="preserve">
+    <value>按 Enter：桌面会显示它的窗口。在窗口中确认 Echo 建议的按键（{0}），或选择其他按键。</value>
+  </data>
+  <data name="HintOpenDesktopWindow" xml:space="preserve">
+    <value>打开桌面的窗口</value>
+  </data>
+  <data name="HintKeep" xml:space="preserve">
+    <value>保留</value>
+  </data>
+  <data name="HotkeyDesktopWaiting" xml:space="preserve">
+    <value>正在等待桌面的窗口</value>
+  </data>
+  <data name="HotkeyDesktopRefused" xml:space="preserve">
+    <value>桌面没有分配按键</value>
+  </data>
+  <data name="HotkeyDesktopRefusedNote" xml:space="preserve">
+    <value>窗口被关闭了，或者此桌面无法给程序分配按键（GNOME 48 及更新版本和 KDE Plasma 可以）。</value>
+  </data>
+  <data name="PastePermissionQuestion" xml:space="preserve">
+    <value>允许 Echo 替您粘贴文本</value>
+  </data>
+  <data name="PastePermissionNote" xml:space="preserve">
+    <value>为了粘贴，Echo 会按 Shift+Insert，而此桌面只有在您允许时才让程序按键。按 Enter：桌面会询问您，Echo 会请它记住您的回答。没有许可时，文本会被复制，由您自己粘贴。</value>
+  </data>
+  <data name="PastePermissionGranted" xml:space="preserve">
+    <value>Echo 可以替您粘贴文本了</value>
+  </data>
+  <data name="PastePermissionRefused" xml:space="preserve">
+    <value>没有按键许可</value>
+  </data>
+  <data name="PastePermissionRefusedNote" xml:space="preserve">
+    <value>文本会被复制，由您自己粘贴。可以通过“echooo setup”再次请求。</value>
+  </data>
+  <data name="MicrophoneNoneHelpLinux" xml:space="preserve">
+    <value>请接入麦克风，或检查桌面的声音设置。</value>
+  </data>
+  <data name="RequireRecognition" xml:space="preserve">
+    <value>语音识别所需的库（libgomp）</value>
+  </data>
+  <data name="RequireRecognitionWithout" xml:space="preserve">
+    <value>没有它，语音识别无法启动。</value>
+  </data>
 </root>

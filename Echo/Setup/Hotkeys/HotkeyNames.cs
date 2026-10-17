@@ -70,6 +70,16 @@ internal static partial class HotkeyNames
         return $"{(isShort ? modifier.Short : modifier.Display)} + {key}";
     }
 
+    /// <summary>
+    ///     The name of the key as the desktop gave it, where the desktop assigns the key itself (Wayland);
+    ///     otherwise the name of the key of the settings.
+    /// </summary>
+    /// <param name="choice">The key and its modifier.</param>
+    /// <param name="desktopLabel">How the desktop describes the key it gave, or null.</param>
+    /// <param name="isShort">Names the side of a modifier with one letter, where room is short.</param>
+    public static string Display(HotkeyChoice choice, string? desktopLabel, bool isShort = false) =>
+        string.IsNullOrWhiteSpace(desktopLabel) ? Display(choice, isShort) : desktopLabel;
+
     private static string DisplayKey(string name, bool isShort)
     {
         if (!Enum.TryParse(name, ignoreCase: true, out KeyCode key))

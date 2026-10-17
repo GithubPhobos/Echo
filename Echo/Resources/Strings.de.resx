@@ -693,4 +693,124 @@
   <data name="ProcessorUnsupportedHint" xml:space="preserve">
     <value>Echo kann auf diesem Computer nicht laufen: Die Erkennung braucht einen Prozessor ab etwa 2013 (Intel Core der 4. Generation, AMD ab 2015, jeder Ryzen).</value>
   </data>
+  <data name="SubSystemCheck" xml:space="preserve">
+    <value>Was dieses System braucht</value>
+  </data>
+  <data name="SystemCheckQuestion" xml:space="preserve">
+    <value>Echo hat geprüft, was es auf diesem Computer braucht</value>
+  </data>
+  <data name="SystemCheckNote" xml:space="preserve">
+    <value>Installiere das Fehlende und drücke R, um erneut zu prüfen, oder fahre ohne es fort.</value>
+  </data>
+  <data name="SystemChecking" xml:space="preserve">
+    <value>System wird geprüft</value>
+  </data>
+  <data name="RequireDesktop" xml:space="preserve">
+    <value>Desktop-Sitzung (X11 oder Wayland)</value>
+  </data>
+  <data name="RequireDesktopWithout" xml:space="preserve">
+    <value>Ohne sie gibt es keine Push-to-talk-Taste und kein Einfügen. Starte Echo in einem Terminal des Desktops.</value>
+  </data>
+  <data name="RequireSound" xml:space="preserve">
+    <value>Soundserver (PulseAudio oder PipeWire)</value>
+  </data>
+  <data name="RequireSoundWithout" xml:space="preserve">
+    <value>Ohne seine Bibliothek kann Echo das Mikrofon nicht hören.</value>
+  </data>
+  <data name="RequireMicrophone" xml:space="preserve">
+    <value>Mikrofon</value>
+  </data>
+  <data name="RequireMicrophoneWithout" xml:space="preserve">
+    <value>Der Soundserver findet kein Mikrofon.</value>
+  </data>
+  <data name="RequireMicrophoneFix" xml:space="preserve">
+    <value>Schließe eines an oder prüfe die Toneinstellungen des Desktops.</value>
+  </data>
+  <data name="RequireClipboard" xml:space="preserve">
+    <value>Zwischenablage-Programm ({0})</value>
+  </data>
+  <data name="RequireClipboardWithout" xml:space="preserve">
+    <value>Ohne es kommt der Text nicht in die Zwischenablage und wird nicht eingefügt.</value>
+  </data>
+  <data name="RequireShortcuts" xml:space="preserve">
+    <value>Tasten für Programme (Desktop-Berechtigung „globale Tastenkürzel“)</value>
+  </data>
+  <data name="RequireShortcutsWithout" xml:space="preserve">
+    <value>Ohne sie gibt dieser Desktop Echo keine Push-to-talk-Taste. GNOME 48 oder neuer und KDE Plasma haben sie.</value>
+  </data>
+  <data name="RequirePaste" xml:space="preserve">
+    <value>Tastendruck durch Programme (Desktop-Berechtigung „Fernsteuerung“)</value>
+  </data>
+  <data name="RequirePasteWithout" xml:space="preserve">
+    <value>Ohne sie wird der Text kopiert, und du fügst ihn selbst ein.</value>
+  </data>
+  <data name="RequireFileChooser" xml:space="preserve">
+    <value>Dateiauswahl</value>
+  </data>
+  <data name="RequireFileChooserWithout" xml:space="preserve">
+    <value>Ohne sie kopierst du eigene Modell- und Bibliotheksdateien von Hand in den Ordner von Echo.</value>
+  </data>
+  <data name="RequireUnpacker" xml:space="preserve">
+    <value>xz, zum Entpacken der NVIDIA-Bibliotheken</value>
+  </data>
+  <data name="RequireUnpackerWithout" xml:space="preserve">
+    <value>Ohne es kann Echo die CUDA-Bibliotheken nicht herunterladen; mit dem Prozessor geht es auch ohne sie.</value>
+  </data>
+  <data name="RequireInstall" xml:space="preserve">
+    <value>Installieren: {0}</value>
+  </data>
+  <data name="RequireInstallPackage" xml:space="preserve">
+    <value>Installiere das Paket {0} mit der Paketverwaltung deines Systems.</value>
+  </data>
+  <data name="CudaToolsMissing" xml:space="preserve">
+    <value>Zum Entpacken der Bibliotheken braucht Echo diese Programme: {0}. Installiere sie und versuche es erneut.</value>
+  </data>
+  <data name="SubPastePermission" xml:space="preserve">
+    <value>Einfügen</value>
+  </data>
+  <data name="HotkeyDesktopQuestion" xml:space="preserve">
+    <value>Auf diesem Desktop vergibt der Desktop selbst die Push-to-talk-Taste</value>
+  </data>
+  <data name="HotkeyDesktopNote" xml:space="preserve">
+    <value>Drücke Enter: Der Desktop zeigt sein Fenster. Bestätige dort die Taste, die Echo vorschlägt ({0}), oder wähle eine andere.</value>
+  </data>
+  <data name="HintOpenDesktopWindow" xml:space="preserve">
+    <value>Fenster des Desktops öffnen</value>
+  </data>
+  <data name="HintKeep" xml:space="preserve">
+    <value>beibehalten</value>
+  </data>
+  <data name="HotkeyDesktopWaiting" xml:space="preserve">
+    <value>Warte auf das Fenster des Desktops</value>
+  </data>
+  <data name="HotkeyDesktopRefused" xml:space="preserve">
+    <value>Der Desktop hat keine Taste vergeben</value>
+  </data>
+  <data name="HotkeyDesktopRefusedNote" xml:space="preserve">
+    <value>Das Fenster wurde geschlossen, oder dieser Desktop kann Programmen keine Tasten geben (GNOME 48 oder neuer und KDE Plasma können es).</value>
+  </data>
+  <data name="PastePermissionQuestion" xml:space="preserve">
+    <value>Lass Echo den Text für dich einfügen</value>
+  </data>
+  <data name="PastePermissionNote" xml:space="preserve">
+    <value>Zum Einfügen drückt Echo Umschalt+Einfg, und dieser Desktop lässt Programme nur mit deiner Erlaubnis Tasten drücken. Drücke Enter: Der Desktop fragt dich, und Echo bittet ihn, sich die Antwort zu merken. Ohne Erlaubnis wird der Text kopiert, und du fügst ihn selbst ein.</value>
+  </data>
+  <data name="PastePermissionGranted" xml:space="preserve">
+    <value>Echo darf den Text für dich einfügen</value>
+  </data>
+  <data name="PastePermissionRefused" xml:space="preserve">
+    <value>Keine Erlaubnis zum Tastendruck</value>
+  </data>
+  <data name="PastePermissionRefusedNote" xml:space="preserve">
+    <value>Der Text wird kopiert, und du fügst ihn selbst ein. Mit „echooo setup“ kannst du erneut fragen.</value>
+  </data>
+  <data name="MicrophoneNoneHelpLinux" xml:space="preserve">
+    <value>Schließe eines an oder prüfe die Toneinstellungen des Desktops.</value>
+  </data>
+  <data name="RequireRecognition" xml:space="preserve">
+    <value>Bibliothek für die Spracherkennung (libgomp)</value>
+  </data>
+  <data name="RequireRecognitionWithout" xml:space="preserve">
+    <value>Ohne sie startet die Spracherkennung nicht.</value>
+  </data>
 </root>

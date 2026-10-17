@@ -693,4 +693,124 @@
   <data name="ProcessorUnsupportedHint" xml:space="preserve">
     <value>Echo не сможет работать на этом компьютере: для распознавания нужен процессор примерно 2013 года или новее (Intel Core 4-го поколения, AMD с 2015 года, любой Ryzen).</value>
   </data>
+  <data name="SubSystemCheck" xml:space="preserve">
+    <value>Что нужно на этой системе</value>
+  </data>
+  <data name="SystemCheckQuestion" xml:space="preserve">
+    <value>Echo проверил, что ему нужно на этом компьютере</value>
+  </data>
+  <data name="SystemCheckNote" xml:space="preserve">
+    <value>Установите недостающее и нажмите R, чтобы проверить снова, или продолжите без него.</value>
+  </data>
+  <data name="SystemChecking" xml:space="preserve">
+    <value>Проверяю систему</value>
+  </data>
+  <data name="RequireDesktop" xml:space="preserve">
+    <value>Сеанс рабочего стола (X11 или Wayland)</value>
+  </data>
+  <data name="RequireDesktopWithout" xml:space="preserve">
+    <value>Без него не будет ни клавиши «держать и говорить», ни вставки. Запустите Echo в терминале рабочего стола.</value>
+  </data>
+  <data name="RequireSound" xml:space="preserve">
+    <value>Звуковой сервер (PulseAudio или PipeWire)</value>
+  </data>
+  <data name="RequireSoundWithout" xml:space="preserve">
+    <value>Без его библиотеки Echo не услышит микрофон.</value>
+  </data>
+  <data name="RequireMicrophone" xml:space="preserve">
+    <value>Микрофон</value>
+  </data>
+  <data name="RequireMicrophoneWithout" xml:space="preserve">
+    <value>Звуковой сервер не видит ни одного микрофона.</value>
+  </data>
+  <data name="RequireMicrophoneFix" xml:space="preserve">
+    <value>Подключите микрофон или проверьте настройки звука рабочего стола.</value>
+  </data>
+  <data name="RequireClipboard" xml:space="preserve">
+    <value>Программа буфера обмена ({0})</value>
+  </data>
+  <data name="RequireClipboardWithout" xml:space="preserve">
+    <value>Без неё текст не попадёт в буфер обмена и не вставится.</value>
+  </data>
+  <data name="RequireShortcuts" xml:space="preserve">
+    <value>Клавиши для программ (разрешение рабочего стола «глобальные горячие клавиши»)</value>
+  </data>
+  <data name="RequireShortcutsWithout" xml:space="preserve">
+    <value>Без него этот рабочий стол не даст Echo клавишу «держать и говорить». Оно есть в GNOME 48 и новее и в KDE Plasma.</value>
+  </data>
+  <data name="RequirePaste" xml:space="preserve">
+    <value>Нажатие клавиш программами (разрешение рабочего стола «удалённое управление»)</value>
+  </data>
+  <data name="RequirePasteWithout" xml:space="preserve">
+    <value>Без него текст копируется, а вставляете его вы сами.</value>
+  </data>
+  <data name="RequireFileChooser" xml:space="preserve">
+    <value>Окно выбора файла</value>
+  </data>
+  <data name="RequireFileChooserWithout" xml:space="preserve">
+    <value>Без него свои файлы моделей и библиотек вы копируете в папку Echo вручную.</value>
+  </data>
+  <data name="RequireUnpacker" xml:space="preserve">
+    <value>xz — для распаковки библиотек NVIDIA</value>
+  </data>
+  <data name="RequireUnpackerWithout" xml:space="preserve">
+    <value>Без неё Echo не сможет скачать библиотеки CUDA; на процессоре всё работает и без них.</value>
+  </data>
+  <data name="RequireInstall" xml:space="preserve">
+    <value>Установите: {0}</value>
+  </data>
+  <data name="RequireInstallPackage" xml:space="preserve">
+    <value>Установите пакет {0} менеджером пакетов вашей системы.</value>
+  </data>
+  <data name="CudaToolsMissing" xml:space="preserve">
+    <value>Чтобы распаковать библиотеки, Echo нужны программы: {0}. Установите их и повторите.</value>
+  </data>
+  <data name="SubPastePermission" xml:space="preserve">
+    <value>Вставка</value>
+  </data>
+  <data name="HotkeyDesktopQuestion" xml:space="preserve">
+    <value>На этом рабочем столе клавишу «держать и говорить» назначает сам рабочий стол</value>
+  </data>
+  <data name="HotkeyDesktopNote" xml:space="preserve">
+    <value>Нажмите Enter: рабочий стол покажет своё окно. Подтвердите в нём клавишу, которую предлагает Echo ({0}), или выберите другую.</value>
+  </data>
+  <data name="HintOpenDesktopWindow" xml:space="preserve">
+    <value>открыть окно рабочего стола</value>
+  </data>
+  <data name="HintKeep" xml:space="preserve">
+    <value>оставить</value>
+  </data>
+  <data name="HotkeyDesktopWaiting" xml:space="preserve">
+    <value>Жду окно рабочего стола</value>
+  </data>
+  <data name="HotkeyDesktopRefused" xml:space="preserve">
+    <value>Рабочий стол не назначил клавишу</value>
+  </data>
+  <data name="HotkeyDesktopRefusedNote" xml:space="preserve">
+    <value>Окно закрыли, или этот рабочий стол не умеет давать программам клавиши (умеют GNOME 48 и новее и KDE Plasma).</value>
+  </data>
+  <data name="PastePermissionQuestion" xml:space="preserve">
+    <value>Разрешите Echo вставлять текст за вас</value>
+  </data>
+  <data name="PastePermissionNote" xml:space="preserve">
+    <value>Чтобы вставить текст, Echo нажимает Shift+Insert, а этот рабочий стол разрешает программам нажимать клавиши только с вашего согласия. Нажмите Enter: рабочий стол спросит, а Echo попросит запомнить ответ. Без разрешения текст копируется, а вставляете его вы сами.</value>
+  </data>
+  <data name="PastePermissionGranted" xml:space="preserve">
+    <value>Echo может вставлять текст за вас</value>
+  </data>
+  <data name="PastePermissionRefused" xml:space="preserve">
+    <value>Разрешения нажимать клавиши нет</value>
+  </data>
+  <data name="PastePermissionRefusedNote" xml:space="preserve">
+    <value>Текст будет копироваться, а вставлять его вы будете сами. Спросить снова можно через «echooo setup».</value>
+  </data>
+  <data name="MicrophoneNoneHelpLinux" xml:space="preserve">
+    <value>Подключите микрофон или проверьте настройки звука рабочего стола.</value>
+  </data>
+  <data name="RequireRecognition" xml:space="preserve">
+    <value>Библиотека для распознавания речи (libgomp)</value>
+  </data>
+  <data name="RequireRecognitionWithout" xml:space="preserve">
+    <value>Без неё распознавание речи не запустится.</value>
+  </data>
 </root>

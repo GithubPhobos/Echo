@@ -693,4 +693,124 @@
   <data name="ProcessorUnsupportedHint" xml:space="preserve">
     <value>Echo no puede funcionar en este equipo: el reconocimiento necesita un procesador de 2013 o posterior (Intel Core de 4.ª generación, AMD desde 2015, cualquier Ryzen).</value>
   </data>
+  <data name="SubSystemCheck" xml:space="preserve">
+    <value>Lo que necesita este sistema</value>
+  </data>
+  <data name="SystemCheckQuestion" xml:space="preserve">
+    <value>Echo comprobó lo que necesita en este equipo</value>
+  </data>
+  <data name="SystemCheckNote" xml:space="preserve">
+    <value>Instala lo que falta y pulsa R para comprobar de nuevo, o continúa sin ello.</value>
+  </data>
+  <data name="SystemChecking" xml:space="preserve">
+    <value>Comprobando el sistema</value>
+  </data>
+  <data name="RequireDesktop" xml:space="preserve">
+    <value>Sesión de escritorio (X11 o Wayland)</value>
+  </data>
+  <data name="RequireDesktopWithout" xml:space="preserve">
+    <value>Sin ella no hay tecla push-to-talk ni pegado. Ejecuta Echo en una terminal del escritorio.</value>
+  </data>
+  <data name="RequireSound" xml:space="preserve">
+    <value>Servidor de sonido (PulseAudio o PipeWire)</value>
+  </data>
+  <data name="RequireSoundWithout" xml:space="preserve">
+    <value>Sin su biblioteca, Echo no puede oír el micrófono.</value>
+  </data>
+  <data name="RequireMicrophone" xml:space="preserve">
+    <value>Micrófono</value>
+  </data>
+  <data name="RequireMicrophoneWithout" xml:space="preserve">
+    <value>El servidor de sonido no muestra ningún micrófono.</value>
+  </data>
+  <data name="RequireMicrophoneFix" xml:space="preserve">
+    <value>Conecta uno o revisa la configuración de sonido del escritorio.</value>
+  </data>
+  <data name="RequireClipboard" xml:space="preserve">
+    <value>Programa del portapapeles ({0})</value>
+  </data>
+  <data name="RequireClipboardWithout" xml:space="preserve">
+    <value>Sin él, el texto no llega al portapapeles ni se pega.</value>
+  </data>
+  <data name="RequireShortcuts" xml:space="preserve">
+    <value>Teclas para programas (permiso del escritorio «atajos globales»)</value>
+  </data>
+  <data name="RequireShortcutsWithout" xml:space="preserve">
+    <value>Sin él, este escritorio no da a Echo una tecla push-to-talk. GNOME 48 o posterior y KDE Plasma lo tienen.</value>
+  </data>
+  <data name="RequirePaste" xml:space="preserve">
+    <value>Pulsar teclas desde programas (permiso del escritorio «control remoto»)</value>
+  </data>
+  <data name="RequirePasteWithout" xml:space="preserve">
+    <value>Sin él, el texto se copia y lo pegas tú.</value>
+  </data>
+  <data name="RequireFileChooser" xml:space="preserve">
+    <value>Selector de archivos</value>
+  </data>
+  <data name="RequireFileChooserWithout" xml:space="preserve">
+    <value>Sin él, copias a mano tus archivos de modelos y bibliotecas a la carpeta de Echo.</value>
+  </data>
+  <data name="RequireUnpacker" xml:space="preserve">
+    <value>xz, para descomprimir las bibliotecas de NVIDIA</value>
+  </data>
+  <data name="RequireUnpackerWithout" xml:space="preserve">
+    <value>Sin él, Echo no puede descargar las bibliotecas de CUDA; con el procesador funciona sin ellas.</value>
+  </data>
+  <data name="RequireInstall" xml:space="preserve">
+    <value>Instala: {0}</value>
+  </data>
+  <data name="RequireInstallPackage" xml:space="preserve">
+    <value>Instala el paquete {0} con el gestor de paquetes de tu sistema.</value>
+  </data>
+  <data name="CudaToolsMissing" xml:space="preserve">
+    <value>Para descomprimir las bibliotecas, Echo necesita estos programas: {0}. Instálalos y vuelve a intentarlo.</value>
+  </data>
+  <data name="SubPastePermission" xml:space="preserve">
+    <value>Pegado</value>
+  </data>
+  <data name="HotkeyDesktopQuestion" xml:space="preserve">
+    <value>En este escritorio, la tecla push-to-talk la asigna el propio escritorio</value>
+  </data>
+  <data name="HotkeyDesktopNote" xml:space="preserve">
+    <value>Pulsa Enter: el escritorio mostrará su ventana. Confirma allí la tecla que sugiere Echo ({0}) o elige otra.</value>
+  </data>
+  <data name="HintOpenDesktopWindow" xml:space="preserve">
+    <value>abrir la ventana del escritorio</value>
+  </data>
+  <data name="HintKeep" xml:space="preserve">
+    <value>mantener</value>
+  </data>
+  <data name="HotkeyDesktopWaiting" xml:space="preserve">
+    <value>Esperando la ventana del escritorio</value>
+  </data>
+  <data name="HotkeyDesktopRefused" xml:space="preserve">
+    <value>El escritorio no asignó ninguna tecla</value>
+  </data>
+  <data name="HotkeyDesktopRefusedNote" xml:space="preserve">
+    <value>Se cerró la ventana, o este escritorio no puede dar teclas a los programas (GNOME 48 o posterior y KDE Plasma sí pueden).</value>
+  </data>
+  <data name="PastePermissionQuestion" xml:space="preserve">
+    <value>Deja que Echo pegue el texto por ti</value>
+  </data>
+  <data name="PastePermissionNote" xml:space="preserve">
+    <value>Para pegar, Echo pulsa Shift+Insert, y este escritorio solo deja que los programas pulsen teclas con tu permiso. Pulsa Enter: el escritorio te preguntará, y Echo le pide que recuerde la respuesta. Sin permiso, el texto se copia y lo pegas tú.</value>
+  </data>
+  <data name="PastePermissionGranted" xml:space="preserve">
+    <value>Echo puede pegar el texto por ti</value>
+  </data>
+  <data name="PastePermissionRefused" xml:space="preserve">
+    <value>Sin permiso para pulsar teclas</value>
+  </data>
+  <data name="PastePermissionRefusedNote" xml:space="preserve">
+    <value>El texto se copiará y lo pegarás tú. Puedes volver a pedirlo con «echooo setup».</value>
+  </data>
+  <data name="MicrophoneNoneHelpLinux" xml:space="preserve">
+    <value>Conecta uno o revisa la configuración de sonido del escritorio.</value>
+  </data>
+  <data name="RequireRecognition" xml:space="preserve">
+    <value>Biblioteca para el reconocimiento de voz (libgomp)</value>
+  </data>
+  <data name="RequireRecognitionWithout" xml:space="preserve">
+    <value>Sin ella, el reconocimiento de voz no arranca.</value>
+  </data>
 </root>

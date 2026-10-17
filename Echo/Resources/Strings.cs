@@ -476,4 +476,84 @@ internal static class Strings
     public static string ProcessorUnsupported => Get(nameof(ProcessorUnsupported));
 
     public static string ProcessorUnsupportedHint => Get(nameof(ProcessorUnsupportedHint));
+
+    public static string SubSystemCheck => Get(nameof(SubSystemCheck));
+
+    public static string SystemCheckQuestion => Get(nameof(SystemCheckQuestion));
+
+    public static string SystemCheckNote => Get(nameof(SystemCheckNote));
+
+    public static string SystemChecking => Get(nameof(SystemChecking));
+
+    public static string RequireDesktop => Get(nameof(RequireDesktop));
+
+    public static string RequireDesktopWithout => Get(nameof(RequireDesktopWithout));
+
+    public static string RequireSound => Get(nameof(RequireSound));
+
+    public static string RequireSoundWithout => Get(nameof(RequireSoundWithout));
+
+    public static string RequireMicrophone => Get(nameof(RequireMicrophone));
+
+    public static string RequireMicrophoneWithout => Get(nameof(RequireMicrophoneWithout));
+
+    public static string RequireMicrophoneFix => Get(nameof(RequireMicrophoneFix));
+
+    public static string RequireClipboard => Get(nameof(RequireClipboard));
+
+    public static string RequireClipboardWithout => Get(nameof(RequireClipboardWithout));
+
+    public static string RequireShortcuts => Get(nameof(RequireShortcuts));
+
+    public static string RequireShortcutsWithout => Get(nameof(RequireShortcutsWithout));
+
+    public static string RequirePaste => Get(nameof(RequirePaste));
+
+    public static string RequirePasteWithout => Get(nameof(RequirePasteWithout));
+
+    public static string RequireFileChooser => Get(nameof(RequireFileChooser));
+
+    public static string RequireFileChooserWithout => Get(nameof(RequireFileChooserWithout));
+
+    public static string RequireUnpacker => Get(nameof(RequireUnpacker));
+
+    public static string RequireUnpackerWithout => Get(nameof(RequireUnpackerWithout));
+
+    public static string RequireInstall => Get(nameof(RequireInstall));
+
+    public static string RequireInstallPackage => Get(nameof(RequireInstallPackage));
+
+    public static string CudaToolsMissing => Get(nameof(CudaToolsMissing));
+
+    public static string SubPastePermission => Get(nameof(SubPastePermission));
+
+    public static string HotkeyDesktopQuestion => Get(nameof(HotkeyDesktopQuestion));
+
+    public static string HotkeyDesktopNote => Get(nameof(HotkeyDesktopNote));
+
+    public static string HintOpenDesktopWindow => Get(nameof(HintOpenDesktopWindow));
+
+    public static string HintKeep => Get(nameof(HintKeep));
+
+    public static string HotkeyDesktopWaiting => Get(nameof(HotkeyDesktopWaiting));
+
+    public static string HotkeyDesktopRefused => Get(nameof(HotkeyDesktopRefused));
+
+    public static string HotkeyDesktopRefusedNote => Get(nameof(HotkeyDesktopRefusedNote));
+
+    public static string PastePermissionQuestion => Get(nameof(PastePermissionQuestion));
+
+    public static string PastePermissionNote => Get(nameof(PastePermissionNote));
+
+    public static string PastePermissionGranted => Get(nameof(PastePermissionGranted));
+
+    public static string PastePermissionRefused => Get(nameof(PastePermissionRefused));
+
+    public static string PastePermissionRefusedNote => Get(nameof(PastePermissionRefusedNote));
+
+    public static string MicrophoneNoneHelpLinux => Get(nameof(MicrophoneNoneHelpLinux));
+
+    public static string RequireRecognition => Get(nameof(RequireRecognition));
+
+    public static string RequireRecognitionWithout => Get(nameof(RequireRecognitionWithout));
 }

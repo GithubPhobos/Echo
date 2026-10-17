@@ -36,6 +36,8 @@ public sealed partial class SetupWizardTests : IDisposable
     private readonly Mock<ICudaRuntime> _cuda = new();
     private readonly Mock<IFileDownloader> _downloader = new();
     private readonly Mock<ISystemShell> _shell = new();
+    private readonly Mock<ISystemRequirements> _requirements = new();
+    private readonly Mock<IDesktopAccess> _desktop = new();
 
     private HardwareInfo _hardware = new(Nvidia: null, IsVulkanAvailable: false, MemoryGb: 16, ProcessorCores: 8);
 
@@ -51,6 +53,8 @@ public sealed partial class SetupWizardTests : IDisposable
         _cuda.SetupGet(cuda => cuda.DownloadSizeBytes).Returns(425_000_000);
         _cuda.SetupGet(cuda => cuda.Libraries).Returns(_libraries);
         _cuda.Setup(cuda => cuda.FindMissingLibraries()).Returns([]);
+        _requirements.Setup(requirements => requirements.Check()).Returns([]);
+        _desktop.SetupGet(desktop => desktop.MayPaste).Returns(true);
     }
 
     public void Dispose()
@@ -948,6 +952,82 @@ public sealed partial class SetupWizardTests : IDisposable
         Assert.False(runner.IsSetupRequired());
     }
 
+    [Fact]
+    public async Task RunAsync_SystemLacksAProgram_SaysWhatIsMissingAndLooksAgainOnRequest()
+    {
+        // Arrange: the clipboard program is missing at first and installed while the page is open
+        _requirements.SetupSequence(requirements => requirements.Check())
+            .Returns(
+            [
+                new SystemRequirement("Sound server", IsMet: true, "No sound without it.", Fix: null),
+                new SystemRequirement("Clipboard program (xsel)", IsMet: false, "No clipboard without it.", "Install: sudo apt install xsel"),
+            ])
+            .Returns([new SystemRequirement("Clipboard program (xsel)", IsMet: true, "No clipboard without it.", "Install: sudo apt install xsel")]);
+
+        _keys.Press(ConsoleKey.Enter)                                               // interface language: English
+            .Press(ConsoleKey.Enter)                                                // dictation language: English
+            .Press(ConsoleKey.R)                                                    // system check: look again
+            .Press(ConsoleKey.Enter)                                                // system check: go on
+            .Press(ConsoleKey.Enter)                                                // hardware: automatic
+            .Press(ConsoleKey.Enter)                                                // model: the recommended one
+            .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)            // key: keep the default
+            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
+            .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)        // test dictation: finish
+            .Press(ConsoleKey.Enter)                                                // additional settings: continue
+            .Press(ConsoleKey.Enter);                                               // review: save
+
+        // Act
+        SetupOutcome outcome = await CreateRunner().RunAsync(onlyNewSteps: true, CancellationToken.None);
+
+        // Assert: what is missing, what it is needed for and the command that installs it
+        Assert.Equal(SetupOutcome.Completed, outcome);
+        Assert.Contains("Clipboard program (xsel)", _console.Output);
+        Assert.Contains("No clipboard without it.", _console.Output);
+        Assert.Contains("Install: sudo apt install xsel", _console.Output);
+        Assert.Contains("step 2 of 6 · Hardware acceleration · What this system needs", ScreensShown());
+        _requirements.Verify(requirements => requirements.Check(), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task RunAsync_DesktopGivesTheKey_AsksTheDesktopForTheKeyAndForPasting()
+    {
+        // Arrange: a Wayland desktop gives "Ctrl+`" when asked for the default key, and allows pasting
+        _desktop.SetupGet(desktop => desktop.AssignsKeys).Returns(true);
+        _desktop.SetupGet(desktop => desktop.AsksToPaste).Returns(true);
+        _desktop.SetupGet(desktop => desktop.MayPaste).Returns(false);
+        _desktop.Setup(desktop => desktop.AssignKeyAsync(HotkeyChoice.Default, It.IsAny<CancellationToken>())).ReturnsAsync("Ctrl+`");
+        _desktop.Setup(desktop => desktop.AskToPasteAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        _keys.Press(ConsoleKey.Enter)                                               // interface language: English
+            .Press(ConsoleKey.Enter)                                                // dictation language: English
+            .Press(ConsoleKey.Enter)                                                // hardware: automatic
+            .Press(ConsoleKey.Enter)                                                // model: the recommended one
+            .Press(ConsoleKey.Enter)                                                // key: open the desktop's window
+            .Press(ConsoleKey.Enter)                                                // pasting: open the desktop's window
+            .Press(ConsoleKey.Enter)                                                // pasting: allowed, continue
+            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
+            .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)        // test dictation: finish
+            .Press(ConsoleKey.Enter)                                                // additional settings: continue
+            .Press(ConsoleKey.Enter);                                               // review: save
+
+        // Act
+        SetupOutcome outcome = await CreateRunner().RunAsync(onlyNewSteps: true, CancellationToken.None);
+
+        // Assert: the keyboard was never listened to; the key is the desktop's, under the name it gave
+        UserSettings saved = CreateStore().Load();
+
+        Assert.Equal(SetupOutcome.Completed, outcome);
+        Assert.Equal(0, _hotkeys.StartCount);
+        Assert.Equal("Ctrl+`", saved.HotkeyLabel);
+        Assert.Contains("Echo may paste the text for you", _console.Output);
+        Assert.Contains("step 4 of 6 · Hotkey · Pasting", ScreensShown());
+        _desktop.Verify(desktop => desktop.AskToPasteAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     /// <summary>
     ///     Queues the keys that accept everything the wizard suggests up to its last step.
     /// </summary>
@@ -1031,9 +1111,9 @@ public sealed partial class SetupWizardTests : IDisposable
         ISetupStep[] steps =
         [
             new LanguageStep(ui),
-            new AccelerationStep(ui, hardwareProbe.Object, _cuda.Object, _shell.Object),
+            new AccelerationStep(ui, hardwareProbe.Object, _cuda.Object, _shell.Object, _requirements.Object),
             new ModelStep(ui, paths, _downloader.Object, _shell.Object),
-            new HotkeyStep(ui, _hotkeys),
+            new HotkeyStep(ui, _hotkeys, _desktop.Object),
             new CheckStep(ui, _microphones, _dictation, timings, _microphones.Clock),
             new AdditionalSettingsStep(ui),
         ];

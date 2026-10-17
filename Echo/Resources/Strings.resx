@@ -693,4 +693,124 @@
   <data name="ProcessorUnsupportedHint" xml:space="preserve">
     <value>Echo cannot work on this computer: recognition needs a processor from about 2013 or newer (Intel Core 4th generation, AMD from 2015, every Ryzen).</value>
   </data>
+  <data name="SubSystemCheck" xml:space="preserve">
+    <value>What this system needs</value>
+  </data>
+  <data name="SystemCheckQuestion" xml:space="preserve">
+    <value>Echo checked what it needs on this computer</value>
+  </data>
+  <data name="SystemCheckNote" xml:space="preserve">
+    <value>Install what is missing and press R to check again, or go on without it.</value>
+  </data>
+  <data name="SystemChecking" xml:space="preserve">
+    <value>Checking the system</value>
+  </data>
+  <data name="RequireDesktop" xml:space="preserve">
+    <value>Desktop session (X11 or Wayland)</value>
+  </data>
+  <data name="RequireDesktopWithout" xml:space="preserve">
+    <value>Without it there is no push-to-talk key and no pasting. Run Echo in a terminal of the desktop.</value>
+  </data>
+  <data name="RequireSound" xml:space="preserve">
+    <value>Sound server (PulseAudio or PipeWire)</value>
+  </data>
+  <data name="RequireSoundWithout" xml:space="preserve">
+    <value>Without its library Echo cannot hear the microphone.</value>
+  </data>
+  <data name="RequireMicrophone" xml:space="preserve">
+    <value>Microphone</value>
+  </data>
+  <data name="RequireMicrophoneWithout" xml:space="preserve">
+    <value>The sound server lists no microphone.</value>
+  </data>
+  <data name="RequireMicrophoneFix" xml:space="preserve">
+    <value>Plug one in, or check the sound settings of the desktop.</value>
+  </data>
+  <data name="RequireClipboard" xml:space="preserve">
+    <value>Clipboard program ({0})</value>
+  </data>
+  <data name="RequireClipboardWithout" xml:space="preserve">
+    <value>Without it the text cannot be put into the clipboard, nor pasted.</value>
+  </data>
+  <data name="RequireShortcuts" xml:space="preserve">
+    <value>Keys for programs (desktop permission "global shortcuts")</value>
+  </data>
+  <data name="RequireShortcutsWithout" xml:space="preserve">
+    <value>Without it this desktop gives Echo no push-to-talk key. GNOME 48 or newer and KDE Plasma have it.</value>
+  </data>
+  <data name="RequirePaste" xml:space="preserve">
+    <value>Pressing keys for programs (desktop permission "remote control")</value>
+  </data>
+  <data name="RequirePasteWithout" xml:space="preserve">
+    <value>Without it the text is copied, and you paste it yourself.</value>
+  </data>
+  <data name="RequireFileChooser" xml:space="preserve">
+    <value>File chooser</value>
+  </data>
+  <data name="RequireFileChooserWithout" xml:space="preserve">
+    <value>Without it you copy your own model and library files into Echo's folder by hand.</value>
+  </data>
+  <data name="RequireUnpacker" xml:space="preserve">
+    <value>xz, to unpack the NVIDIA libraries</value>
+  </data>
+  <data name="RequireUnpackerWithout" xml:space="preserve">
+    <value>Without it Echo cannot download the CUDA libraries; the processor works without them.</value>
+  </data>
+  <data name="RequireInstall" xml:space="preserve">
+    <value>Install: {0}</value>
+  </data>
+  <data name="RequireInstallPackage" xml:space="preserve">
+    <value>Install the package {0} with the package manager of your system.</value>
+  </data>
+  <data name="CudaToolsMissing" xml:space="preserve">
+    <value>To unpack the libraries Echo needs these programs: {0}. Install them and try again.</value>
+  </data>
+  <data name="SubPastePermission" xml:space="preserve">
+    <value>Pasting</value>
+  </data>
+  <data name="HotkeyDesktopQuestion" xml:space="preserve">
+    <value>On this desktop the push-to-talk key is given by the desktop itself</value>
+  </data>
+  <data name="HotkeyDesktopNote" xml:space="preserve">
+    <value>Press Enter: the desktop will show its window. Confirm the key Echo suggests ({0}) or pick another one there.</value>
+  </data>
+  <data name="HintOpenDesktopWindow" xml:space="preserve">
+    <value>open the desktop's window</value>
+  </data>
+  <data name="HintKeep" xml:space="preserve">
+    <value>keep it</value>
+  </data>
+  <data name="HotkeyDesktopWaiting" xml:space="preserve">
+    <value>Waiting for the desktop's window</value>
+  </data>
+  <data name="HotkeyDesktopRefused" xml:space="preserve">
+    <value>The desktop gave no key</value>
+  </data>
+  <data name="HotkeyDesktopRefusedNote" xml:space="preserve">
+    <value>The window was closed, or this desktop cannot give programs keys (GNOME 48 or newer and KDE Plasma can).</value>
+  </data>
+  <data name="PastePermissionQuestion" xml:space="preserve">
+    <value>Let Echo paste the text for you</value>
+  </data>
+  <data name="PastePermissionNote" xml:space="preserve">
+    <value>To paste, Echo presses Shift+Insert, and this desktop lets programs press keys only with your permission. Press Enter: the desktop will ask, and Echo asks it to remember the answer. Without it the text is copied, and you paste it yourself.</value>
+  </data>
+  <data name="PastePermissionGranted" xml:space="preserve">
+    <value>Echo may paste the text for you</value>
+  </data>
+  <data name="PastePermissionRefused" xml:space="preserve">
+    <value>No permission to press keys</value>
+  </data>
+  <data name="PastePermissionRefusedNote" xml:space="preserve">
+    <value>The text will be copied, and you paste it yourself. You can ask again with 'echooo setup'.</value>
+  </data>
+  <data name="MicrophoneNoneHelpLinux" xml:space="preserve">
+    <value>Plug one in, or check the sound settings of the desktop.</value>
+  </data>
+  <data name="RequireRecognition" xml:space="preserve">
+    <value>Library for speech recognition (libgomp)</value>
+  </data>
+  <data name="RequireRecognitionWithout" xml:space="preserve">
+    <value>Without it speech recognition does not start.</value>
+  </data>
 </root>

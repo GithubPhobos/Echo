@@ -27,17 +27,25 @@ internal sealed class AccelerationStep : ISetupStep
     private readonly IHardwareProbe _hardwareProbe;
     private readonly ICudaRuntime _cudaRuntime;
     private readonly ISystemShell _shell;
+    private readonly ISystemRequirements _system;
+
+    /// <summary>
+    ///     What the system lacks, found when the wizard first gets here and again whenever the user asks.
+    /// </summary>
+    private IReadOnlyList<SystemRequirement>? _requirements;
 
     /// <param name="ui"><see cref="SetupUi"/></param>
     /// <param name="hardwareProbe"><see cref="IHardwareProbe"/></param>
     /// <param name="cudaRuntime"><see cref="ICudaRuntime"/></param>
     /// <param name="shell"><see cref="ISystemShell"/></param>
-    public AccelerationStep(SetupUi ui, IHardwareProbe hardwareProbe, ICudaRuntime cudaRuntime, ISystemShell shell)
+    /// <param name="system">What Echo needs from this system besides itself.</param>
+    public AccelerationStep(SetupUi ui, IHardwareProbe hardwareProbe, ICudaRuntime cudaRuntime, ISystemShell shell, ISystemRequirements system)
     {
         _ui = ui;
         _hardwareProbe = hardwareProbe;
         _cudaRuntime = cudaRuntime;
         _shell = shell;
+        _system = system;
 
         Pages =
         [
@@ -45,6 +53,12 @@ internal sealed class AccelerationStep : ISetupStep
             new SetupPage(
                 ExplainProcessorAsync,
                 IsNeeded: _ => ProcessorSupport.MissingInstructions().Count > 0),
+
+            // Shown only when the system lacks something Echo needs: before anything is chosen or downloaded
+            new SetupPage(
+                ShowRequirementsAsync,
+                IsNeeded: _ => Requirements().Any(requirement => !requirement.IsMet),
+                SubTitle: () => Strings.SubSystemCheck),
 
             new SetupPage(ChooseBackendAsync),
 
@@ -96,6 +110,55 @@ internal sealed class AccelerationStep : ISetupStep
 
     private bool NeedsLibraries(SetupContext context) =>
         context.RequestedBackend == AccelerationBackend.Cuda && _cudaRuntime.FindMissingLibraries().Count > 0;
+
+    private IReadOnlyList<SystemRequirement> Requirements() =>
+        _requirements ??= _system.Check();
+
+    /// <summary>
+    ///     Lists what the system has and lacks, with how to get what is missing. The user may install it and
+    ///     look again, or go on without it.
+    /// </summary>
+    private async Task<SetupStepResult> ShowRequirementsAsync(SetupContext context,
+                                                              SetupScreen screen,
+                                                              CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            List<string> lines = [SetupUi.Question(Markup.Escape(Strings.SystemCheckQuestion)), string.Empty];
+
+            foreach (SystemRequirement requirement in Requirements())
+            {
+                if (requirement.IsMet)
+                {
+                    lines.Add(_ui.Good(Markup.Escape(requirement.Name)));
+
+                    continue;
+                }
+
+                lines.Add(_ui.Bad(Markup.Escape(requirement.Name)));
+                lines.Add(SetupUi.Dim($"  {Markup.Escape(requirement.Consequence)}"));
+
+                if (requirement.Fix is not null)
+                    lines.Add($"  {SetupUi.Accent(Markup.Escape(requirement.Fix))}");
+            }
+
+            lines.AddRange([string.Empty, SetupUi.Small(Markup.Escape(Strings.SystemCheckNote))]);
+
+            UiResult<ConsoleKey> key = await _ui.ShowAsync(
+                screen,
+                lines,
+                [(ConsoleKey.Enter, Strings.HintContinue), (ConsoleKey.R, Strings.HintCheckAgain)],
+                cancellationToken);
+
+            if (key.IsBack)
+                return SetupStepResult.Back;
+
+            if (key.Value == ConsoleKey.Enter)
+                return SetupStepResult.Next;
+
+            _requirements = await _ui.WaitAsync(screen, Markup.Escape(Strings.SystemChecking), () => Task.Run(_system.Check), cancellationToken);
+        }
+    }
 
     /// <summary>
     ///     Says that this processor cannot run recognition. There is no way forward from here, only back.
@@ -305,6 +368,14 @@ internal sealed class AccelerationStep : ISetupStep
             _cudaRuntime.Libraries.Except(missing).Select(library => KeyValuePair.Create(library, true)));
 
         var downloaded = new InlineProgress<string>(library => ready[library] = true);
+
+        // Found out before hundreds of megabytes come down, not after
+        if (_cudaRuntime.MissingTools() is { Count: > 0 } tools)
+        {
+            await ReportAsync(screen, Strings.Format(nameof(Strings.CudaToolsMissing), string.Join(", ", tools)), details: null, cancellationToken);
+
+            return;
+        }
 
         while (true)
         {

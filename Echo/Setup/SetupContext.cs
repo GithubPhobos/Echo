@@ -47,6 +47,11 @@ internal sealed class SetupContext
 
     public HotkeyChoice Hotkey { get; set; } = HotkeyChoice.Default;
 
+    /// <summary>
+    ///     How the desktop describes the key it gave, where the desktop assigns the key itself (Wayland).
+    /// </summary>
+    public string? HotkeyLabel { get; set; }
+
     public int MicrophoneIndex { get; set; }
 
     public string? MicrophoneName { get; set; }
@@ -71,6 +76,7 @@ internal sealed class SetupContext
         Hotkey = settings.HotkeyKey is null
             ? HotkeyChoice.Default
             : new HotkeyChoice(settings.HotkeyKey, settings.HotkeyModifier ?? string.Empty),
+        HotkeyLabel = settings.HotkeyLabel,
         MicrophoneIndex = settings.MicrophoneIndex ?? 0,
         MicrophoneName = settings.MicrophoneName,
         SilenceThreshold = settings.SilenceThreshold ?? ThresholdCalculator.Default,
@@ -87,6 +93,7 @@ internal sealed class SetupContext
         ModelName = ModelFileName,
         HotkeyKey = Hotkey.Key,
         HotkeyModifier = Hotkey.Modifier,
+        HotkeyLabel = HotkeyLabel,
         MicrophoneIndex = MicrophoneIndex,
         MicrophoneName = MicrophoneName,
         SilenceThreshold = SilenceThreshold,
