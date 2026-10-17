@@ -1,0 +1,690 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HintSelect" xml:space="preserve">
+    <value>выбор</value>
+  </data>
+  <data name="HintConfirm" xml:space="preserve">
+    <value>подтвердить</value>
+  </data>
+  <data name="HintBack" xml:space="preserve">
+    <value>назад</value>
+  </data>
+  <data name="HintCancel" xml:space="preserve">
+    <value>отменить</value>
+  </data>
+  <data name="HintTryAgain" xml:space="preserve">
+    <value>повторить</value>
+  </data>
+  <data name="HintCheckAgain" xml:space="preserve">
+    <value>проверить снова</value>
+  </data>
+  <data name="HintOpenFolder" xml:space="preserve">
+    <value>открыть папку</value>
+  </data>
+  <data name="HintContinue" xml:space="preserve">
+    <value>продолжить</value>
+  </data>
+  <data name="HintSkip" xml:space="preserve">
+    <value>пропустить</value>
+  </data>
+  <data name="HintFinish" xml:space="preserve">
+    <value>завершить</value>
+  </data>
+  <data name="SetupTitle" xml:space="preserve">
+    <value>Настройка</value>
+  </data>
+  <data name="SetupReview" xml:space="preserve">
+    <value>проверка выбора</value>
+  </data>
+  <data name="SetupStepOf" xml:space="preserve">
+    <value>шаг {0} из {1}</value>
+  </data>
+  <data name="SetupNeedsTerminal" xml:space="preserve">
+    <value>Echo ещё не настроен. Запустите «echooo setup» в терминале, чтобы выбрать модель, микрофон и клавишу.</value>
+  </data>
+  <data name="SetupSaved" xml:space="preserve">
+    <value>Настройки сохранены.</value>
+  </data>
+  <data name="StepLanguages" xml:space="preserve">
+    <value>Языки</value>
+  </data>
+  <data name="StepAcceleration" xml:space="preserve">
+    <value>Аппаратное ускорение</value>
+  </data>
+  <data name="StepModel" xml:space="preserve">
+    <value>Модель</value>
+  </data>
+  <data name="StepHotkey" xml:space="preserve">
+    <value>Горячая клавиша</value>
+  </data>
+  <data name="StepCheck" xml:space="preserve">
+    <value>Звук</value>
+  </data>
+  <data name="DownloadVerifying" xml:space="preserve">
+    <value>Проверяю скачанный файл…</value>
+  </data>
+  <data name="DownloadDetails" xml:space="preserve">
+    <value>{0} из {1} · {2}/с</value>
+  </data>
+  <data name="DownloadFailed" xml:space="preserve">
+    <value>Скачивание не завершилось.</value>
+  </data>
+  <data name="DiskSpaceLow" xml:space="preserve">
+    <value>Недостаточно места на диске: нужно {0}, свободно {1}.</value>
+  </data>
+  <data name="LanguageInterfaceQuestion" xml:space="preserve">
+    <value>Выберите язык интерфейса</value>
+  </data>
+  <data name="LanguageDictationQuestion" xml:space="preserve">
+    <value>Выберите, на каком языке вы будете диктовать</value>
+  </data>
+  <data name="LanguageDictationNote" xml:space="preserve">
+    <value>Любой другой язык, который знает модель, можно позже указать в файле настроек.</value>
+  </data>
+  <data name="DictationAuto" xml:space="preserve">
+    <value>Определять автоматически (медленнее)</value>
+  </data>
+  <data name="DictationAutoHint" xml:space="preserve">
+    <value>Модель сама определит язык каждой фразы. Удобно, если вы говорите на нескольких языках.</value>
+  </data>
+  <data name="SummaryInterfaceLanguage" xml:space="preserve">
+    <value>Язык интерфейса</value>
+  </data>
+  <data name="SummaryDictationLanguage" xml:space="preserve">
+    <value>Язык диктовки</value>
+  </data>
+  <data name="SummaryAcceleration" xml:space="preserve">
+    <value>Аппаратное ускорение</value>
+  </data>
+  <data name="SummaryModel" xml:space="preserve">
+    <value>Модель</value>
+  </data>
+  <data name="SummaryHotkey" xml:space="preserve">
+    <value>Push-to-talk клавиша</value>
+  </data>
+  <data name="SummaryMicrophone" xml:space="preserve">
+    <value>Микрофон</value>
+  </data>
+  <data name="HardwareChecking" xml:space="preserve">
+    <value>Определяю оборудование</value>
+  </data>
+  <data name="HardwareNoNvidia" xml:space="preserve">
+    <value>Видеокарта NVIDIA не найдена.</value>
+  </data>
+  <data name="HardwareGpu" xml:space="preserve">
+    <value>Определена ваша видеокарта: {0}, {1}, драйвер {2}</value>
+  </data>
+  <data name="AccelerationQuestion" xml:space="preserve">
+    <value>На чём запускать модель?</value>
+  </data>
+  <data name="AccelerationAuto" xml:space="preserve">
+    <value>Автоматически</value>
+  </data>
+  <data name="AccelerationAutoHint" xml:space="preserve">
+    <value>Рекомендуется. Echo сам выберет самый быстрый вариант для этого компьютера: сейчас это {0}.</value>
+  </data>
+  <data name="AccelerationCudaHint" xml:space="preserve">
+    <value>Модель целиком выполняется на видеокарте NVIDIA через CUDA и cuBLAS. Самый быстрый вариант. Требуются видеокарта серии RTX 20 / GTX 16 или новее, драйвер {0} или новее и три библиотеки NVIDIA (около {1}).</value>
+  </data>
+  <data name="AccelerationVulkanHint" xml:space="preserve">
+    <value>Модель выполняется на видеокарте через графический интерфейс Vulkan: подходит для карт AMD, Intel и NVIDIA, включая встроенные. Обычно быстрее процессора, но медленнее CUDA. Vulkan устанавливается вместе с драйвером видеокарты и на этом компьютере уже есть.</value>
+  </data>
+  <data name="AccelerationCpu" xml:space="preserve">
+    <value>Процессор</value>
+  </data>
+  <data name="AccelerationCpuHint" xml:space="preserve">
+    <value>Модель выполняется на ядрах процессора, видеокарта не используется. Работает на любом компьютере, но медленнее остальных вариантов: для моделей крупнее small задержка становится заметной.</value>
+  </data>
+  <data name="CudaGpuTooOld" xml:space="preserve">
+    <value>CUDA не предлагается: нужна видеокарта серии RTX 20, GTX 16 или новее.</value>
+  </data>
+  <data name="CudaDriverTooOld" xml:space="preserve">
+    <value>CUDA не предлагается: нужен драйвер NVIDIA {0} или новее. Обновите драйвер и запустите настройку заново.</value>
+  </data>
+  <data name="CudaLibrariesQuestion" xml:space="preserve">
+    <value>Для CUDA нужны три библиотеки NVIDIA (они не входят в драйвер видеокарты и не поставляются вместе с Echo):</value>
+  </data>
+  <data name="CudaDownload" xml:space="preserve">
+    <value>Скачать</value>
+  </data>
+  <data name="CudaDownloadHint" xml:space="preserve">
+    <value>Echo скачает {0} с nvidia.com и сам положит файлы на место.</value>
+  </data>
+  <data name="CudaAlreadyHave" xml:space="preserve">
+    <value>Они у меня уже есть</value>
+  </data>
+  <data name="CudaAlreadyHaveHint" xml:space="preserve">
+    <value>Укажите их местоположение: откроется окно выбора файлов, и Echo скопирует файлы в свою папку.</value>
+  </data>
+  <data name="CudaDownloading" xml:space="preserve">
+    <value>Скачиваю библиотеки NVIDIA</value>
+  </data>
+  <data name="ModelQuestion" xml:space="preserve">
+    <value>Какую модель использовать?</value>
+  </data>
+  <data name="ModelRecommended" xml:space="preserve">
+    <value>Рекомендуется для этого компьютера</value>
+  </data>
+  <data name="ModelDownloaded" xml:space="preserve">
+    <value>Уже скачана</value>
+  </data>
+  <data name="ModelAlreadyHave" xml:space="preserve">
+    <value>У меня уже есть скачанные модели</value>
+  </data>
+  <data name="ModelAlreadyHaveHint" xml:space="preserve">
+    <value>Откроется окно выбора файлов: укажите один или несколько файлов моделей, и Echo скопирует их туда, где хранит модели.</value>
+  </data>
+  <data name="ModelTinyHint" xml:space="preserve">
+    <value>Самая быстрая, ошибается чаще остальных. Занимает около 300 МБ памяти. Для слабых компьютеров и работы на процессоре.</value>
+  </data>
+  <data name="ModelBaseHint" xml:space="preserve">
+    <value>Очень быстрая, точность приемлемая. Занимает около 400 МБ памяти. Для старых ноутбуков и работы на процессоре.</value>
+  </data>
+  <data name="ModelSmallHint" xml:space="preserve">
+    <value>Быстрая, точность хорошая. Занимает около 900 МБ памяти. Подходит и для процессора, и для видеокарты от 2 ГБ.</value>
+  </data>
+  <data name="ModelMediumHint" xml:space="preserve">
+    <value>Точность очень хорошая, заметно медленнее small. Занимает около 2 ГБ памяти: нужна видеокарта от 4 ГБ, на процессоре медленная.</value>
+  </data>
+  <data name="ModelTurboHint" xml:space="preserve">
+    <value>Точность почти как у large-v3, скорость в несколько раз выше. Нужна видеокарта от 6 ГБ.</value>
+  </data>
+  <data name="ModelTurboNoTranslateHint" xml:space="preserve">
+    <value>Быстрая и точная, но не умеет переводить на английский: для перевода выберите другую.</value>
+  </data>
+  <data name="ModelLargeHint" xml:space="preserve">
+    <value>Лучшая точность, справляется со сложной лексикой. Занимает около 4 ГБ памяти: нужна видеокарта от 6 ГБ, на процессоре очень медленная.</value>
+  </data>
+  <data name="ModelDownloading" xml:space="preserve">
+    <value>Скачиваю {0}</value>
+  </data>
+  <data name="ModelCopyQuestion" xml:space="preserve">
+    <value>Положите файл модели Whisper (ggml, .bin) в папку:</value>
+  </data>
+  <data name="HotkeyQuestion" xml:space="preserve">
+    <value>Выберите push-to-talk клавишу</value>
+  </data>
+  <data name="HotkeyCurrent" xml:space="preserve">
+    <value>Клавиша:</value>
+  </data>
+  <data name="HotkeyChangeNote" xml:space="preserve">
+    <value>Чтобы изменить, нажмите другую клавишу.</value>
+  </data>
+  <data name="HotkeySuppressedNote" xml:space="preserve">
+    <value>Внимание: пока Echo запущен, эта клавиша больше ничего не делает. Она не печатает свой символ и не доходит до других программ, поэтому выберите клавишу, которой редко пользуетесь.</value>
+  </data>
+  <data name="MicrophoneQuestion" xml:space="preserve">
+    <value>Выберите устройство ввода</value>
+  </data>
+  <data name="MicrophoneNone" xml:space="preserve">
+    <value>Микрофон не найден.</value>
+  </data>
+  <data name="MicrophoneNoneHelp" xml:space="preserve">
+    <value>Подключите микрофон или разрешите классическим приложениям доступ к нему в настройках конфиденциальности системы.</value>
+  </data>
+  <data name="MicrophoneFailed" xml:space="preserve">
+    <value>Не удалось открыть микрофон.</value>
+  </data>
+  <data name="MicrophoneNoResponse" xml:space="preserve">
+    <value>Он не отвечает. Возможно, его удерживает другая программа: закройте её или выберите другой микрофон.</value>
+  </data>
+  <data name="CalibrationQuiet" xml:space="preserve">
+    <value>Помолчите, измеряю шум в комнате: {0}</value>
+  </data>
+  <data name="CalibrationSpeak" xml:space="preserve">
+    <value>Теперь говорите с обычной громкостью: {0}</value>
+  </data>
+  <data name="CalibrationNotHeard" xml:space="preserve">
+    <value>Вас почти не слышно.</value>
+  </data>
+  <data name="CalibrationNotHeardHelp" xml:space="preserve">
+    <value>Подвиньтесь ближе к микрофону, увеличьте его уровень в настройках системы или выберите другой.</value>
+  </data>
+  <data name="TestLoading" xml:space="preserve">
+    <value>Загружаю модель</value>
+  </data>
+  <data name="TestStartFailed" xml:space="preserve">
+    <value>С этими настройками диктовку запустить не удалось.</value>
+  </data>
+  <data name="TestStartFailedHelp" xml:space="preserve">
+    <value>Нажмите Esc, чтобы вернуться и сменить микрофон, модель или аппаратное ускорение.</value>
+  </data>
+  <data name="TestQuestion" xml:space="preserve">
+    <value>Удерживайте {0} и скажите что-нибудь</value>
+  </data>
+  <data name="TestWaiting" xml:space="preserve">
+    <value>Жду, когда вы зажмёте клавишу…</value>
+  </data>
+  <data name="TestTranscribing" xml:space="preserve">
+    <value>Распознаю</value>
+  </data>
+  <data name="TestNothingHeard" xml:space="preserve">
+    <value>Ничего не распознано. Подержите клавишу чуть дольше и говорите громче.</value>
+  </data>
+  <data name="TestSeconds" xml:space="preserve">
+    <value>{0} с</value>
+  </data>
+  <data name="TestRestartNeeded" xml:space="preserve">
+    <value>В этом запуске уже загружен {0}, поэтому {1} не использовался. Он заработает после перезапуска Echo.</value>
+  </data>
+  <data name="SetupRestartNeeded" xml:space="preserve">
+    <value>Настройки сохранены. Запустите Echo ещё раз: выбранное аппаратное ускорение включится после перезапуска.</value>
+  </data>
+  <data name="TestSlow" xml:space="preserve">
+    <value>Получилось медленно. Модель меньше ответит быстрее: нажмите Esc, чтобы вернуться и выбрать её.</value>
+  </data>
+  <data name="ReviewQuestion" xml:space="preserve">
+    <value>Всё верно?</value>
+  </data>
+  <data name="ReviewNote" xml:space="preserve">
+    <value>Выберите строку, чтобы изменить её.</value>
+  </data>
+  <data name="ReviewSave" xml:space="preserve">
+    <value>Сохранить и начать</value>
+  </data>
+  <data name="ReviewSaveHint" xml:space="preserve">
+    <value>Всё верно</value>
+  </data>
+  <data name="SubDictation" xml:space="preserve">
+    <value>Язык диктовки</value>
+  </data>
+  <data name="SubCudaLibraries" xml:space="preserve">
+    <value>Библиотеки NVIDIA</value>
+  </data>
+  <data name="SubCalibration" xml:space="preserve">
+    <value>Порог тишины</value>
+  </data>
+  <data name="SubDictationTest" xml:space="preserve">
+    <value>Пробная диктовка</value>
+  </data>
+  <data name="UnitMb" xml:space="preserve">
+    <value>МБ</value>
+  </data>
+  <data name="UnitGb" xml:space="preserve">
+    <value>ГБ</value>
+  </data>
+  <data name="DictationAutoName" xml:space="preserve">
+    <value>Автоматически</value>
+  </data>
+  <data name="TagRecommended" xml:space="preserve">
+    <value>Рекомендуется</value>
+  </data>
+  <data name="HardwareGpus" xml:space="preserve">
+    <value>Определены ваши видеокарты NVIDIA (драйвер {0}):</value>
+  </data>
+  <data name="SubGraphicsCard" xml:space="preserve">
+    <value>Видеокарта</value>
+  </data>
+  <data name="GraphicsCardQuestion" xml:space="preserve">
+    <value>На какой видеокарте запускать модель?</value>
+  </data>
+  <data name="GraphicsCardHint" xml:space="preserve">
+    <value>{0} видеопамяти. Чем её больше, тем более крупную и точную модель сможет запустить Echo.</value>
+  </data>
+  <data name="ModelOwnFileHint" xml:space="preserve">
+    <value>Файл модели, который уже лежит в папке моделей Echo.</value>
+  </data>
+  <data name="ModelPickFilesTitle" xml:space="preserve">
+    <value>Выберите файлы моделей Whisper (ggml, .bin)</value>
+  </data>
+  <data name="ModelNotAModel" xml:space="preserve">
+    <value>Это не похоже на модель Whisper, файл пропущен: {0}</value>
+  </data>
+  <data name="HotkeyNote" xml:space="preserve">
+    <value>Пока вы её удерживаете, Echo будет записывать голос.</value>
+  </data>
+  <data name="MicrophoneLevel" xml:space="preserve">
+    <value>Уровень:</value>
+  </data>
+  <data name="MicrophoneOpening" xml:space="preserve">
+    <value>Открываю микрофон</value>
+  </data>
+  <data name="HintMeasure" xml:space="preserve">
+    <value>измерить</value>
+  </data>
+  <data name="CudaSourceQuestion" xml:space="preserve">
+    <value>Откуда их взять?</value>
+  </data>
+  <data name="CudaPickFilesTitle" xml:space="preserve">
+    <value>Выберите библиотеки NVIDIA</value>
+  </data>
+  <data name="CudaNotALibrary" xml:space="preserve">
+    <value>Это не одна из нужных библиотек, файл пропущен: {0}</value>
+  </data>
+  <data name="ModelRecommendationNote" xml:space="preserve">
+    <value>Рекомендация рассчитана на основе вашей системы.</value>
+  </data>
+  <data name="DownloadPaused" xml:space="preserve">
+    <value>Скачивание остановлено. Уже скачанная часть сохранена.</value>
+  </data>
+  <data name="CopyPaused" xml:space="preserve">
+    <value>Копирование остановлено.</value>
+  </data>
+  <data name="FileCopying" xml:space="preserve">
+    <value>Копирую {0}</value>
+  </data>
+  <data name="FileCopyFailed" xml:space="preserve">
+    <value>Не удалось скопировать файл.</value>
+  </data>
+  <data name="CudaAlreadyHaveSummary" xml:space="preserve">
+    <value>Указать путь</value>
+  </data>
+  <data name="StepAdditional" xml:space="preserve">
+    <value>Дополнительные настройки</value>
+  </data>
+  <data name="AdditionalQuestion" xml:space="preserve">
+    <value>Выберите настройку, которую хотите изменить</value>
+  </data>
+  <data name="AdditionalNote" xml:space="preserve">
+    <value>Все эти настройки необязательны: Echo хорошо работает и без них.</value>
+  </data>
+  <data name="AdditionalTranslate" xml:space="preserve">
+    <value>Перевод на английский</value>
+  </data>
+  <data name="AdditionalTranslateHint" xml:space="preserve">
+    <value>Echo будет печатать английский перевод сказанного вместо исходного текста.</value>
+  </data>
+  <data name="AdditionalTranslateWarning" xml:space="preserve">
+    <value>Выбранная модель {0} не умеет переводить. Сменить модель можно на следующем экране.</value>
+  </data>
+  <data name="AdditionalAutoInsert" xml:space="preserve">
+    <value>Автоматическая вставка текста</value>
+  </data>
+  <data name="AdditionalAutoInsertHint" xml:space="preserve">
+    <value>Распознанный текст сразу печатается там, где стоит курсор. Если выключить, он только копируется в буфер обмена, и вы вставляете его сами через Ctrl+V.</value>
+  </data>
+  <data name="AdditionalContinue" xml:space="preserve">
+    <value>Продолжить</value>
+  </data>
+  <data name="AdditionalContinueHint" xml:space="preserve">
+    <value>Перейти к сводке всего, что вы выбрали.</value>
+  </data>
+  <data name="ValueOn" xml:space="preserve">
+    <value>Включено</value>
+  </data>
+  <data name="ValueOff" xml:space="preserve">
+    <value>Выключено</value>
+  </data>
+  <data name="CalibrationQuestion" xml:space="preserve">
+    <value>Измерьте порог тишины</value>
+  </data>
+  <data name="CalibrationWhy" xml:space="preserve">
+    <value>Echo начинает запись только тогда, когда звук становится громче порога тишины. Так в запись не попадает фон: вентилятор, клавиатура, улица. Если порог слишком низкий, Echo записывает шум; если слишком высокий — срезает тихое начало фразы.</value>
+  </data>
+  <data name="CalibrationHow" xml:space="preserve">
+    <value>Echo послушает комнату, а затем ваш голос, и поставит порог между ними: сначала помолчите, потом говорите. Отсчёт покажет, сколько секунд осталось.</value>
+  </data>
+  <data name="CalibrationCurrent" xml:space="preserve">
+    <value>Порог тишины сейчас: {0}</value>
+  </data>
+  <data name="CalibrationDone" xml:space="preserve">
+    <value>Порог тишины измерен: {0}</value>
+  </data>
+  <data name="CalibrationDoneDetails" xml:space="preserve">
+    <value>Шум в комнате: {0}, ваш голос: {1}. Всё, что тише порога, Echo записывать не будет.</value>
+  </data>
+  <data name="GroupRecording" xml:space="preserve">
+    <value>Запись</value>
+  </data>
+  <data name="GroupGeneral" xml:space="preserve">
+    <value>Общее</value>
+  </data>
+  <data name="ValueAuto" xml:space="preserve">
+    <value>Авто</value>
+  </data>
+  <data name="ValueNotSet" xml:space="preserve">
+    <value>Не задано</value>
+  </data>
+  <data name="InputEmptyNote" xml:space="preserve">
+    <value>Оставьте поле пустым, чтобы вернуть значение по умолчанию.</value>
+  </data>
+  <data name="InputWholeError" xml:space="preserve">
+    <value>Введите целое число от {0} до {1}</value>
+  </data>
+  <data name="InputFractionError" xml:space="preserve">
+    <value>Введите число от {0} до {1}, например 0.2</value>
+  </data>
+  <data name="AdditionalPrompt" xml:space="preserve">
+    <value>Словарь: имена и термины</value>
+  </data>
+  <data name="AdditionalPromptHint" xml:space="preserve">
+    <value>Слова, в которых Echo ошибается: имена, названия, термины. Впишите их через запятую, например: Kubernetes, PostgreSQL, Иванов. Модель будет считать, что они уже звучали перед вашей фразой, и напишет их так же.</value>
+  </data>
+  <data name="AdditionalCarryInitialPrompt" xml:space="preserve">
+    <value>Словарь в длинных записях</value>
+  </data>
+  <data name="AdditionalCarryInitialPromptHint" xml:space="preserve">
+    <value>Модель разбирает запись кусками по 30 секунд, и словарь действует только на первый из них. Включите, если диктуете дольше 30 секунд подряд, а слова из словаря в продолжении пишутся с ошибками. Пока словарь пуст, настройка ничего не меняет.</value>
+  </data>
+  <data name="AdditionalNoContext" xml:space="preserve">
+    <value>Не учитывать предыдущий текст</value>
+  </data>
+  <data name="AdditionalNoContextHint" xml:space="preserve">
+    <value>Модель опирается на уже распознанный ею текст: так слова и стиль остаются согласованными. Включите, если она начинает повторять одну и ту же фразу; распознавание заодно станет чуть быстрее.</value>
+  </data>
+  <data name="AdditionalSingleSegment" xml:space="preserve">
+    <value>Один сегмент</value>
+  </data>
+  <data name="AdditionalSingleSegmentHint" xml:space="preserve">
+    <value>Модель отдаёт текст записи одним куском, а не частями по паузам. На фразы короче 30 секунд не влияет. В более длинной записи плюс в предсказуемости: модель идёт ровными шагами по 30 секунд и не застревает на одном месте. Минус: слово на границе двух шагов может потеряться.</value>
+  </data>
+  <data name="AdditionalSuppressBlank" xml:space="preserve">
+    <value>Не возвращать пустой результат</value>
+  </data>
+  <data name="AdditionalSuppressBlankHint" xml:space="preserve">
+    <value>Модель обязана начать ответ со слова, а не с пустоты. Включено: тихая или очень короткая фраза не пропадёт. Выключено: модель вправе ничего не написать, если не разобрала речь, и реже выдумывает текст там, где слов не было.</value>
+  </data>
+  <data name="AdditionalTemperature" xml:space="preserve">
+    <value>Температура</value>
+  </data>
+  <data name="AdditionalTemperatureHint" xml:space="preserve">
+    <value>Насколько свободно модель выбирает слова, от 0 до 1. При 0 она всегда берёт самые вероятные слова: это точнее всего. Чем выше значение, тем разнообразнее текст и выше риск выдуманных слов. Авто: 0, и выше только тогда, когда распознать не удалось.</value>
+  </data>
+  <data name="AdditionalThreads" xml:space="preserve">
+    <value>Потоки процессора</value>
+  </data>
+  <data name="AdditionalThreadsHint" xml:space="preserve">
+    <value>Сколько потоков процессора занимает распознавание. Важно, когда модель выполняется на процессоре, а не на видеокарте: больше потоков — быстрее, но остальные программы в это время работают медленнее. Авто: не больше четырёх.</value>
+  </data>
+  <data name="AdditionalSuppressRegex" xml:space="preserve">
+    <value>Запрещённый текст (шаблон)</value>
+  </data>
+  <data name="AdditionalSuppressRegexHint" xml:space="preserve">
+    <value>Для знатоков регулярных выражений. Модель не сможет написать кусочки слов, которые целиком подходят под шаблон: так, например, запрещают цифры, чтобы числа писались словами. Не задано: ничего не запрещено.</value>
+  </data>
+  <data name="AdditionalBufferMs" xml:space="preserve">
+    <value>Аудиобуфер, мс</value>
+  </data>
+  <data name="AdditionalBufferMsHint" xml:space="preserve">
+    <value>Как часто микрофон передаёт звук в Echo, в миллисекундах. Чем меньше значение, тем ниже задержка, но чуть выше нагрузка на процессор.</value>
+  </data>
+  <data name="AdditionalNumberOfBuffers" xml:space="preserve">
+    <value>Количество аудиобуферов</value>
+  </data>
+  <data name="AdditionalNumberOfBuffersHint" xml:space="preserve">
+    <value>Сколько буферов выделено для записи. Увеличьте до 4 или 5, если на медленном компьютере запись заикается или пропадает.</value>
+  </data>
+  <data name="AdditionalMicrophoneLevelOutput" xml:space="preserve">
+    <value>Выводить уровень микрофона</value>
+  </data>
+  <data name="AdditionalMicrophoneLevelOutputHint" xml:space="preserve">
+    <value>Пока Echo во время записи ждёт речь, он печатает уровень микрофона в своём окне. Помогает подобрать порог тишины вручную. Видно только при подробности журнала Debug или Verbose.</value>
+  </data>
+  <data name="AdditionalPlaySound" xml:space="preserve">
+    <value>Звуковой сигнал записи</value>
+  </data>
+  <data name="AdditionalPlaySoundHint" xml:space="preserve">
+    <value>Короткий звук в начале и в конце записи: на слух понятно, что Echo слушает.</value>
+  </data>
+  <data name="AdditionalVolume" xml:space="preserve">
+    <value>Громкость сигнала</value>
+  </data>
+  <data name="AdditionalVolumeHint" xml:space="preserve">
+    <value>Громкость звукового сигнала записи, от 0 до 100 процентов.</value>
+  </data>
+  <data name="KeySpace" xml:space="preserve">
+    <value>Пробел</value>
+  </data>
+  <data name="HintSwitch" xml:space="preserve">
+    <value>переключить</value>
+  </data>
+  <data name="HintType" xml:space="preserve">
+    <value>ввести значение</value>
+  </data>
+  <data name="GroupRecognition" xml:space="preserve">
+    <value>Распознавание речи</value>
+  </data>
+  <data name="AdditionalTranslateCaution" xml:space="preserve">
+    <value>Модель large-v3-turbo переводить не умеет: для перевода выберите другую модель.</value>
+  </data>
+  <data name="AdditionalLogLevel" xml:space="preserve">
+    <value>Подробность журнала</value>
+  </data>
+  <data name="AdditionalLogLevelHint" xml:space="preserve">
+    <value>Сколько Echo пишет о своей работе в своём окне. Debug: всё подряд — загрузка модели, устройства, время распознавания, распознанный текст. Information: только начало и конец каждой записи. Warning и Error: только неполадки.</value>
+  </data>
+  <data name="ListenStarting" xml:space="preserve">
+    <value>запуск</value>
+  </data>
+  <data name="ListenListening" xml:space="preserve">
+    <value>готов</value>
+  </data>
+  <data name="ListenRecording" xml:space="preserve">
+    <value>запись</value>
+  </data>
+  <data name="ListenTranscribing" xml:space="preserve">
+    <value>распознаю</value>
+  </data>
+  <data name="ListenPaused" xml:space="preserve">
+    <value>пауза</value>
+  </data>
+  <data name="ListenFailed" xml:space="preserve">
+    <value>ошибка</value>
+  </data>
+  <data name="ListenKey" xml:space="preserve">
+    <value>клавиша</value>
+  </data>
+  <data name="ListenScrolled" xml:space="preserve">
+    <value>End — в самый низ</value>
+  </data>
+  <data name="ListenPlaceholder" xml:space="preserve">
+    <value>введите / для команд</value>
+  </data>
+  <data name="ListenTooSmall" xml:space="preserve">
+    <value>Окно слишком маленькое: увеличьте его</value>
+  </data>
+  <data name="ListenHintRun" xml:space="preserve">
+    <value>выполнить</value>
+  </data>
+  <data name="ListenHintLog" xml:space="preserve">
+    <value>журнал</value>
+  </data>
+  <data name="ListenHintQuit" xml:space="preserve">
+    <value>выход</value>
+  </data>
+  <data name="ListenSetupDone" xml:space="preserve">
+    <value>Настройки сохранены, Echo уже работает с ними.</value>
+  </data>
+  <data name="ListenFailedHint" xml:space="preserve">
+    <value>Echo не запустился: причина выше. /setup — изменить настройки, /quit — выйти.</value>
+  </data>
+  <data name="CommandSetup" xml:space="preserve">
+    <value>пройти настройку заново</value>
+  </data>
+  <data name="CommandPause" xml:space="preserve">
+    <value>перестать слушать клавишу</value>
+  </data>
+  <data name="CommandResume" xml:space="preserve">
+    <value>снова слушать клавишу</value>
+  </data>
+  <data name="CommandLog" xml:space="preserve">
+    <value>сменить подробность журнала</value>
+  </data>
+  <data name="CommandLogArgument" xml:space="preserve">
+    <value>&lt;уровень&gt;</value>
+  </data>
+  <data name="CommandHelp" xml:space="preserve">
+    <value>список команд</value>
+  </data>
+  <data name="CommandQuit" xml:space="preserve">
+    <value>выйти из Echo</value>
+  </data>
+  <data name="ResponseNotACommand" xml:space="preserve">
+    <value>Команды начинаются с /. Список — /help.</value>
+  </data>
+  <data name="ResponseUnknownCommand" xml:space="preserve">
+    <value>Нет такой команды: {0}. Список — /help.</value>
+  </data>
+  <data name="ResponsePaused" xml:space="preserve">
+    <value>Echo больше не слушает клавишу. /resume — продолжить.</value>
+  </data>
+  <data name="ResponseResumed" xml:space="preserve">
+    <value>Echo снова слушает клавишу.</value>
+  </data>
+  <data name="ResponseHelpTitle" xml:space="preserve">
+    <value>Команды:</value>
+  </data>
+  <data name="ResponseLogLevelNow" xml:space="preserve">
+    <value>Подробность журнала сейчас: {0}. Уровни: {1}.</value>
+  </data>
+  <data name="ResponseUnknownLevel" xml:space="preserve">
+    <value>Нет такого уровня: {0}. Уровни: {1}.</value>
+  </data>
+  <data name="ResponseLogLevel" xml:space="preserve">
+    <value>Подробность журнала: {0}. Сохранено: останется, пока вы её не смените.</value>
+  </data>
+  <data name="ResponseLogLevelNotSaved" xml:space="preserve">
+    <value>Подробность журнала: {0}, но сохранить её не удалось, поэтому она действует только до перезапуска Echo: {1}</value>
+  </data>
+  <data name="ListenHintPick" xml:space="preserve">
+    <value>выбрать</value>
+  </data>
+  <data name="ListenHintClose" xml:space="preserve">
+    <value>закрыть</value>
+  </data>
+  <data name="CommandInfo" xml:space="preserve">
+    <value>сводка главных настроек</value>
+  </data>
+  <data name="ResponseInfoTitle" xml:space="preserve">
+    <value>Настройки:</value>
+  </data>
+  <data name="InfoSettingsFile" xml:space="preserve">
+    <value>Файл настроек</value>
+  </data>
+  <data name="InfoLogsFolder" xml:space="preserve">
+    <value>Файлы журнала</value>
+  </data>
+  <data name="LevelVerbose" xml:space="preserve">
+    <value>всё, вплоть до мелочей</value>
+  </data>
+  <data name="LevelDebug" xml:space="preserve">
+    <value>загрузка, устройства, распознанный текст</value>
+  </data>
+  <data name="LevelInformation" xml:space="preserve">
+    <value>начало и конец каждой записи</value>
+  </data>
+  <data name="LevelWarning" xml:space="preserve">
+    <value>только предупреждения и ошибки</value>
+  </data>
+  <data name="LevelError" xml:space="preserve">
+    <value>только ошибки</value>
+  </data>
+  <data name="LevelFatal" xml:space="preserve">
+    <value>только сбои, которые останавливают Echo</value>
+  </data>
+  <data name="LevelCurrent" xml:space="preserve">
+    <value>сейчас</value>
+  </data>
+</root>

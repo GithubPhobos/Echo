@@ -1,0 +1,690 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HintSelect" xml:space="preserve">
+    <value>选择</value>
+  </data>
+  <data name="HintConfirm" xml:space="preserve">
+    <value>确认</value>
+  </data>
+  <data name="HintBack" xml:space="preserve">
+    <value>返回</value>
+  </data>
+  <data name="HintCancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="HintTryAgain" xml:space="preserve">
+    <value>重试</value>
+  </data>
+  <data name="HintCheckAgain" xml:space="preserve">
+    <value>重新检查</value>
+  </data>
+  <data name="HintOpenFolder" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="HintContinue" xml:space="preserve">
+    <value>继续</value>
+  </data>
+  <data name="HintSkip" xml:space="preserve">
+    <value>跳过</value>
+  </data>
+  <data name="HintFinish" xml:space="preserve">
+    <value>完成</value>
+  </data>
+  <data name="SetupTitle" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="SetupReview" xml:space="preserve">
+    <value>核对</value>
+  </data>
+  <data name="SetupStepOf" xml:space="preserve">
+    <value>第 {0} 步，共 {1} 步</value>
+  </data>
+  <data name="SetupNeedsTerminal" xml:space="preserve">
+    <value>Echo 尚未设置。请在终端中运行“echooo setup”，选择模型、麦克风和按键。</value>
+  </data>
+  <data name="SetupSaved" xml:space="preserve">
+    <value>设置已保存。</value>
+  </data>
+  <data name="StepLanguages" xml:space="preserve">
+    <value>语言</value>
+  </data>
+  <data name="StepAcceleration" xml:space="preserve">
+    <value>硬件加速</value>
+  </data>
+  <data name="StepModel" xml:space="preserve">
+    <value>模型</value>
+  </data>
+  <data name="StepHotkey" xml:space="preserve">
+    <value>热键</value>
+  </data>
+  <data name="StepCheck" xml:space="preserve">
+    <value>声音</value>
+  </data>
+  <data name="DownloadVerifying" xml:space="preserve">
+    <value>正在校验下载的文件…</value>
+  </data>
+  <data name="DownloadDetails" xml:space="preserve">
+    <value>{0} / {1} · {2}/秒</value>
+  </data>
+  <data name="DownloadFailed" xml:space="preserve">
+    <value>下载未完成。</value>
+  </data>
+  <data name="DiskSpaceLow" xml:space="preserve">
+    <value>磁盘空间不足：需要 {0}，可用 {1}。</value>
+  </data>
+  <data name="LanguageInterfaceQuestion" xml:space="preserve">
+    <value>选择界面语言</value>
+  </data>
+  <data name="LanguageDictationQuestion" xml:space="preserve">
+    <value>选择您听写时使用的语言</value>
+  </data>
+  <data name="LanguageDictationNote" xml:space="preserve">
+    <value>模型支持的其他语言可稍后在设置文件中指定。</value>
+  </data>
+  <data name="DictationAuto" xml:space="preserve">
+    <value>自动检测（较慢）</value>
+  </data>
+  <data name="DictationAutoHint" xml:space="preserve">
+    <value>模型会自行判断每句话的语言。适合经常使用多种语言的情况。</value>
+  </data>
+  <data name="SummaryInterfaceLanguage" xml:space="preserve">
+    <value>界面语言</value>
+  </data>
+  <data name="SummaryDictationLanguage" xml:space="preserve">
+    <value>听写语言</value>
+  </data>
+  <data name="SummaryAcceleration" xml:space="preserve">
+    <value>硬件加速</value>
+  </data>
+  <data name="SummaryModel" xml:space="preserve">
+    <value>模型</value>
+  </data>
+  <data name="SummaryHotkey" xml:space="preserve">
+    <value>按住说话的按键</value>
+  </data>
+  <data name="SummaryMicrophone" xml:space="preserve">
+    <value>麦克风</value>
+  </data>
+  <data name="HardwareChecking" xml:space="preserve">
+    <value>正在检测硬件</value>
+  </data>
+  <data name="HardwareNoNvidia" xml:space="preserve">
+    <value>未找到 NVIDIA 显卡。</value>
+  </data>
+  <data name="HardwareGpu" xml:space="preserve">
+    <value>已检测到您的显卡：{0}，{1}，驱动 {2}</value>
+  </data>
+  <data name="AccelerationQuestion" xml:space="preserve">
+    <value>模型在什么硬件上运行？</value>
+  </data>
+  <data name="AccelerationAuto" xml:space="preserve">
+    <value>自动</value>
+  </data>
+  <data name="AccelerationAutoHint" xml:space="preserve">
+    <value>推荐。Echo 会选择这台电脑支持的最快方式：目前是 {0}。</value>
+  </data>
+  <data name="AccelerationCudaHint" xml:space="preserve">
+    <value>整个模型通过 CUDA 和 cuBLAS 在 NVIDIA 显卡上运行。最快的方式。需要 RTX 20 / GTX 16 系列或更新的显卡、{0} 或更新版本的驱动，以及三个 NVIDIA 库（约 {1}）。</value>
+  </data>
+  <data name="AccelerationVulkanHint" xml:space="preserve">
+    <value>模型通过 Vulkan 图形接口在显卡上运行：适用于 AMD、Intel 和 NVIDIA 显卡，包括集成显卡。通常比处理器快，但比 CUDA 慢。Vulkan 随显卡驱动一起安装，这台电脑上已经有了。</value>
+  </data>
+  <data name="AccelerationCpu" xml:space="preserve">
+    <value>处理器</value>
+  </data>
+  <data name="AccelerationCpuHint" xml:space="preserve">
+    <value>模型在处理器核心上运行，不使用显卡。适用于任何电脑，但比其他方式慢：使用比 small 更大的模型时延迟会很明显。</value>
+  </data>
+  <data name="CudaGpuTooOld" xml:space="preserve">
+    <value>不提供 CUDA：需要 RTX 20 或 GTX 16 系列及更新的显卡。</value>
+  </data>
+  <data name="CudaDriverTooOld" xml:space="preserve">
+    <value>不提供 CUDA：需要 NVIDIA 驱动 {0} 或更新版本。请更新驱动后重新运行设置。</value>
+  </data>
+  <data name="CudaLibrariesQuestion" xml:space="preserve">
+    <value>CUDA 需要三个 NVIDIA 库（它们不包含在显卡驱动中，也不随 Echo 一起提供）：</value>
+  </data>
+  <data name="CudaDownload" xml:space="preserve">
+    <value>下载</value>
+  </data>
+  <data name="CudaDownloadHint" xml:space="preserve">
+    <value>Echo 从 nvidia.com 下载 {0} 并自动放好文件。</value>
+  </data>
+  <data name="CudaAlreadyHave" xml:space="preserve">
+    <value>我已经有了</value>
+  </data>
+  <data name="CudaAlreadyHaveHint" xml:space="preserve">
+    <value>指出它们的位置：将打开文件选择窗口，Echo 会把文件复制到自己的文件夹。</value>
+  </data>
+  <data name="CudaDownloading" xml:space="preserve">
+    <value>正在下载 NVIDIA 库</value>
+  </data>
+  <data name="ModelQuestion" xml:space="preserve">
+    <value>Echo 使用哪个模型？</value>
+  </data>
+  <data name="ModelRecommended" xml:space="preserve">
+    <value>推荐用于这台电脑</value>
+  </data>
+  <data name="ModelDownloaded" xml:space="preserve">
+    <value>已下载</value>
+  </data>
+  <data name="ModelAlreadyHave" xml:space="preserve">
+    <value>我已经下载过模型</value>
+  </data>
+  <data name="ModelAlreadyHaveHint" xml:space="preserve">
+    <value>将打开文件选择窗口：选择一个或多个模型文件，Echo 会把它们复制到存放模型的位置。</value>
+  </data>
+  <data name="ModelTinyHint" xml:space="preserve">
+    <value>最快，出错最多。占用约 300 MB 内存。适合性能较弱的电脑和在处理器上运行。</value>
+  </data>
+  <data name="ModelBaseHint" xml:space="preserve">
+    <value>很快，准确度尚可。占用约 400 MB 内存。适合旧笔记本和在处理器上运行。</value>
+  </data>
+  <data name="ModelSmallHint" xml:space="preserve">
+    <value>速度快，准确度良好。占用约 900 MB 内存。既适合处理器，也适合 2 GB 以上显存的显卡。</value>
+  </data>
+  <data name="ModelMediumHint" xml:space="preserve">
+    <value>准确度很好，明显慢于 small。占用约 2 GB 内存：需要 4 GB 以上显存的显卡，在处理器上很慢。</value>
+  </data>
+  <data name="ModelTurboHint" xml:space="preserve">
+    <value>准确度接近 large-v3，速度快数倍。需要 6 GB 以上显存的显卡。</value>
+  </data>
+  <data name="ModelTurboNoTranslateHint" xml:space="preserve">
+    <value>又快又准，但不能翻译成英语：需要翻译请选其他模型。</value>
+  </data>
+  <data name="ModelLargeHint" xml:space="preserve">
+    <value>准确度最高，能应对复杂词汇。占用约 4 GB 内存：需要 6 GB 以上显存的显卡，在处理器上非常慢。</value>
+  </data>
+  <data name="ModelDownloading" xml:space="preserve">
+    <value>正在下载 {0}</value>
+  </data>
+  <data name="ModelCopyQuestion" xml:space="preserve">
+    <value>请把 Whisper 模型文件（ggml，.bin）放入此文件夹：</value>
+  </data>
+  <data name="HotkeyQuestion" xml:space="preserve">
+    <value>选择按住说话的按键</value>
+  </data>
+  <data name="HotkeyCurrent" xml:space="preserve">
+    <value>按键：</value>
+  </data>
+  <data name="HotkeyChangeNote" xml:space="preserve">
+    <value>要更改，请按其他键。</value>
+  </data>
+  <data name="HotkeySuppressedNote" xml:space="preserve">
+    <value>注意：Echo 运行期间，此键不再有其他作用。它不会输入自己的字符，其他程序也收不到它，所以请选择一个很少使用的键。</value>
+  </data>
+  <data name="MicrophoneQuestion" xml:space="preserve">
+    <value>选择输入设备</value>
+  </data>
+  <data name="MicrophoneNone" xml:space="preserve">
+    <value>未找到麦克风。</value>
+  </data>
+  <data name="MicrophoneNoneHelp" xml:space="preserve">
+    <value>请接入麦克风，或在系统隐私设置中允许桌面应用使用麦克风。</value>
+  </data>
+  <data name="MicrophoneFailed" xml:space="preserve">
+    <value>无法打开麦克风。</value>
+  </data>
+  <data name="MicrophoneNoResponse" xml:space="preserve">
+    <value>它没有响应。可能被其他程序占用：请关闭该程序或选择其他麦克风。</value>
+  </data>
+  <data name="CalibrationQuiet" xml:space="preserve">
+    <value>请保持安静，正在测量房间噪音：{0}</value>
+  </data>
+  <data name="CalibrationSpeak" xml:space="preserve">
+    <value>现在请用平常的音量说话：{0}</value>
+  </data>
+  <data name="CalibrationNotHeard" xml:space="preserve">
+    <value>几乎听不到您的声音。</value>
+  </data>
+  <data name="CalibrationNotHeardHelp" xml:space="preserve">
+    <value>请靠近麦克风、在系统设置中调高其音量，或选择其他麦克风。</value>
+  </data>
+  <data name="TestLoading" xml:space="preserve">
+    <value>正在加载模型</value>
+  </data>
+  <data name="TestStartFailed" xml:space="preserve">
+    <value>无法使用这些设置启动听写。</value>
+  </data>
+  <data name="TestStartFailedHelp" xml:space="preserve">
+    <value>按 Esc 返回，更换麦克风、模型或硬件加速。</value>
+  </data>
+  <data name="TestQuestion" xml:space="preserve">
+    <value>按住 {0} 并说点什么</value>
+  </data>
+  <data name="TestWaiting" xml:space="preserve">
+    <value>等待您按住按键…</value>
+  </data>
+  <data name="TestTranscribing" xml:space="preserve">
+    <value>正在识别</value>
+  </data>
+  <data name="TestNothingHeard" xml:space="preserve">
+    <value>没有识别到内容。请按住按键稍久一些并提高音量。</value>
+  </data>
+  <data name="TestSeconds" xml:space="preserve">
+    <value>{0} 秒</value>
+  </data>
+  <data name="TestRestartNeeded" xml:space="preserve">
+    <value>本次运行已加载 {0}，因此未使用 {1}。重启 Echo 后将使用它。</value>
+  </data>
+  <data name="SetupRestartNeeded" xml:space="preserve">
+    <value>设置已保存。请重新启动 Echo：所选的硬件加速在重启后生效。</value>
+  </data>
+  <data name="TestSlow" xml:space="preserve">
+    <value>速度偏慢。较小的模型响应更快：按 Esc 返回并重新选择。</value>
+  </data>
+  <data name="ReviewQuestion" xml:space="preserve">
+    <value>一切都正确吗？</value>
+  </data>
+  <data name="ReviewNote" xml:space="preserve">
+    <value>选择某一行即可修改。</value>
+  </data>
+  <data name="ReviewSave" xml:space="preserve">
+    <value>保存并开始</value>
+  </data>
+  <data name="ReviewSaveHint" xml:space="preserve">
+    <value>一切正确</value>
+  </data>
+  <data name="SubDictation" xml:space="preserve">
+    <value>听写语言</value>
+  </data>
+  <data name="SubCudaLibraries" xml:space="preserve">
+    <value>NVIDIA 库</value>
+  </data>
+  <data name="SubCalibration" xml:space="preserve">
+    <value>静音阈值</value>
+  </data>
+  <data name="SubDictationTest" xml:space="preserve">
+    <value>试听写</value>
+  </data>
+  <data name="UnitMb" xml:space="preserve">
+    <value>MB</value>
+  </data>
+  <data name="UnitGb" xml:space="preserve">
+    <value>GB</value>
+  </data>
+  <data name="DictationAutoName" xml:space="preserve">
+    <value>自动</value>
+  </data>
+  <data name="TagRecommended" xml:space="preserve">
+    <value>推荐</value>
+  </data>
+  <data name="HardwareGpus" xml:space="preserve">
+    <value>已检测到您的 NVIDIA 显卡（驱动 {0}）：</value>
+  </data>
+  <data name="SubGraphicsCard" xml:space="preserve">
+    <value>显卡</value>
+  </data>
+  <data name="GraphicsCardQuestion" xml:space="preserve">
+    <value>模型在哪块显卡上运行？</value>
+  </data>
+  <data name="GraphicsCardHint" xml:space="preserve">
+    <value>显存 {0}。显存越大，Echo 能运行的模型越大、越准确。</value>
+  </data>
+  <data name="ModelOwnFileHint" xml:space="preserve">
+    <value>已在 Echo 模型文件夹中的模型文件。</value>
+  </data>
+  <data name="ModelPickFilesTitle" xml:space="preserve">
+    <value>选择 Whisper 模型文件（ggml，.bin）</value>
+  </data>
+  <data name="ModelNotAModel" xml:space="preserve">
+    <value>这看起来不是 Whisper 模型，已跳过：{0}</value>
+  </data>
+  <data name="HotkeyNote" xml:space="preserve">
+    <value>按住它时，Echo 将录制您的声音。</value>
+  </data>
+  <data name="MicrophoneLevel" xml:space="preserve">
+    <value>音量：</value>
+  </data>
+  <data name="MicrophoneOpening" xml:space="preserve">
+    <value>正在打开麦克风</value>
+  </data>
+  <data name="HintMeasure" xml:space="preserve">
+    <value>测量</value>
+  </data>
+  <data name="CudaSourceQuestion" xml:space="preserve">
+    <value>从哪里获取？</value>
+  </data>
+  <data name="CudaPickFilesTitle" xml:space="preserve">
+    <value>选择 NVIDIA 库</value>
+  </data>
+  <data name="CudaNotALibrary" xml:space="preserve">
+    <value>这不是所需的库之一，已跳过：{0}</value>
+  </data>
+  <data name="ModelRecommendationNote" xml:space="preserve">
+    <value>推荐基于您的系统。</value>
+  </data>
+  <data name="DownloadPaused" xml:space="preserve">
+    <value>下载已停止。已下载的部分已保留。</value>
+  </data>
+  <data name="CopyPaused" xml:space="preserve">
+    <value>复制已停止。</value>
+  </data>
+  <data name="FileCopying" xml:space="preserve">
+    <value>正在复制 {0}</value>
+  </data>
+  <data name="FileCopyFailed" xml:space="preserve">
+    <value>无法复制文件。</value>
+  </data>
+  <data name="CudaAlreadyHaveSummary" xml:space="preserve">
+    <value>指定路径</value>
+  </data>
+  <data name="StepAdditional" xml:space="preserve">
+    <value>其他设置</value>
+  </data>
+  <data name="AdditionalQuestion" xml:space="preserve">
+    <value>选择要更改的设置</value>
+  </data>
+  <data name="AdditionalNote" xml:space="preserve">
+    <value>这些设置都不是必需的：不改动它们，Echo 也能正常工作。</value>
+  </data>
+  <data name="AdditionalTranslate" xml:space="preserve">
+    <value>翻译成英语</value>
+  </data>
+  <data name="AdditionalTranslateHint" xml:space="preserve">
+    <value>Echo 将输入您所说内容的英文翻译，而不是原文。</value>
+  </data>
+  <data name="AdditionalTranslateWarning" xml:space="preserve">
+    <value>所选模型 {0} 不能翻译。可以在下一个界面更换模型。</value>
+  </data>
+  <data name="AdditionalAutoInsert" xml:space="preserve">
+    <value>自动插入文字</value>
+  </data>
+  <data name="AdditionalAutoInsertHint" xml:space="preserve">
+    <value>识别出的文字会直接输入到光标所在位置。关闭后只复制到剪贴板，由您自己用 Ctrl+V 粘贴。</value>
+  </data>
+  <data name="AdditionalContinue" xml:space="preserve">
+    <value>继续</value>
+  </data>
+  <data name="AdditionalContinueHint" xml:space="preserve">
+    <value>前往您所有选择的摘要。</value>
+  </data>
+  <data name="ValueOn" xml:space="preserve">
+    <value>开</value>
+  </data>
+  <data name="ValueOff" xml:space="preserve">
+    <value>关</value>
+  </data>
+  <data name="CalibrationQuestion" xml:space="preserve">
+    <value>测量静音阈值</value>
+  </data>
+  <data name="CalibrationWhy" xml:space="preserve">
+    <value>只有当声音高于静音阈值时，Echo 才开始录音。这样背景声就不会进入录音：风扇、键盘、街道。阈值太低，Echo 会录下噪音；太高，则会截掉句子轻声的开头。</value>
+  </data>
+  <data name="CalibrationHow" xml:space="preserve">
+    <value>Echo 会先听房间的声音，再听您的声音，并把阈值设在两者之间：先保持安静，然后说话。倒计时会显示还剩几秒。</value>
+  </data>
+  <data name="CalibrationCurrent" xml:space="preserve">
+    <value>当前静音阈值：{0}</value>
+  </data>
+  <data name="CalibrationDone" xml:space="preserve">
+    <value>静音阈值已测量：{0}</value>
+  </data>
+  <data name="CalibrationDoneDetails" xml:space="preserve">
+    <value>房间噪音：{0}，您的声音：{1}。低于阈值的声音 Echo 不会录制。</value>
+  </data>
+  <data name="GroupRecording" xml:space="preserve">
+    <value>录音</value>
+  </data>
+  <data name="GroupGeneral" xml:space="preserve">
+    <value>常规</value>
+  </data>
+  <data name="ValueAuto" xml:space="preserve">
+    <value>自动</value>
+  </data>
+  <data name="ValueNotSet" xml:space="preserve">
+    <value>未设置</value>
+  </data>
+  <data name="InputEmptyNote" xml:space="preserve">
+    <value>留空即可恢复 Echo 的默认值。</value>
+  </data>
+  <data name="InputWholeError" xml:space="preserve">
+    <value>请输入 {0} 到 {1} 之间的整数</value>
+  </data>
+  <data name="InputFractionError" xml:space="preserve">
+    <value>请输入 {0} 到 {1} 之间的数字，例如 0.2</value>
+  </data>
+  <data name="AdditionalPrompt" xml:space="preserve">
+    <value>词汇表：人名和术语</value>
+  </data>
+  <data name="AdditionalPromptHint" xml:space="preserve">
+    <value>Echo 容易写错的词：人名、产品名、术语。用逗号分隔输入，例如：Kubernetes, PostgreSQL, Ivanov。模型会认为这些词在您的话之前已经出现过，并按同样的写法输出。</value>
+  </data>
+  <data name="AdditionalCarryInitialPrompt" xml:space="preserve">
+    <value>长录音中使用词汇表</value>
+  </data>
+  <data name="AdditionalCarryInitialPromptHint" xml:space="preserve">
+    <value>模型按每段 30 秒处理录音，词汇表只对第一段起作用。如果您一次口述超过 30 秒，而词汇表中的词在后面被写错，请开启。词汇表为空时，此设置不起作用。</value>
+  </data>
+  <data name="AdditionalNoContext" xml:space="preserve">
+    <value>忽略此前的文字</value>
+  </data>
+  <data name="AdditionalNoContextHint" xml:space="preserve">
+    <value>模型会参考已经识别出的文字，使用词和风格保持一致。如果模型开始重复同一句话，请开启；识别也会稍快一些。</value>
+  </data>
+  <data name="AdditionalSingleSegment" xml:space="preserve">
+    <value>单一片段</value>
+  </data>
+  <data name="AdditionalSingleSegmentHint" xml:space="preserve">
+    <value>模型把录音的文字作为一整段返回，而不是按停顿分成几部分。对短于 30 秒的语句没有影响。在更长的录音中，优点是可预期：模型以 30 秒为一步均匀前进，不会卡在某处。缺点：两步交界处的词可能丢失。</value>
+  </data>
+  <data name="AdditionalSuppressBlank" xml:space="preserve">
+    <value>不返回空结果</value>
+  </data>
+  <data name="AdditionalSuppressBlankHint" xml:space="preserve">
+    <value>模型必须以词开始作答，而不是以空白开始。开启：轻声或很短的语句不会丢失。关闭：模型在听不清时可以什么都不写，因此在没有说话的地方更少编造文字。</value>
+  </data>
+  <data name="AdditionalTemperature" xml:space="preserve">
+    <value>温度</value>
+  </data>
+  <data name="AdditionalTemperatureHint" xml:space="preserve">
+    <value>模型选词的自由程度，0 到 1。为 0 时总是取最可能的词，最准确。数值越高，文字越多变，编造词语的风险也越大。自动：从 0 开始，只有识别失败时才升高。</value>
+  </data>
+  <data name="AdditionalThreads" xml:space="preserve">
+    <value>处理器线程数</value>
+  </data>
+  <data name="AdditionalThreadsHint" xml:space="preserve">
+    <value>识别占用多少处理器线程。当模型在处理器而不是显卡上运行时很重要：线程越多越快，但其他程序会同时变慢。自动：不超过四个。</value>
+  </data>
+  <data name="AdditionalSuppressRegex" xml:space="preserve">
+    <value>禁止的文字（模式）</value>
+  </data>
+  <data name="AdditionalSuppressRegexHint" xml:space="preserve">
+    <value>适合熟悉正则表达式的人。模型无法写出与该模式完全匹配的词片段：例如可以禁止数字，让数字以文字形式写出。未设置：不禁止任何内容。</value>
+  </data>
+  <data name="AdditionalBufferMs" xml:space="preserve">
+    <value>音频缓冲，毫秒</value>
+  </data>
+  <data name="AdditionalBufferMsHint" xml:space="preserve">
+    <value>麦克风向 Echo 传送声音的间隔，单位毫秒。数值越小延迟越低，但处理器负载略高。</value>
+  </data>
+  <data name="AdditionalNumberOfBuffers" xml:space="preserve">
+    <value>音频缓冲数量</value>
+  </data>
+  <data name="AdditionalNumberOfBuffersHint" xml:space="preserve">
+    <value>为录音预留的缓冲数量。如果在较慢的电脑上录音卡顿或丢失，请增加到 4 或 5。</value>
+  </data>
+  <data name="AdditionalMicrophoneLevelOutput" xml:space="preserve">
+    <value>输出麦克风音量</value>
+  </data>
+  <data name="AdditionalMicrophoneLevelOutputHint" xml:space="preserve">
+    <value>录音期间等待语音时，Echo 会在自己的窗口中输出麦克风音量。有助于手动选择静音阈值。仅在日志详细程度为 Debug 或 Verbose 时显示。</value>
+  </data>
+  <data name="AdditionalPlaySound" xml:space="preserve">
+    <value>录音提示音</value>
+  </data>
+  <data name="AdditionalPlaySoundHint" xml:space="preserve">
+    <value>录音开始和结束时播放短促提示音，让您听得出 Echo 正在聆听。</value>
+  </data>
+  <data name="AdditionalVolume" xml:space="preserve">
+    <value>提示音音量</value>
+  </data>
+  <data name="AdditionalVolumeHint" xml:space="preserve">
+    <value>录音提示音的音量，0 到 100%。</value>
+  </data>
+  <data name="KeySpace" xml:space="preserve">
+    <value>空格</value>
+  </data>
+  <data name="HintSwitch" xml:space="preserve">
+    <value>切换</value>
+  </data>
+  <data name="HintType" xml:space="preserve">
+    <value>输入数值</value>
+  </data>
+  <data name="GroupRecognition" xml:space="preserve">
+    <value>语音识别</value>
+  </data>
+  <data name="AdditionalTranslateCaution" xml:space="preserve">
+    <value>large-v3-turbo 模型不会翻译：需要翻译时请选择其他模型。</value>
+  </data>
+  <data name="AdditionalLogLevel" xml:space="preserve">
+    <value>日志详细程度</value>
+  </data>
+  <data name="AdditionalLogLevelHint" xml:space="preserve">
+    <value>Echo 在自己的窗口中输出多少工作信息。Debug：全部内容——模型加载、设备、识别耗时、识别出的文字。Information：只有每次录音的开始和结束。Warning 和 Error：只有问题。</value>
+  </data>
+  <data name="ListenStarting" xml:space="preserve">
+    <value>启动中</value>
+  </data>
+  <data name="ListenListening" xml:space="preserve">
+    <value>就绪</value>
+  </data>
+  <data name="ListenRecording" xml:space="preserve">
+    <value>录音</value>
+  </data>
+  <data name="ListenTranscribing" xml:space="preserve">
+    <value>识别中</value>
+  </data>
+  <data name="ListenPaused" xml:space="preserve">
+    <value>已暂停</value>
+  </data>
+  <data name="ListenFailed" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="ListenKey" xml:space="preserve">
+    <value>按键</value>
+  </data>
+  <data name="ListenScrolled" xml:space="preserve">
+    <value>End 回到最底部</value>
+  </data>
+  <data name="ListenPlaceholder" xml:space="preserve">
+    <value>输入 / 查看命令</value>
+  </data>
+  <data name="ListenTooSmall" xml:space="preserve">
+    <value>窗口太小：请放大窗口</value>
+  </data>
+  <data name="ListenHintRun" xml:space="preserve">
+    <value>执行</value>
+  </data>
+  <data name="ListenHintLog" xml:space="preserve">
+    <value>日志</value>
+  </data>
+  <data name="ListenHintQuit" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="ListenSetupDone" xml:space="preserve">
+    <value>设置已保存，Echo 现在按新设置工作。</value>
+  </data>
+  <data name="ListenFailedHint" xml:space="preserve">
+    <value>Echo 无法启动：原因见上方。/setup 修改设置，/quit 退出。</value>
+  </data>
+  <data name="CommandSetup" xml:space="preserve">
+    <value>重新进行设置</value>
+  </data>
+  <data name="CommandPause" xml:space="preserve">
+    <value>停止监听按键</value>
+  </data>
+  <data name="CommandResume" xml:space="preserve">
+    <value>重新监听按键</value>
+  </data>
+  <data name="CommandLog" xml:space="preserve">
+    <value>更改日志详细程度</value>
+  </data>
+  <data name="CommandLogArgument" xml:space="preserve">
+    <value>&lt;级别&gt;</value>
+  </data>
+  <data name="CommandHelp" xml:space="preserve">
+    <value>命令列表</value>
+  </data>
+  <data name="CommandQuit" xml:space="preserve">
+    <value>退出 Echo</value>
+  </data>
+  <data name="ResponseNotACommand" xml:space="preserve">
+    <value>命令以 / 开头。/help 查看列表。</value>
+  </data>
+  <data name="ResponseUnknownCommand" xml:space="preserve">
+    <value>没有这个命令：{0}。/help 查看列表。</value>
+  </data>
+  <data name="ResponsePaused" xml:space="preserve">
+    <value>Echo 已不再监听按键。/resume 继续。</value>
+  </data>
+  <data name="ResponseResumed" xml:space="preserve">
+    <value>Echo 重新开始监听按键。</value>
+  </data>
+  <data name="ResponseHelpTitle" xml:space="preserve">
+    <value>命令：</value>
+  </data>
+  <data name="ResponseLogLevelNow" xml:space="preserve">
+    <value>当前日志详细程度：{0}。级别：{1}。</value>
+  </data>
+  <data name="ResponseUnknownLevel" xml:space="preserve">
+    <value>没有这个级别：{0}。级别：{1}。</value>
+  </data>
+  <data name="ResponseLogLevel" xml:space="preserve">
+    <value>日志详细程度：{0}。已保存：在你更改之前一直有效。</value>
+  </data>
+  <data name="ResponseLogLevelNotSaved" xml:space="preserve">
+    <value>日志详细程度：{0}，但无法保存，因此仅在 Echo 重启前有效：{1}</value>
+  </data>
+  <data name="ListenHintPick" xml:space="preserve">
+    <value>选择</value>
+  </data>
+  <data name="ListenHintClose" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="CommandInfo" xml:space="preserve">
+    <value>主要设置摘要</value>
+  </data>
+  <data name="ResponseInfoTitle" xml:space="preserve">
+    <value>设置：</value>
+  </data>
+  <data name="InfoSettingsFile" xml:space="preserve">
+    <value>设置文件</value>
+  </data>
+  <data name="InfoLogsFolder" xml:space="preserve">
+    <value>日志文件</value>
+  </data>
+  <data name="LevelVerbose" xml:space="preserve">
+    <value>全部，事无巨细</value>
+  </data>
+  <data name="LevelDebug" xml:space="preserve">
+    <value>加载、设备、识别出的文字</value>
+  </data>
+  <data name="LevelInformation" xml:space="preserve">
+    <value>每次录音的开始和结束</value>
+  </data>
+  <data name="LevelWarning" xml:space="preserve">
+    <value>仅警告和错误</value>
+  </data>
+  <data name="LevelError" xml:space="preserve">
+    <value>仅错误</value>
+  </data>
+  <data name="LevelFatal" xml:space="preserve">
+    <value>仅导致 Echo 停止的故障</value>
+  </data>
+  <data name="LevelCurrent" xml:space="preserve">
+    <value>当前</value>
+  </data>
+</root>
