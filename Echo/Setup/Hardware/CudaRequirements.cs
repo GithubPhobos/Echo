@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-namespace Echo.Setup.Hardware;
+﻿namespace Echo.Setup.Hardware;
 
 /// <summary>
 ///     The requirements of the CUDA libraries this version of the application is built against.
@@ -24,11 +22,12 @@ internal static class CudaRequirements
     public const string DeviceOrderVariable = "CUDA_DEVICE_ORDER";
     public const string DeviceOrderByBus = "PCI_BUS_ID";
 
+    /// <summary>
+    ///     Whether the card and its driver can run the CUDA build of Whisper. Echo ships that build for every
+    ///     system it runs on; whether the NVIDIA libraries are in place is for <see cref="CudaRuntime"/> to say.
+    /// </summary>
     public static CudaSupport Check(HardwareInfo hardware)
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            return CudaSupport.UnsupportedPlatform;
-
         if (hardware.Nvidia is null)
             return CudaSupport.NoNvidiaGpu;
 

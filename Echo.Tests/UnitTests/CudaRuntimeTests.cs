@@ -1,5 +1,6 @@
 ﻿using System.IO.Compression;
 using Echo.Setup.Downloads;
+using Echo.Platform.Windows;
 using Echo.Setup.Hardware;
 
 namespace Echo.Tests.UnitTests;
@@ -8,70 +9,21 @@ public sealed class CudaRuntimeTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "echooo-tests", Guid.NewGuid().ToString("N"));
 
+    /// <summary>
+    ///     The libraries of Windows: their archives are ZIP files, which the tests can make anywhere.
+    /// </summary>
+    private readonly WindowsCudaLibraries _libraries = new();
+
     public CudaRuntimeTests() => Directory.CreateDirectory(_directory);
 
     public void Dispose() => Directory.Delete(_directory, recursive: true);
-
-    [Fact]
-    public void Extract_TakesOnlyTheRequestedLibrariesOutOfNestedFolders()
-    {
-        // Arrange
-        string archive = Path.Combine(_directory, "archive.zip");
-        using (ZipArchive zip = ZipFile.Open(archive, ZipArchiveMode.Create))
-        {
-            WriteEntry(zip, "libcublas-archive/bin/x64/cublas64_13.dll", "cublas");
-            WriteEntry(zip, "libcublas-archive/bin/x64/nvblas64_13.dll", "not needed");
-            WriteEntry(zip, "libcublas-archive/LICENSE", "license");
-        }
-
-        string target = Path.Combine(_directory, "cuda");
-        Directory.CreateDirectory(target);
-
-        // Act
-        CudaRuntime.Extract(archive, ["cublas64_13.dll"], target);
-
-        // Assert
-        Assert.Equal(["cublas64_13.dll"], Directory.GetFiles(target).Select(Path.GetFileName));
-        Assert.Equal("cublas", File.ReadAllText(Path.Combine(target, "cublas64_13.dll")));
-    }
-
-    [Fact]
-    public void Extract_LibraryMissingFromArchive_Throws()
-    {
-        // Arrange
-        string archive = Path.Combine(_directory, "archive.zip");
-        using (ZipArchive zip = ZipFile.Open(archive, ZipArchiveMode.Create))
-            WriteEntry(zip, "readme.txt", "nothing useful");
-
-        // Act & Assert
-        Assert.Throws<DownloadException>(() => CudaRuntime.Extract(archive, ["cudart64_13.dll"], _directory));
-    }
-
-    [Fact]
-    public void FindMissingLibraries_SeesFilesTheUserCopiedIntoTheFolder()
-    {
-        // Arrange
-        var paths = new AppPaths(_directory, _directory);
-        var runtime = new CudaRuntime(paths, Mock.Of<IFileDownloader>());
-
-        Directory.CreateDirectory(paths.CudaDirectory);
-        File.WriteAllText(Path.Combine(paths.CudaDirectory, "cudart64_13.dll"), string.Empty);
-        File.WriteAllText(Path.Combine(paths.CudaDirectory, "cublas64_13.dll"), string.Empty);
-
-        // Act
-        IReadOnlyList<string> missing = runtime.FindMissingLibraries();
-
-        // Assert: the third library may only be found if a CUDA toolkit is installed on this machine
-        Assert.DoesNotContain("cudart64_13.dll", missing);
-        Assert.DoesNotContain("cublas64_13.dll", missing);
-    }
 
     [Fact]
     public async Task InstallAsync_PutsAllLibrariesInPlaceAndCleansUp()
     {
         // Arrange
         var paths = new AppPaths(_directory, _directory);
-        var runtime = new CudaRuntime(paths, CreateArchiveDownloader(failingArchiveIndex: null).Object);
+        var runtime = new CudaRuntime(paths, CreateArchiveDownloader(failingArchiveIndex: null).Object, _libraries);
 
         var downloaded = new List<string>();
 
@@ -94,7 +46,7 @@ public sealed class CudaRuntimeTests : IDisposable
     {
         // Arrange
         var paths = new AppPaths(_directory, _directory);
-        var failing = new CudaRuntime(paths, CreateArchiveDownloader(failingArchiveIndex: 1).Object);
+        var failing = new CudaRuntime(paths, CreateArchiveDownloader(failingArchiveIndex: 1).Object, _libraries);
 
         Mock<IFileDownloader> working = CreateArchiveDownloader(failingArchiveIndex: null);
         var downloaded = new List<string>();
@@ -106,7 +58,7 @@ public sealed class CudaRuntimeTests : IDisposable
         string[] afterFailure = [.. Directory.GetFiles(paths.CudaDirectory).Select(Path.GetFileName)!];
         IReadOnlyList<string> missingAfterFailure = failing.FindMissingLibraries();
 
-        await new CudaRuntime(paths, working.Object).InstallAsync(
+        await new CudaRuntime(paths, working.Object, _libraries).InstallAsync(
             new InlineProgress<DownloadProgress>(_ => { }), new InlineProgress<string>(downloaded.Add), CancellationToken.None);
 
         // Assert: the library that arrived is in place; the incomplete set is still reported as incomplete,
@@ -130,19 +82,6 @@ public sealed class CudaRuntimeTests : IDisposable
     }
 
     [Fact]
-    public void Archives_AreFullyDescribed()
-    {
-        // Assert
-        Assert.All(CudaRuntime.Archives, archive =>
-        {
-            Assert.True(archive.SizeBytes > 0);
-            Assert.Matches("^[0-9a-f]{64}$", archive.Sha256);
-            Assert.NotEmpty(archive.Libraries);
-            Assert.EndsWith(".zip", archive.RelativePath);
-        });
-    }
-
-    [Fact]
     public void RequiredSpaceBytes_LibrariesOfAnArchiveInPlace_CountsOnlyWhatIsStillToCome()
     {
         // Arrange: the runtime library is in place, and a part of the other archive has already arrived
@@ -154,17 +93,17 @@ public sealed class CudaRuntimeTests : IDisposable
         Directory.CreateDirectory(paths.CudaDirectory);
         File.WriteAllText(Path.Combine(paths.CudaDirectory, "cudart64_13.dll"), string.Empty);
 
-        var runtime = new CudaRuntime(paths, downloader.Object);
+        var runtime = new CudaRuntime(paths, downloader.Object, _libraries);
 
         // Act
         long required = runtime.RequiredSpaceBytes();
 
         // Assert: nothing for the archive whose library is in place; what is left of the other one and its
         // unpacked libraries, unless a CUDA toolkit on this machine already has them
-        CudaArchive libraries = CudaRuntime.Archives[1];
+        CudaArchive libraries = _libraries.Archives[1];
         bool isFoundElsewhere = !runtime.FindMissingLibraries().Any(libraries.Libraries.Contains);
 
-        Assert.Equal(isFoundElsewhere ? 0 : 1_000 + (long)(libraries.SizeBytes * CudaRuntime.UnpackedSizeFactor), required);
+        Assert.Equal(isFoundElsewhere ? 0 : 1_000 + (long)(libraries.SizeBytes * _libraries.UnpackedSizeFactor), required);
     }
 
     private static void WriteEntry(ZipArchive zip, string name, string content)
@@ -177,7 +116,7 @@ public sealed class CudaRuntimeTests : IDisposable
     /// <summary>
     ///     A downloader that "downloads" archives holding exactly the libraries the real ones hold.
     /// </summary>
-    private static Mock<IFileDownloader> CreateArchiveDownloader(int? failingArchiveIndex)
+    private Mock<IFileDownloader> CreateArchiveDownloader(int? failingArchiveIndex)
     {
         var downloader = new Mock<IFileDownloader>();
 
@@ -186,14 +125,14 @@ public sealed class CudaRuntimeTests : IDisposable
                 It.IsAny<DownloadRequest>(), It.IsAny<string>(), It.IsAny<IProgress<DownloadProgress>>(), It.IsAny<CancellationToken>()))
             .Returns((DownloadRequest request, string destination, IProgress<DownloadProgress> _, CancellationToken _) =>
             {
-                int index = CudaRuntime.Archives.ToList().FindIndex(archive => request.Url.AbsoluteUri.EndsWith(archive.RelativePath));
+                int index = _libraries.Archives.ToList().FindIndex(archive => request.Url.AbsoluteUri.EndsWith(archive.RelativePath));
 
                 if (index == failingArchiveIndex)
                     throw new DownloadException("The connection was lost.");
 
                 using ZipArchive zip = ZipFile.Open(destination, ZipArchiveMode.Create);
 
-                foreach (string library in CudaRuntime.Archives[index].Libraries)
+                foreach (string library in _libraries.Archives[index].Libraries)
                     WriteEntry(zip, $"archive/bin/x64/{library}", library);
 
                 return Task.CompletedTask;

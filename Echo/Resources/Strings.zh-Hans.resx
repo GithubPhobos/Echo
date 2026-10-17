@@ -687,4 +687,10 @@
   <data name="LevelCurrent" xml:space="preserve">
     <value>当前</value>
   </data>
+  <data name="ProcessorUnsupported" xml:space="preserve">
+    <value>此处理器缺少语音识别所需的指令：{0}。</value>
+  </data>
+  <data name="ProcessorUnsupportedHint" xml:space="preserve">
+    <value>Echo 无法在这台电脑上运行：识别需要大约 2013 年及以后的处理器（Intel 第 4 代酷睿、2015 年起的 AMD、所有 Ryzen）。</value>
+  </data>
 </root>

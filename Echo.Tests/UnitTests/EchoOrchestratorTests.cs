@@ -1,7 +1,4 @@
-﻿using TextCopy;
-using GregsStack.InputSimulatorStandard;
-using GregsStack.InputSimulatorStandard.Native;
-using Echo.Listening;
+﻿using Echo.Listening;
 using Echo.Services.BackgroundServices;
 
 namespace Echo.Tests.UnitTests;
@@ -32,7 +29,8 @@ public sealed class EchoOrchestratorTests
             _textMock.Object,
             _audioMock.Object,
             _whisperMock.Object,
-            _monitorMock.Object);
+            _monitorMock.Object,
+            Mock.Of<IErrorWindow>());
     }
 
     [Fact]
@@ -143,6 +141,7 @@ public sealed class EchoOrchestratorTests
             Mock.Of<IAudioRecordingService>(),
             whisper.Object,
             Mock.Of<IPushToTalkMonitorService>(),
+            Mock.Of<IErrorWindow>(),
             activity);
 
         // Act
@@ -274,22 +273,23 @@ public sealed class EchoOrchestratorTests
         string? clipboard = null;
         var pasted = new List<string?>();
 
-        var clipboardMock = new Mock<IClipboard>();
+        var clipboardMock = new Mock<ITextClipboard>();
         clipboardMock
-            .Setup(c => c.SetTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Callback((string text, CancellationToken _) => clipboard = text)
+            .Setup(c => c.SetTextAsync(It.IsAny<string>()))
+            .Callback((string text) => clipboard = text)
             .Returns(Task.CompletedTask);
 
-        var keyboardMock = new Mock<IKeyboardSimulator>();
-        keyboardMock
-            .Setup(k => k.ModifiedKeyStroke(It.IsAny<VirtualKeyCode>(), It.IsAny<VirtualKeyCode>()))
-            .Callback(() => pasted.Add(clipboard));
-
-        var inputMock = new Mock<IInputSimulator>();
-        inputMock.SetupGet(i => i.Keyboard).Returns(keyboardMock.Object);
+        var pasteMock = new Mock<IPasteKeys>();
+        pasteMock
+            .Setup(k => k.PasteAsync())
+            .Callback(() => pasted.Add(clipboard))
+            .ReturnsAsync(true);
 
         var insertion = new TextInsertionService(
-            Options.Create(new TextInsertionSettings { UseAutoInsert = true }), clipboardMock.Object, inputMock.Object);
+            Options.Create(new TextInsertionSettings { UseAutoInsert = true }),
+            clipboardMock.Object,
+            pasteMock.Object,
+            Mock.Of<ILogger<TextInsertionService>>());
 
         _whisperMock.SetupSequence(w => w.ProcessAudioAsync(It.IsAny<MemoryStream?>()))
             .ReturnsAsync("first")
@@ -302,7 +302,8 @@ public sealed class EchoOrchestratorTests
             insertion,
             _audioMock.Object,
             _whisperMock.Object,
-            _monitorMock.Object);
+            _monitorMock.Object,
+            Mock.Of<IErrorWindow>());
 
         await StartAsync(orchestrator);
 
@@ -335,5 +336,6 @@ public sealed class EchoOrchestratorTests
             _audioMock.Object,
             _whisperMock.Object,
             _monitorMock.Object,
+            Mock.Of<IErrorWindow>(),
             activity);
 }

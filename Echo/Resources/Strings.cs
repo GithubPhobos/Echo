@@ -472,4 +472,8 @@ internal static class Strings
     public static string LevelFatal => Get(nameof(LevelFatal));
 
     public static string LevelCurrent => Get(nameof(LevelCurrent));
+
+    public static string ProcessorUnsupported => Get(nameof(ProcessorUnsupported));
+
+    public static string ProcessorUnsupportedHint => Get(nameof(ProcessorUnsupportedHint));
 }

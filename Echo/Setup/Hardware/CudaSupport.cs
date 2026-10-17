@@ -8,6 +8,5 @@ internal enum CudaSupport
     Supported,
     NoNvidiaGpu,
     GpuTooOld,
-    DriverTooOld,
-    UnsupportedPlatform
+    DriverTooOld
 }

@@ -1,41 +1,39 @@
-﻿using NAudio.Utils;
+﻿using Echo.Setup.Audio;
+using NAudio.Utils;
 using NAudio.Wave;
 
 namespace Echo.Services;
 
 /// <inheritdoc cref="IAudioRecordingService"/>
+/// <param name="audioInput">The microphones of the system.</param>
 /// <param name="logger">The logger instance.</param>
 /// <param name="recordingDeviceSettingsOptions">The audio device configuration settings.</param>
 /// <param name="activity">The working screen, when Echo runs with one: it shows the level of the microphone.</param>
 internal sealed class AudioRecordingService(
+    IAudioInput audioInput,
     ILogger<AudioRecordingService> logger,
     IOptions<RecordingDeviceSettings> recordingDeviceSettingsOptions,
     IListenActivity? activity = null) : IAudioRecordingService
 {
-    /// <summary>
-    ///     How long closing the microphone may take. Opening the same device again before it has really
-    ///     stopped leaves the next opening hanging, which is what the setup wizard does right after this.
-    /// </summary>
-    private static readonly TimeSpan _stopTimeout = TimeSpan.FromSeconds(2);
-
     private readonly IListenActivity? _activity = activity;
 
     /// <summary>
-    ///     Required audio format for Whisper inference. 
+    ///     Required audio format for Whisper inference.
     ///     Strictly 16kHz, 16-bit, Mono.
     /// </summary>
     private static readonly WaveFormat _whisperFormat = new(16000, 16, 1);
 
+    private readonly IAudioInput _audioInput = audioInput;
     private readonly ILogger<AudioRecordingService> _logger = logger;
     private readonly RecordingDeviceSettings _recordingDeviceSettings = recordingDeviceSettingsOptions.Value;
 
     /// <summary>
-    ///     Synchronization lock object to prevent race conditions between the main UI/Hook thread 
-    ///     and the background NAudio hardware thread.
+    ///     Synchronization lock object to prevent race conditions between the main UI/Hook thread
+    ///     and the background audio thread.
     /// </summary>
     private readonly object _lockObj = new();
 
-    private WaveInEvent? _waveIn;
+    private IAudioInputStream? _microphone;
 
     /// <summary>
     ///     Indicates whether the logical recording session (Push-To-Talk) is currently active.
@@ -55,7 +53,9 @@ internal sealed class AudioRecordingService(
     {
         _logger.LogDebug("{AudioEmoji} Audio:", LoggerConstants.ControlKnobsEmoji);
 
-        int deviceCount = WaveInEvent.DeviceCount;
+        IReadOnlyList<MicrophoneDevice> devices = _audioInput.GetDevices();
+
+        int deviceCount = devices.Count;
         if (deviceCount <= 0)
         {
             throw new Exception(
@@ -68,15 +68,12 @@ internal sealed class AudioRecordingService(
         _logger.LogDebug("{Tab}Found {DeviceCount} recording devices:",
             LoggerConstants.Tab, deviceCount);
 
-        for (int i = 0; i < deviceCount; i++)
+        foreach (MicrophoneDevice device in devices)
         {
-            WaveInCapabilities deviceInfo = WaveInEvent.GetCapabilities(i);
-
-            _logger.LogDebug("{Tab}[{i}]: {ProductName} (Channels: {ChannelsCount})",
+            _logger.LogDebug("{Tab}[{i}]: {ProductName}",
                 LoggerConstants.Tab,
-                i,
-                deviceInfo.ProductName,
-                deviceInfo.Channels);
+                device.Index,
+                device.Name);
         }
 
         if (_recordingDeviceSettings.DeviceIndex == -1
@@ -97,22 +94,19 @@ internal sealed class AudioRecordingService(
         // Local function to handle actual hardware initialization
         void InitializeMic()
         {
-            if (_waveIn is not null) return;
+            if (_microphone is not null) return;
 
             try
             {
-                _waveIn = new WaveInEvent
-                {
-                    WaveFormat = _whisperFormat,
-                    DeviceNumber = _recordingDeviceSettings.DeviceIndex,
-                    BufferMilliseconds = _recordingDeviceSettings.BufferMs,
-                    NumberOfBuffers = _recordingDeviceSettings.NumberOfBuffers
-                };
+                _microphone = _audioInput.Open(
+                    _recordingDeviceSettings.DeviceIndex,
+                    _recordingDeviceSettings.BufferMs,
+                    _recordingDeviceSettings.NumberOfBuffers);
 
-                _waveIn.DataAvailable += OnRecording;
+                _microphone.DataAvailable += OnRecording;
 
                 // Hardware is started once and kept running (Hot Mic pattern)
-                _waveIn.StartRecording();
+                _microphone.Start();
             }
             catch (Exception exc)
             {
@@ -137,7 +131,7 @@ internal sealed class AudioRecordingService(
                 // NAudio requires a WaveFileWriter to generate the correct WAV header (RIFF) in memory
                 _writer = new WaveFileWriter(
                     new IgnoreDisposeStream(_audioStream),
-                    _waveIn!.WaveFormat);
+                    _whisperFormat);
 
                 _hasVoiceStarted = false;
                 _isPttActive = true;
@@ -203,8 +197,8 @@ internal sealed class AudioRecordingService(
     ///     Implements Voice Activity Detection (VAD) to trim initial silence.
     /// </remarks>
     /// <param name="sender">The source of the event.</param>
-    /// <param name="e">A <see cref="WaveInEventArgs"/> containing the raw audio buffer data.</param>
-    private void OnRecording(object? sender, WaveInEventArgs e)
+    /// <param name="e">A <see cref="AudioInputEventArgs"/> containing the raw audio buffer data.</param>
+    private void OnRecording(object? sender, AudioInputEventArgs e)
     {
         // Fast-path bypass (lock-free) to discard audio chunks when PTT is inactive
         if (!_isPttActive)
@@ -239,7 +233,7 @@ internal sealed class AudioRecordingService(
 
             if (!_hasVoiceStarted && _recordingDeviceSettings.OutputMicAmplitudeDebugInfo)
             {
-                _logger.LogDebug("{Tab}{InfoEmoji} Current mic amplitude: {Amplitude:F4}", 
+                _logger.LogDebug("{Tab}{InfoEmoji} Current mic amplitude: {Amplitude:F4}",
                     LoggerConstants.Tab, LoggerConstants.InfoEmoji, maxAmplitude);
             }
 
@@ -273,16 +267,13 @@ internal sealed class AudioRecordingService(
     {
         _isPttActive = false;
 
-        if (_waveIn is not null)
+        if (_microphone is not null)
         {
-            using var stopped = new ManualResetEventSlim();
+            _microphone.DataAvailable -= OnRecording;
 
-            _waveIn.DataAvailable -= OnRecording;
-            _waveIn.RecordingStopped += (_, _) => stopped.Set();
-            _waveIn.StopRecording();
-            stopped.Wait(_stopTimeout);
-            _waveIn.Dispose();
-            _waveIn = null;
+            // Waits until the device has really stopped: the setup wizard opens it again right after this
+            _microphone.Dispose();
+            _microphone = null;
         }
 
         _writer?.Dispose();

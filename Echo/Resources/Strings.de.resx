@@ -687,4 +687,10 @@
   <data name="LevelCurrent" xml:space="preserve">
     <value>aktuell</value>
   </data>
+  <data name="ProcessorUnsupported" xml:space="preserve">
+    <value>Diesem Prozessor fehlen Befehle, die die Spracherkennung braucht: {0}.</value>
+  </data>
+  <data name="ProcessorUnsupportedHint" xml:space="preserve">
+    <value>Echo kann auf diesem Computer nicht laufen: Die Erkennung braucht einen Prozessor ab etwa 2013 (Intel Core der 4. Generation, AMD ab 2015, jeder Ryzen).</value>
+  </data>
 </root>

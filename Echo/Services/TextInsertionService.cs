@@ -1,20 +1,19 @@
-﻿using GregsStack.InputSimulatorStandard;
-using GregsStack.InputSimulatorStandard.Native;
-using TextCopy;
-
-namespace Echo.Services;
+﻿namespace Echo.Services;
 
 /// <inheritdoc cref="ITextInsertionService"/>
 /// <param name="textInsertionSettingsOptions"><see cref="IOptions{TextInsertionSettings}"/></param>
 /// <param name="clipboard">The system clipboard.</param>
-/// <param name="inputSimulator">Presses keys as if the user did.</param>
+/// <param name="pasteKeys">Presses the keys that paste, as if the user did.</param>
+/// <param name="logger"><see cref="ILogger{TextInsertionService}"/></param>
 internal sealed class TextInsertionService(
     IOptions<TextInsertionSettings> textInsertionSettingsOptions,
-    IClipboard clipboard,
-    IInputSimulator inputSimulator) : ITextInsertionService
+    ITextClipboard clipboard,
+    IPasteKeys pasteKeys,
+    ILogger<TextInsertionService> logger) : ITextInsertionService
 {
-    private readonly IClipboard _clipboard = clipboard;
-    private readonly IInputSimulator _inputSimulator = inputSimulator;
+    private readonly ITextClipboard _clipboard = clipboard;
+    private readonly IPasteKeys _pasteKeys = pasteKeys;
+    private readonly ILogger<TextInsertionService> _logger = logger;
     private readonly TextInsertionSettings _textInsertionSettings = textInsertionSettingsOptions.Value;
 
     /// <inheritdoc/>
@@ -31,8 +30,10 @@ internal sealed class TextInsertionService(
 
         await Task.Delay(50);
 
-        _inputSimulator.Keyboard.ModifiedKeyStroke(
-            VirtualKeyCode.CONTROL,
-            VirtualKeyCode.VK_V);
+        if (!await _pasteKeys.PasteAsync())
+        {
+            _logger.LogWarning("{Tab}{TextEmoji} Copied, paste it yourself: the system does not let Echo press keys.",
+                LoggerConstants.Tab, LoggerConstants.TextEmoji);
+        }
     }
 }

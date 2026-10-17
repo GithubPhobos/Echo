@@ -46,15 +46,19 @@ internal static class Acceleration
     {
         List<RuntimeLibrary> order = Parse(setting) switch
         {
-            AccelerationBackend.Cuda => [RuntimeLibrary.Cuda, RuntimeLibrary.Cpu, RuntimeLibrary.CpuNoAvx],
-            AccelerationBackend.Vulkan => [RuntimeLibrary.Vulkan, RuntimeLibrary.Cpu, RuntimeLibrary.CpuNoAvx],
-            AccelerationBackend.Cpu => [RuntimeLibrary.Cpu, RuntimeLibrary.CpuNoAvx],
+            AccelerationBackend.Cuda => [RuntimeLibrary.Cuda, RuntimeLibrary.Cpu],
+            AccelerationBackend.Vulkan => [RuntimeLibrary.Vulkan, RuntimeLibrary.Cpu],
+            AccelerationBackend.Cpu => [RuntimeLibrary.Cpu],
             _ => [.. defaultOrder]
         };
 
         // With some of its libraries missing the CUDA runtime does not fail, it takes the process down
         if (!isCudaInstalled)
             order.Remove(RuntimeLibrary.Cuda);
+
+        // Echo does not ship the build for processors without AVX: a processor that needs it is turned away
+        // before setup goes any further
+        order.Remove(RuntimeLibrary.CpuNoAvx);
 
         return order;
     }

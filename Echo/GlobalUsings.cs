@@ -17,3 +17,5 @@ global using Echo.Setup.Check.Contracts;
 global using Echo.Setup.Downloads.Contracts;
 global using Echo.Setup.Hardware.Contracts;
 global using Echo.Setup.Hotkeys.Contracts;
+global using Echo.Platform;
+global using Echo.Platform.Contracts;

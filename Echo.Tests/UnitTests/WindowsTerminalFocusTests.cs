@@ -1,17 +1,21 @@
-﻿namespace Echo.Tests.UnitTests;
+﻿using System.Runtime.Versioning;
+using Echo.Platform.Windows;
 
-public sealed class TerminalFocusTests
+namespace Echo.Tests.UnitTests;
+
+[SupportedOSPlatform("windows")]
+public sealed class WindowsTerminalFocusTests
 {
     [Theory]
     // Windows Terminal: the stand-in console window is owned by the terminal window
-    [InlineData(10, 20, 20, true, TerminalFocus.PseudoConsoleClass, true)]
-    [InlineData(10, 20, 30, true, TerminalFocus.PseudoConsoleClass, false)]
+    [InlineData(10, 20, 20, true, WindowsTerminalFocus.PseudoConsoleClass, true)]
+    [InlineData(10, 20, 30, true, WindowsTerminalFocus.PseudoConsoleClass, false)]
     // The classic console window is its own owner
     [InlineData(10, 10, 10, true, "ConsoleWindowClass", true)]
     [InlineData(10, 10, 30, true, "ConsoleWindowClass", false)]
     // Terminals that do not say which window is theirs: nothing can be told
     [InlineData(10, 10, 30, false, "ConsoleWindowClass", null)]
-    [InlineData(10, 10, 30, true, TerminalFocus.PseudoConsoleClass, null)]
+    [InlineData(10, 10, 30, true, WindowsTerminalFocus.PseudoConsoleClass, null)]
     [InlineData(0, 0, 30, false, "", null)]
     public void Decide_TellsWhetherTheTerminalIsInFrontOrThatItCannotBeTold(int console,
                                                                              int owner,
@@ -21,7 +25,7 @@ public sealed class TerminalFocusTests
                                                                              bool? expected)
     {
         // Act
-        bool? isFocused = TerminalFocus.Decide(new IntPtr(console), new IntPtr(owner), new IntPtr(foreground), isConsoleVisible, consoleClass);
+        bool? isFocused = WindowsTerminalFocus.Decide(new IntPtr(console), new IntPtr(owner), new IntPtr(foreground), isConsoleVisible, consoleClass);
 
         // Assert
         Assert.Equal(expected, isFocused);

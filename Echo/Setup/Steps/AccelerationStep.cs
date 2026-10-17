@@ -41,6 +41,11 @@ internal sealed class AccelerationStep : ISetupStep
 
         Pages =
         [
+            // Shown only on a processor recognition cannot run on: setup goes no further, nothing is downloaded
+            new SetupPage(
+                ExplainProcessorAsync,
+                IsNeeded: _ => ProcessorSupport.MissingInstructions().Count > 0),
+
             new SetupPage(ChooseBackendAsync),
 
             // Asked only when CUDA has more than one card to run on
@@ -91,6 +96,26 @@ internal sealed class AccelerationStep : ISetupStep
 
     private bool NeedsLibraries(SetupContext context) =>
         context.RequestedBackend == AccelerationBackend.Cuda && _cudaRuntime.FindMissingLibraries().Count > 0;
+
+    /// <summary>
+    ///     Says that this processor cannot run recognition. There is no way forward from here, only back.
+    /// </summary>
+    private async Task<SetupStepResult> ExplainProcessorAsync(SetupContext context,
+                                                              SetupScreen screen,
+                                                              CancellationToken cancellationToken)
+    {
+        await _ui.ShowAsync(
+            screen,
+            [
+                _ui.Bad(Markup.Escape(Strings.Format(nameof(Strings.ProcessorUnsupported), string.Join(", ", ProcessorSupport.MissingInstructions())))),
+                string.Empty,
+                SetupUi.Dim(Markup.Escape(Strings.ProcessorUnsupportedHint)),
+            ],
+            [],
+            cancellationToken);
+
+        return SetupStepResult.Back;
+    }
 
     private async Task<SetupStepResult> ChooseBackendAsync(SetupContext context,
                                                            SetupScreen screen,
@@ -230,8 +255,11 @@ internal sealed class AccelerationStep : ISetupStep
         {
             string name = Path.GetFileName(source);
 
+            // On Linux the library is often a link to a file with the full version in its name,
+            // such as 'libcublas.so.13.8.0.4' for 'libcublas.so.13'; either one will do
             string? library = _cudaRuntime.Libraries.FirstOrDefault(
-                candidate => string.Equals(candidate, name, StringComparison.OrdinalIgnoreCase));
+                candidate => string.Equals(candidate, name, PathNames.Comparison)
+                    || name.StartsWith(candidate + ".", PathNames.Comparison));
 
             if (library is null)
             {
@@ -243,7 +271,7 @@ internal sealed class AccelerationStep : ISetupStep
             string target = Path.Combine(_cudaRuntime.Directory, library);
 
             // Picked from Echo's own folder: it is already where it belongs
-            if (string.Equals(Path.GetFullPath(source), Path.GetFullPath(target), StringComparison.OrdinalIgnoreCase))
+            if (PathNames.AreSame(source, target))
                 continue;
 
             long size = new FileInfo(source).Length;

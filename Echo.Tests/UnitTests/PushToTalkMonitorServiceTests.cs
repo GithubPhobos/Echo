@@ -1,60 +1,92 @@
 ﻿using Echo.Listening;
-using SharpHook;
-using SharpHook.Data;
+using Echo.Setup.Hotkeys;
 
 namespace Echo.Tests.UnitTests;
 
 public sealed class PushToTalkMonitorServiceTests
 {
+    /// <summary>
+    ///     How long a test waits for what happens in the background.
+    /// </summary>
+    private static readonly TimeSpan _patience = TimeSpan.FromSeconds(10);
+
+    private readonly Mock<IHotkeyListener> _listenerMock = new();
     private readonly Mock<ILogger<PushToTalkMonitorService>> _loggerMock = new();
     private readonly Mock<ISoundPlayService> _soundMock = new();
 
     [Fact]
-    public void InitializePushToTalkHotkeysOrThrow_InvalidMainKey_ThrowsException()
+    public void InitializePushToTalkHotkeysOrThrow_BindsTheKeyAndModifierFromTheSettings()
     {
         // Arrange
-        var badSettings = new PushToTalkSettings { Key = "INVALID_KEY_123" };
-        var optionsMock = Options.Create(badSettings);
+        using PushToTalkMonitorService service = CreateService(modifier: "alt");
 
-        using var service = new PushToTalkMonitorService(_soundMock.Object, _loggerMock.Object, optionsMock);
+        // Act
+        service.InitializePushToTalkHotkeysOrThrow();
 
-        // Act & Assert
-        var ex = Assert.Throws<Exception>(() => service.InitializePushToTalkHotkeysOrThrow());
-
-        Assert.Contains("Couldn't parse push to talk key", ex.Message);
+        // Assert
+        _listenerMock.Verify(listener => listener.Bind(new HotkeyChoice("VcF8", "alt")), Times.Once);
     }
 
     [Fact]
-    public void InitializePushToTalkHotkeysOrThrow_ValidKey_DoesNotThrow()
+    public void InitializePushToTalkHotkeysOrThrow_KeyTheSystemCannotListenTo_Throws()
     {
         // Arrange
-        var goodSettings = new PushToTalkSettings { Key = "`", Modifier = "alt" };
-        var optionsMock = Options.Create(goodSettings);
+        _listenerMock.Setup(listener => listener.Bind(It.IsAny<HotkeyChoice>())).Throws(new Exception("Couldn't parse push to talk key!"));
 
-        using var service = new PushToTalkMonitorService(_soundMock.Object, _loggerMock.Object, optionsMock);
+        using PushToTalkMonitorService service = CreateService(modifier: null);
 
         // Act & Assert
-        var exception = Record.Exception(() => service.InitializePushToTalkHotkeysOrThrow());
+        var exception = Assert.Throws<Exception>(service.InitializePushToTalkHotkeysOrThrow);
 
-        Assert.Null(exception);
+        Assert.Contains("Couldn't parse push to talk key", exception.Message);
     }
 
     [Fact]
-    public void OnKeyPressed_KeyPressed_IsKeptFromOtherProgramsUntilReleased()
+    public async Task OnKeyPressed_PressAndRelease_StartAndEndOneRecordingAndKeepTheKey()
     {
         // Arrange
         using PushToTalkMonitorService service = CreateService(modifier: null);
 
-        KeyboardHookEventArgs pressed = KeyEvent(EventType.KeyPressed, KeyCode.VcF8);
-        KeyboardHookEventArgs released = KeyEvent(EventType.KeyReleased, KeyCode.VcF8);
+        using var started = new SemaphoreSlim(0);
+        using var ended = new SemaphoreSlim(0);
+
+        service.OnRecordingTriggered += (_, _) => started.Release();
+        service.OnRecordingReleased += (_, _) => ended.Release();
+
+        var pressed = new HotkeyEventArgs();
+        var released = new HotkeyEventArgs();
 
         // Act
-        service.OnKeyPressed(null, pressed);
-        service.OnKeyReleased(null, released);
+        _listenerMock.Raise(listener => listener.Pressed += null, pressed);
+        _listenerMock.Raise(listener => listener.Released += null, released);
 
         // Assert
-        Assert.True(pressed.SuppressEvent);
-        Assert.True(released.SuppressEvent);
+        Assert.True(await started.WaitAsync(_patience));
+        Assert.True(await ended.WaitAsync(_patience));
+        Assert.True(pressed.IsTaken);
+        Assert.True(released.IsTaken);
+    }
+
+    [Fact]
+    public async Task OnKeyPressed_PressedAgainWhileRecording_DoesNotStartAnotherRecording()
+    {
+        // Arrange
+        using PushToTalkMonitorService service = CreateService(modifier: null);
+
+        int starts = 0;
+        using var ended = new SemaphoreSlim(0);
+
+        service.OnRecordingTriggered += (_, _) => Interlocked.Increment(ref starts);
+        service.OnRecordingReleased += (_, _) => ended.Release();
+
+        // Act
+        _listenerMock.Raise(listener => listener.Pressed += null, new HotkeyEventArgs());
+        _listenerMock.Raise(listener => listener.Pressed += null, new HotkeyEventArgs());
+        _listenerMock.Raise(listener => listener.Released += null, new HotkeyEventArgs());
+
+        // Assert: the recording event is raised in the background, and the end of the recording comes after it
+        Assert.True(await ended.WaitAsync(_patience));
+        Assert.Equal(1, Volatile.Read(ref starts));
     }
 
     [Fact]
@@ -64,49 +96,22 @@ public sealed class PushToTalkMonitorServiceTests
         var activity = new ListenActivity(new ScreenLog(), () => false) { IsPaused = true };
         using PushToTalkMonitorService service = CreateService(modifier: null, activity);
 
-        KeyboardHookEventArgs pressed = KeyEvent(EventType.KeyPressed, KeyCode.VcF8);
-        KeyboardHookEventArgs released = KeyEvent(EventType.KeyReleased, KeyCode.VcF8);
+        var pressed = new HotkeyEventArgs();
+        var released = new HotkeyEventArgs();
 
         // Act
-        service.OnKeyPressed(null, pressed);
-        service.OnKeyReleased(null, released);
+        _listenerMock.Raise(listener => listener.Pressed += null, pressed);
+        _listenerMock.Raise(listener => listener.Released += null, released);
 
         // Assert: a program never sees the key go down without coming up
-        Assert.False(pressed.SuppressEvent);
-        Assert.False(released.SuppressEvent);
+        Assert.False(pressed.IsTaken);
+        Assert.False(released.IsTaken);
     }
 
-    [Fact]
-    public void OnKeyReleased_KeyPressedWithoutItsModifier_ThePressAndTheReleaseBothReachOtherPrograms()
-    {
-        // Arrange
-        using PushToTalkMonitorService service = CreateService(modifier: "leftctrl");
-
-        KeyboardHookEventArgs pressed = KeyEvent(EventType.KeyPressed, KeyCode.VcF8);
-        KeyboardHookEventArgs released = KeyEvent(EventType.KeyReleased, KeyCode.VcF8);
-
-        // Act
-        service.OnKeyPressed(null, pressed);
-        service.OnKeyReleased(null, released);
-
-        // Assert
-        Assert.False(pressed.SuppressEvent);
-        Assert.False(released.SuppressEvent);
-    }
-
-    private PushToTalkMonitorService CreateService(string? modifier, IListenActivity? activity = null)
-    {
-        var service = new PushToTalkMonitorService(
+    private PushToTalkMonitorService CreateService(string? modifier, IListenActivity? activity = null) =>
+        new(_listenerMock.Object,
             _soundMock.Object,
             _loggerMock.Object,
             Options.Create(new PushToTalkSettings { Key = "VcF8", Modifier = modifier }),
             activity);
-
-        service.InitializePushToTalkHotkeysOrThrow();
-
-        return service;
-    }
-
-    private static KeyboardHookEventArgs KeyEvent(EventType type, KeyCode key) =>
-        new(new UioHookEvent { Type = type, Keyboard = new KeyboardEventData { KeyCode = key } });
 }

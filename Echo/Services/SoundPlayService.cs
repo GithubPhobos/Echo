@@ -1,18 +1,20 @@
-﻿using NAudio.CoreAudioApi;
-using NAudio.Wave;
+﻿using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 
 namespace Echo.Services;
 
 /// <inheritdoc cref="ISoundPlayService"/>
+/// <param name="soundOutput">The loudspeakers of the system.</param>
 /// <param name="assetsProvider"><see cref="IAssetsProvider"/></param>
 /// <param name="logger"><see cref="ILogge{SoundPlayService}"/></param>
 /// <param name="pushToTalkSettingsOptions"><see cref="IOptions<PushToTalkSettings>"/></param>
 internal sealed class SoundPlayService(
+    ISoundOutput soundOutput,
     IAssetsProvider assetsProvider,
     ILogger<SoundPlayService> logger,
     IOptions<PushToTalkSettings> pushToTalkSettingsOptions) : ISoundPlayService
 {
+    private readonly ISoundOutput _soundOutput = soundOutput;
     private readonly IAssetsProvider _assetsProvider = assetsProvider;
     private readonly ILogger<SoundPlayService> _logger = logger;
     private readonly PushToTalkSettings _pushToTalkSettings = pushToTalkSettingsOptions.Value;
@@ -21,7 +23,7 @@ internal sealed class SoundPlayService(
     private bool _canPlaySounds;
     private CachedSound? _onSound;
     private CachedSound? _offSound;
-    private WasapiOut? _outputDevice;
+    private IDisposable? _outputDevice;
     private MixingSampleProvider? _mixer;
 
     /// <inheritdoc/>
@@ -67,9 +69,7 @@ internal sealed class SoundPlayService(
                 _onSound = new CachedSound(startRecordingFilePath, mixerFormat);
                 _offSound = new CachedSound(stopRecordingFilePath, mixerFormat);
 
-                _outputDevice = new WasapiOut(AudioClientShareMode.Shared, 50);
-                _outputDevice.Init(_mixer);
-                _outputDevice.Play();
+                _outputDevice = _soundOutput.Play(_mixer);
 
                 _canPlaySounds = true;
             }
@@ -113,7 +113,6 @@ internal sealed class SoundPlayService(
     /// <inheritdoc/>
     public void Dispose()
     {
-        _outputDevice?.Stop();
         _outputDevice?.Dispose();
     }
 

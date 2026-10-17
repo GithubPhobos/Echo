@@ -1,34 +1,42 @@
 ﻿namespace Echo.Infrastructure;
 
 /// <inheritdoc cref="ISystemShell"/>
-/// <param name="processRunner">Runs the file chooser programs on Linux.</param>
-internal sealed class SystemShell(IProcessRunner processRunner) : ISystemShell
+/// <param name="fileChooser">The file chooser of the system.</param>
+internal sealed class SystemShell(IFileChooser fileChooser) : ISystemShell
 {
-    /// <summary>
-    ///     A person may take a long time to find a file; the chooser is not hurried.
-    /// </summary>
-    private static readonly TimeSpan _chooserTimeout = TimeSpan.FromHours(1);
-
-    private readonly IProcessRunner _processRunner = processRunner;
+    private readonly IFileChooser _fileChooser = fileChooser;
 
     /// <inheritdoc/>
-    public bool CanPickFiles =>
-        OperatingSystem.IsWindows() || OperatingSystem.IsLinux();
+    public bool CanPickFiles => _fileChooser.IsAvailable;
 
     /// <inheritdoc/>
     public long GetFreeSpace(string path)
     {
         try
         {
-            string? root = Path.GetPathRoot(Path.GetFullPath(path));
-
-            return string.IsNullOrEmpty(root) ? long.MaxValue : new DriveInfo(root).AvailableFreeSpace;
+            return FreeSpaceOf(path, DriveInfo.GetDrives().Select(drive => drive.RootDirectory.FullName), root => new DriveInfo(root).AvailableFreeSpace);
         }
         catch (Exception exc) when (exc is IOException or ArgumentException or UnauthorizedAccessException)
         {
             // Not knowing is no reason to refuse a download; a full disk will fail it with a clear error anyway
             return long.MaxValue;
         }
+    }
+
+    /// <summary>
+    ///     The free space of the file system the path is on. On Linux a disk is a folder anywhere in the tree,
+    ///     such as '/home', so the deepest folder that holds the path is the one that counts, not the root.
+    /// </summary>
+    /// <param name="path">The folder that will get the files; it need not exist yet.</param>
+    /// <param name="roots">Where the file systems start.</param>
+    /// <param name="freeSpace">Tells the free space of a file system by where it starts.</param>
+    internal static long FreeSpaceOf(string path, IEnumerable<string> roots, Func<string, long> freeSpace)
+    {
+        string? root = roots
+            .Where(candidate => PathNames.IsInside(path, candidate))
+            .MaxBy(candidate => Path.GetFullPath(candidate).Length);
+
+        return root is null ? long.MaxValue : freeSpace(root);
     }
 
     /// <inheritdoc/>
@@ -42,6 +50,7 @@ internal sealed class SystemShell(IProcessRunner processRunner) : ISystemShell
         {
             Directory.CreateDirectory(path);
 
+            // Windows opens the folder in Explorer; on Linux .NET hands it to the desktop's own opener (xdg-open)
             Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
         }
         catch (Exception exc) when (exc is System.ComponentModel.Win32Exception or IOException or InvalidOperationException)
@@ -51,28 +60,6 @@ internal sealed class SystemShell(IProcessRunner processRunner) : ISystemShell
     }
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyList<string>> PickFilesAsync(string title, string pattern, CancellationToken cancellationToken)
-    {
-        if (OperatingSystem.IsWindows())
-            return await WindowsFileChooser.ShowAsync(title, pattern);
-
-        // Both choosers want several patterns separated by spaces
-        string patterns = pattern.Replace(';', ' ');
-
-        // The two choosers found on nearly every Linux desktop. The first separates paths with a bar,
-        // the second prints one per line
-        string? output =
-            await _processRunner.RunAsync(
-                "zenity",
-                $"--file-selection --multiple --title=\"{title}\" --file-filter=\"{patterns}\"",
-                _chooserTimeout,
-                cancellationToken)
-            ?? await _processRunner.RunAsync(
-                "kdialog",
-                $"--getopenfilename . \"{patterns}\" --multiple --separate-output --title \"{title}\"",
-                _chooserTimeout,
-                cancellationToken);
-
-        return [.. (output ?? string.Empty).Split(['\n', '|'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)];
-    }
+    public Task<IReadOnlyList<string>> PickFilesAsync(string title, string pattern, CancellationToken cancellationToken) =>
+        _fileChooser.PickAsync(title, pattern, cancellationToken);
 }

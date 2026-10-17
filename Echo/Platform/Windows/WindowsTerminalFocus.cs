@@ -1,13 +1,13 @@
 ﻿using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
-namespace Echo.Infrastructure;
+namespace Echo.Platform.Windows;
 
 /// <summary>
-///     Tells whether the user is looking at the terminal the application runs in. Screens that listen
-///     to the keyboard of the whole system use it to leave out what is typed into other windows.
+///     Tells from the console window of the process whether its terminal is in front.
 /// </summary>
-internal static class TerminalFocus
+[SupportedOSPlatform("windows")]
+internal sealed class WindowsTerminalFocus : ITerminalFocus
 {
     /// <summary>
     ///     The window class of the stand-in console window a terminal application gives its programs.
@@ -17,17 +17,20 @@ internal static class TerminalFocus
     private const uint RootOwner = 3;
     private const int ClassNameChars = 256;
 
-    /// <summary>
-    ///     Whether the terminal is the window in front, or null when that cannot be found out.
-    ///     What to do then is up to the caller: the hotkey screen still hears the key, while a dictated
-    ///     phrase is still typed into the window in front.
-    /// </summary>
-    public static bool? IsFocused()
+    /// <inheritdoc/>
+    public bool? IsFocused()
     {
-        if (!OperatingSystem.IsWindows())
+        IntPtr console = GetConsoleWindow();
+
+        if (console == IntPtr.Zero)
             return null;
 
-        return IsFocusedOnWindows();
+        return Decide(
+            console,
+            GetAncestor(console, RootOwner),
+            GetForegroundWindow(),
+            IsWindowVisible(console),
+            ClassOf(console));
     }
 
     /// <summary>
@@ -62,43 +65,17 @@ internal static class TerminalFocus
     /// </summary>
     public static bool IsHostedByTerminal()
     {
-        if (!OperatingSystem.IsWindows())
-            return true;
-
-        return IsHostedByTerminalOnWindows();
-    }
-
-    [SupportedOSPlatform("windows")]
-    private static bool IsHostedByTerminalOnWindows()
-    {
         IntPtr console = GetConsoleWindow();
 
-        if (console == IntPtr.Zero)
-            return false;
-
-        char[] name = new char[ClassNameChars];
-        int length = GetClassName(console, name, name.Length);
-
-        return new string(name, 0, Math.Max(0, length)) == PseudoConsoleClass;
+        return console != IntPtr.Zero && ClassOf(console) == PseudoConsoleClass;
     }
 
-    [SupportedOSPlatform("windows")]
-    private static bool? IsFocusedOnWindows()
+    private static string ClassOf(IntPtr window)
     {
-        IntPtr console = GetConsoleWindow();
-
-        if (console == IntPtr.Zero)
-            return null;
-
         char[] name = new char[ClassNameChars];
-        int length = GetClassName(console, name, name.Length);
+        int length = GetClassName(window, name, name.Length);
 
-        return Decide(
-            console,
-            GetAncestor(console, RootOwner),
-            GetForegroundWindow(),
-            IsWindowVisible(console),
-            new string(name, 0, Math.Max(0, length)));
+        return new string(name, 0, Math.Max(0, length));
     }
 
     [DllImport("kernel32.dll")]

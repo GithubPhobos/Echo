@@ -8,14 +8,12 @@ using Echo.Setup.Hardware;
 using Echo.Setup.Hotkeys;
 using Echo.Setup.Steps;
 using Echo.UI;
-using GregsStack.InputSimulatorStandard;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 using Spectre.Console;
-using TextCopy;
 
 namespace Echo.Extensions;
 
@@ -89,6 +87,7 @@ internal static class ServiceCollectionExtensions
     internal static void RegisterSetup(this IServiceCollection services, IAppPaths paths)
     {
         services.AddSingleton(paths);
+        services.AddPlatform(paths);
         services.AddSingleton(AnsiConsole.Console);
         services.AddSingleton(SetupTimings.Default);
         services.AddSingleton(TimeProvider.System);
@@ -180,8 +179,6 @@ internal static class ServiceCollectionExtensions
     {
         services.AddSingleton<IAssetsProvider, AssetsProvider>();
         services.AddSingleton<ISoundPlayService, SoundPlayService>();
-        services.AddSingleton<IClipboard, Clipboard>();
-        services.AddSingleton<IInputSimulator, InputSimulator>();
         services.AddSingleton<ITextInsertionService, TextInsertionService>();
         services.AddSingleton<IAudioRecordingService, AudioRecordingService>();
         services.AddSingleton<IWhisperInferenceService, WhisperInferenceService>();

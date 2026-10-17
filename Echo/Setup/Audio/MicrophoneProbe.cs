@@ -1,44 +1,40 @@
-﻿using NAudio.Wave;
-
-namespace Echo.Setup.Audio;
+﻿namespace Echo.Setup.Audio;
 
 /// <inheritdoc cref="IMicrophoneProbe"/>
-internal sealed class MicrophoneProbe : IMicrophoneProbe
+/// <param name="audioInput">The microphones of the system.</param>
+internal sealed class MicrophoneProbe(IAudioInput audioInput) : IMicrophoneProbe
 {
+    /// <summary>
+    ///     Short pieces, so the level meter follows the voice closely.
+    /// </summary>
+    private const int BufferMilliseconds = 50;
+
+    private const int NumberOfBuffers = 3;
+
+    private readonly IAudioInput _audioInput = audioInput;
+
     /// <inheritdoc/>
     public IReadOnlyList<MicrophoneDevice> GetDevices() =>
-        Enumerable.Range(0, WaveInEvent.DeviceCount)
-            .Select(index => new MicrophoneDevice(index, WaveInEvent.GetCapabilities(index).ProductName))
-            .ToList();
+        _audioInput.GetDevices();
 
     /// <inheritdoc/>
     public IMicrophoneSession Open(int deviceIndex) =>
-        new Session(deviceIndex);
+        new Session(_audioInput.Open(deviceIndex, BufferMilliseconds, NumberOfBuffers));
 
+    /// <summary>
+    ///     The same format the dictation itself records in, so the measured levels are comparable.
+    /// </summary>
     private sealed class Session : IMicrophoneSession
     {
-        /// <summary>
-        ///     How long the device may take to stop recording before it is closed regardless.
-        /// </summary>
-        private static readonly TimeSpan _stopTimeout = TimeSpan.FromSeconds(2);
-
-        private readonly WaveInEvent _waveIn;
-        private readonly ManualResetEventSlim _stopped = new();
+        private readonly IAudioInputStream _microphone;
         private float _peak;
 
-        public Session(int deviceIndex)
+        public Session(IAudioInputStream microphone)
         {
-            // The same format the dictation itself records in, so the measured levels are comparable
-            _waveIn = new WaveInEvent
-            {
-                DeviceNumber = deviceIndex,
-                WaveFormat = new WaveFormat(16000, 16, 1),
-                BufferMilliseconds = 50
-            };
+            _microphone = microphone;
 
-            _waveIn.DataAvailable += OnData;
-            _waveIn.RecordingStopped += OnStopped;
-            _waveIn.StartRecording();
+            _microphone.DataAvailable += OnData;
+            _microphone.Start();
         }
 
         public float ReadPeak() =>
@@ -46,22 +42,14 @@ internal sealed class MicrophoneProbe : IMicrophoneProbe
 
         public void Dispose()
         {
-            _waveIn.DataAvailable -= OnData;
-            _waveIn.StopRecording();
+            _microphone.DataAvailable -= OnData;
 
-            // Closing a device that is still winding down leaves it busy, and whoever opens it next
-            // (the following page, or dictation itself) waits for it in vain
-            _stopped.Wait(_stopTimeout);
-
-            _waveIn.RecordingStopped -= OnStopped;
-            _waveIn.Dispose();
-            _stopped.Dispose();
+            // Closing waits for the device to stop: whoever opens it next (the following page,
+            // or dictation itself) would otherwise wait for it in vain
+            _microphone.Dispose();
         }
 
-        private void OnStopped(object? sender, StoppedEventArgs e) =>
-            _stopped.Set();
-
-        private void OnData(object? sender, WaveInEventArgs e)
+        private void OnData(object? sender, AudioInputEventArgs e)
         {
             float peak = 0f;
 

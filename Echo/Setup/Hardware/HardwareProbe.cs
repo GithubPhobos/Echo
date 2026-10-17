@@ -1,11 +1,11 @@
 ﻿using System.Globalization;
-using System.Runtime.InteropServices;
 
 namespace Echo.Setup.Hardware;
 
 /// <inheritdoc cref="IHardwareProbe"/>
 /// <param name="processRunner"><see cref="IProcessRunner"/></param>
-internal sealed class HardwareProbe(IProcessRunner processRunner) : IHardwareProbe
+/// <param name="vulkan">Whether Vulkan can be used on this system.</param>
+internal sealed class HardwareProbe(IProcessRunner processRunner, IVulkanSupport vulkan) : IHardwareProbe
 {
     private const string NvidiaTool = "nvidia-smi";
     private const string QueryWithCapability = "--query-gpu=index,name,memory.total,driver_version,compute_cap --format=csv,noheader,nounits";
@@ -14,6 +14,7 @@ internal sealed class HardwareProbe(IProcessRunner processRunner) : IHardwarePro
     private static readonly TimeSpan _toolTimeout = TimeSpan.FromSeconds(5);
 
     private readonly IProcessRunner _processRunner = processRunner;
+    private readonly IVulkanSupport _vulkan = vulkan;
 
     /// <inheritdoc/>
     public async Task<HardwareInfo> DetectAsync(CancellationToken cancellationToken)
@@ -30,7 +31,7 @@ internal sealed class HardwareProbe(IProcessRunner processRunner) : IHardwarePro
         // Until the user says otherwise, the card with the most memory is the one to use
         return new HardwareInfo(
             cards.OrderByDescending(card => card.MemoryMb).ThenBy(card => card.Index).FirstOrDefault(),
-            IsVulkanInstalled(),
+            _vulkan.IsAvailable(),
             (int)Math.Round(memoryBytes / (1024d * 1024 * 1024)),
             Environment.ProcessorCount)
         {
@@ -69,17 +70,5 @@ internal sealed class HardwareProbe(IProcessRunner processRunner) : IHardwarePro
         }
 
         return cards;
-    }
-
-    private static bool IsVulkanInstalled()
-    {
-        string library = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "vulkan-1.dll" : "libvulkan.so.1";
-
-        if (!NativeLibrary.TryLoad(library, out IntPtr handle))
-            return false;
-
-        NativeLibrary.Free(handle);
-
-        return true;
     }
 }

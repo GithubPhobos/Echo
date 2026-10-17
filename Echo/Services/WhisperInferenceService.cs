@@ -7,14 +7,17 @@ namespace Echo.Services;
 
 /// <inheritdoc cref="IWhisperInferenceService"/>
 /// <param name="paths"><see cref="IAppPaths"/></param>
+/// <param name="cudaLibraries">Finds the NVIDIA libraries the CUDA runtime needs, the way this system does.</param>
 /// <param name="logger"><see cref="ILogger{WhisperInferenceService}"/></param>
 /// <param name="whisperSettingsOptions"><see cref="IOptions{WhisperSettings}"/></param>
 internal sealed class WhisperInferenceService(
     IAppPaths paths,
+    ICudaLibraries cudaLibraries,
     ILogger<WhisperInferenceService> logger,
     IOptions<WhisperSettings> whisperSettingsOptions) : IWhisperInferenceService
 {
     private readonly IAppPaths _paths = paths;
+    private readonly ICudaLibraries _cudaLibraries = cudaLibraries;
     private readonly ILogger<WhisperInferenceService> _logger = logger;
     private readonly WhisperSettings _whisperSettings = whisperSettingsOptions.Value;
 
@@ -32,13 +35,13 @@ internal sealed class WhisperInferenceService(
                 LoggerConstants.Tab, LoggerConstants.LoadingEmoji);
 
             // The NVIDIA libraries live in the user's folder, not next to the executable
-            CudaRuntime.RegisterSearchPath(_paths.CudaDirectory);
+            _cudaLibraries.PrepareForLoading(_paths.CudaDirectory);
 
             // The card number in the settings follows the order of the driver tool, so CUDA must count the same way
             if (Environment.GetEnvironmentVariable(CudaRequirements.DeviceOrderVariable) is null)
                 Environment.SetEnvironmentVariable(CudaRequirements.DeviceOrderVariable, CudaRequirements.DeviceOrderByBus);
 
-            IReadOnlyList<string> missingCudaLibraries = CudaRuntime.FindMissingLibraries(_paths.CudaDirectory);
+            IReadOnlyList<string> missingCudaLibraries = _cudaLibraries.FindMissing(_paths.CudaDirectory);
 
             if (missingCudaLibraries.Count > 0 && Acceleration.Parse(_whisperSettings.HardwareBackend) == AccelerationBackend.Cuda)
             {

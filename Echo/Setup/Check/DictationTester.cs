@@ -151,6 +151,7 @@ internal sealed class DictationTester : IDictationTester
 
         services.AddLogging();
         services.AddSingleton(paths);
+        services.AddPlatform(paths);
         services.SetupConfiguration(ServiceCollectionExtensions.BuildConfiguration(paths, ToOverrides(draft)));
         services.RegisterDictationServices();
 

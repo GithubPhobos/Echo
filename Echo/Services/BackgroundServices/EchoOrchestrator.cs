@@ -16,6 +16,7 @@ namespace Echo.Services.BackgroundServices;
 /// <param name="soundPlayService"><see cref="AudioRecordingService"/></param>
 /// <param name="textInsertionService"><see cref="WhisperInferenceService"/></param>
 /// <param name="whisperInferenceService"><see cref="PushToTalkMonitorService"/></param>
+/// <param name="errorWindow">Shows an error that stops Echo when there is no working screen to show it on.</param>
 /// <param name="activity">The working screen, when Echo runs with one.</param>
 internal sealed class EchoOrchestrator(
     IAssetsProvider assetsProvider,
@@ -25,6 +26,7 @@ internal sealed class EchoOrchestrator(
     IAudioRecordingService audioRecordingService,
     IWhisperInferenceService whisperInferenceService,
     IPushToTalkMonitorService pushToTalkMonitorService,
+    IErrorWindow errorWindow,
     IListenActivity? activity = null) : BackgroundService
 {
     private readonly IListenActivity? _activity = activity;
@@ -36,6 +38,7 @@ internal sealed class EchoOrchestrator(
     private readonly IAudioRecordingService _audioRecordingService = audioRecordingService;
     private readonly IWhisperInferenceService _whisperInferenceService = whisperInferenceService;
     private readonly IPushToTalkMonitorService _pushToTalkMonitorService = pushToTalkMonitorService;
+    private readonly IErrorWindow _errorWindow = errorWindow;
 
     /// <summary>
     ///     One phrase at a time, from recognition to insertion: the model mixes up the text of phrases it is
@@ -119,7 +122,7 @@ internal sealed class EchoOrchestrator(
                 return;
             }
 
-            MessageBoxService.ShowErrorMessage(exc.Message);
+            _errorWindow.Show(exc.Message);
 
             Environment.Exit(1);
         }

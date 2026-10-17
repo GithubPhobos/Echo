@@ -1,12 +1,13 @@
 ﻿using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
-namespace Echo.Infrastructure;
+namespace Echo.Platform.Windows;
 
 /// <summary>
 ///     The standard "Open" window of Windows, asked for directly: the application has no window toolkit of its own.
 /// </summary>
-internal static class WindowsFileChooser
+[SupportedOSPlatform("windows")]
+internal sealed class WindowsFileChooser : IFileChooser
 {
     private const int BufferChars = 32 * 1024;
 
@@ -17,11 +18,11 @@ internal static class WindowsFileChooser
     private const int FileMustExist = 0x00001000;
     private const int Explorer = 0x00080000;
 
-    /// <summary>
-    ///     Shows the chooser and returns the full paths of the picked files.
-    /// </summary>
-    [SupportedOSPlatform("windows")]
-    public static Task<IReadOnlyList<string>> ShowAsync(string title, string pattern)
+    /// <inheritdoc/>
+    public bool IsAvailable => true;
+
+    /// <inheritdoc/>
+    public Task<IReadOnlyList<string>> PickAsync(string title, string pattern, CancellationToken cancellationToken)
     {
         var result = new TaskCompletionSource<IReadOnlyList<string>>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -63,7 +64,6 @@ internal static class WindowsFileChooser
             : [.. parts.Skip(1).Select(name => Path.Combine(parts[0], name))];
     }
 
-    [SupportedOSPlatform("windows")]
     private static IReadOnlyList<string> Show(IntPtr owner, string title, string pattern)
     {
         IntPtr buffer = Marshal.AllocHGlobal(BufferChars * sizeof(char));

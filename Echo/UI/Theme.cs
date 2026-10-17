@@ -69,7 +69,7 @@ internal sealed record Theme(
             !RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WT_SESSION"))
             || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TERM_PROGRAM"))
-            || Infrastructure.TerminalFocus.IsHostedByTerminal();
+            || Platform.Windows.WindowsTerminalFocus.IsHostedByTerminal();
 
         return isModernTerminal ? Full : Safe;
     }

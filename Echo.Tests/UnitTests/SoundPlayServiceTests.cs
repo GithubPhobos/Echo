@@ -16,7 +16,7 @@ public sealed class SoundPlayServiceTests
         var settings = new PushToTalkSettings { PlaySound = true, Volume = 0.5f };
         var optionsMock = Options.Create(settings);
 
-        using var service = new SoundPlayService(assetsMock.Object, loggerMock.Object, optionsMock);
+        using var service = new SoundPlayService(Mock.Of<ISoundOutput>(), assetsMock.Object, loggerMock.Object, optionsMock);
 
         // Act
         // This should not throw an exception, it should catch it internally and disable playback

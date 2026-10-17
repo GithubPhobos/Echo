@@ -4,7 +4,7 @@
 ///     Manages the loading and low-latency playback of system audio cues.
 /// </summary>
 /// <remarks>
-///      e.g., microphone activation and deactivation sounds, using the WASAPI audio engine.
+///      e.g., microphone activation and deactivation sounds, through the loudspeakers of the system.
 /// </remarks>
 internal interface ISoundPlayService : IDisposable
 {
@@ -12,7 +12,7 @@ internal interface ISoundPlayService : IDisposable
     ///     Validates the presence of required audio files.
     /// </summary>
     /// <remarks>
-    ///     Then caches them into RAM, and initializes the WASAPI output device and audio mixer.
+    ///     Then caches them into RAM, and opens the loudspeakers with an audio mixer.
     ///     Gracefully degrades if no playback devices are found or files are missing.
     /// </remarks>
     void EnsureCanPlaySounds();

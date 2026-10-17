@@ -26,10 +26,29 @@
 		<PackageReference Include="Spectre.Console" Version="0.57.2" />
 		<PackageReference Include="Spectre.Console.Cli" Version="0.57.2" />
 		<PackageReference Include="TextCopy" Version="6.2.1" />
+		<PackageReference Include="Tmds.DBus.Protocol" Version="0.95.1" />
 		<PackageReference Include="Whisper.net" Version="1.9.0" />
 		<PackageReference Include="Whisper.net.Runtime" Version="1.9.0" />
+	</ItemGroup>
+
+	<!--
+		The packages above are needed to compile the code of every system, so they are always there.
+		The native libraries below belong to one system each and are chosen by the system the build is for:
+		the one given with -r, or, without it (Visual Studio, dotnet test), the one the build runs on.
+	-->
+	<PropertyGroup>
+		<TargetSystem Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</TargetSystem>
+		<TargetSystem Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">win-x64</TargetSystem>
+		<TargetSystem Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">linux-x64</TargetSystem>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(TargetSystem)' == 'win-x64'">
 		<PackageReference Include="Whisper.net.Runtime.Cuda.Windows" Version="1.9.0" />
 		<PackageReference Include="Whisper.net.Runtime.Vulkan" Version="1.9.0" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(TargetSystem)' == 'linux-x64'">
+		<PackageReference Include="Whisper.net.Runtime.Cuda.Linux" Version="1.9.0" />
 	</ItemGroup>
 
 	<ItemGroup>

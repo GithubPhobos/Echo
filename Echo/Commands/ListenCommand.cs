@@ -9,7 +9,6 @@ using Echo.UI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using NAudio.Wave;
 using Serilog.Core;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -24,13 +23,22 @@ namespace Echo.Commands;
 /// <param name="console">The console to draw on.</param>
 /// <param name="paths"><see cref="IAppPaths"/></param>
 /// <param name="setupRunner"><see cref="SetupRunner"/></param>
+/// <param name="audioInput">The microphones, for the name of the one in use.</param>
+/// <param name="terminalFocus">Tells whether Echo's own window is in front.</param>
 internal sealed class ListenCommand(
     IAnsiConsole console,
     IAppPaths paths,
-    SetupRunner setupRunner) : AsyncCommand<ListenCommand.ListenSettings>
+    SetupRunner setupRunner,
+    IAudioInput audioInput,
+    ITerminalFocus terminalFocus) : AsyncCommand<ListenCommand.ListenSettings>
 {
     internal const string Name = "listen";
     internal const string Description = "Starts push-to-talk voice typing (default).";
+
+    /// <summary>
+    ///     Returned when the processor cannot run recognition.
+    /// </summary>
+    internal const int UnsupportedProcessorExitCode = 3;
 
     /// <summary>
     ///     How often the working screen is refreshed: often enough for the equalizer to move smoothly.
@@ -45,6 +53,8 @@ internal sealed class ListenCommand(
     private readonly IAnsiConsole _console = console;
     private readonly IAppPaths _paths = paths;
     private readonly SetupRunner _setupRunner = setupRunner;
+    private readonly IAudioInput _audioInput = audioInput;
+    private readonly ITerminalFocus _terminalFocus = terminalFocus;
 
     /// <summary>
     ///     Command line options of <see cref="ListenCommand"/>.
@@ -63,6 +73,16 @@ internal sealed class ListenCommand(
     {
         if (!settings.NoBanner)
             await new StartupScreen(_console).PlayAsync(cancellationToken);
+
+        // Checked at every start, not only in setup: the settings may have come from another computer
+        if (ProcessorSupport.MissingInstructions() is { Count: > 0 } missing)
+        {
+            _console.MarkupLine($"  [{Theme.Failure}]{Markup.Escape(Strings.Format(nameof(Strings.ProcessorUnsupported), string.Join(", ", missing)))}[/]");
+            _console.MarkupLine($"  {Markup.Escape(Strings.ProcessorUnsupportedHint)}");
+            _console.WriteLine();
+
+            return UnsupportedProcessorExitCode;
+        }
 
         if (_setupRunner.IsSetupRequired())
         {
@@ -128,7 +148,9 @@ internal sealed class ListenCommand(
         IConfiguration configuration = ServiceCollectionExtensions.BuildConfiguration(_paths);
 
         var levelSwitch = new LoggingLevelSwitch(ServiceCollectionExtensions.LogLevelOf(configuration));
-        var activity = new ListenActivity(log);
+        // Echo's window counts as having the keyboard only when that is known: otherwise a phrase
+        // is typed into the window in front, as it would be without the screen
+        var activity = new ListenActivity(log, () => _terminalFocus.IsFocused() == true);
 
         var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
         {
@@ -136,6 +158,7 @@ internal sealed class ListenCommand(
         });
 
         builder.Services.AddSingleton(_paths);
+        builder.Services.AddPlatform(_paths);
         builder.Services.AddSingleton<IListenActivity>(activity);
         builder.Services.SetupConfiguration(configuration);
         builder.Services.ConfigureScreenLogging(configuration, levelSwitch, log, _paths.LogsDirectory);
@@ -291,10 +314,11 @@ internal sealed class ListenCommand(
                 ? parsed
                 : 0;
 
-            return index >= 0 && index < WaveInEvent.DeviceCount ? WaveInEvent.GetCapabilities(index).ProductName : null;
+            return _audioInput.GetDevices().FirstOrDefault(device => device.Index == index)?.Name;
         }
-        catch (Exception exc) when (exc is NAudio.MmException or InvalidOperationException)
+        catch (Exception exc) when (exc is not OutOfMemoryException)
         {
+            // Asking the audio system is only for a name on the screen; whatever goes wrong there leaves it out
             return null;
         }
     }
@@ -314,6 +338,7 @@ internal sealed class ListenCommand(
         IConfiguration configuration = ServiceCollectionExtensions.BuildConfiguration(_paths);
 
         builder.Services.AddSingleton(_paths);
+        builder.Services.AddPlatform(_paths);
         builder.Services.SetupConfiguration(configuration);
         builder.Services.ConfigureSerilog(configuration, _paths.LogsDirectory);
         builder.Services.RegisterServices();

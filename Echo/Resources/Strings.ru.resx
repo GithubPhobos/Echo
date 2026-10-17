@@ -687,4 +687,10 @@
   <data name="LevelCurrent" xml:space="preserve">
     <value>сейчас</value>
   </data>
+  <data name="ProcessorUnsupported" xml:space="preserve">
+    <value>У этого процессора нет инструкций, без которых не работает распознавание: {0}.</value>
+  </data>
+  <data name="ProcessorUnsupportedHint" xml:space="preserve">
+    <value>Echo не сможет работать на этом компьютере: для распознавания нужен процессор примерно 2013 года или новее (Intel Core 4-го поколения, AMD с 2015 года, любой Ryzen).</value>
+  </data>
 </root>

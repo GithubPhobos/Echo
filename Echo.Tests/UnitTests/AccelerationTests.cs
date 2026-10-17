@@ -31,17 +31,19 @@ public sealed class AccelerationTests
 
         // Assert
         Assert.Equal(first, order[0]);
-        Assert.Equal(RuntimeLibrary.CpuNoAvx, order[^1]);
+        Assert.Equal(RuntimeLibrary.Cpu, order[^1]);
     }
 
     [Theory]
     [InlineData("Auto")]
     [InlineData(null)]
     [InlineData("something else")]
-    public void LibraryOrder_AutomaticOrUnknown_KeepsRuntimeOrder(string? setting)
+    public void LibraryOrder_AutomaticOrUnknown_KeepsRuntimeOrderWithoutTheBuildEchoDoesNotShip(string? setting)
     {
         // Act & Assert
-        Assert.Equal(_runtimeDefaultOrder, Acceleration.LibraryOrder(setting, isCudaInstalled: true, _runtimeDefaultOrder));
+        Assert.Equal(
+            _runtimeDefaultOrder.Where(library => library != RuntimeLibrary.CpuNoAvx),
+            Acceleration.LibraryOrder(setting, isCudaInstalled: true, _runtimeDefaultOrder));
         Assert.True(Acceleration.UsesGpu(setting));
     }
 

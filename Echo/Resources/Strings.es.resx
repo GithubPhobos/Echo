@@ -687,4 +687,10 @@
   <data name="LevelCurrent" xml:space="preserve">
     <value>actual</value>
   </data>
+  <data name="ProcessorUnsupported" xml:space="preserve">
+    <value>Este procesador no tiene instrucciones que el reconocimiento de voz necesita: {0}.</value>
+  </data>
+  <data name="ProcessorUnsupportedHint" xml:space="preserve">
+    <value>Echo no puede funcionar en este equipo: el reconocimiento necesita un procesador de 2013 o posterior (Intel Core de 4.ª generación, AMD desde 2015, cualquier Ryzen).</value>
+  </data>
 </root>

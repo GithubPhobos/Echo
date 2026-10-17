@@ -687,4 +687,10 @@
   <data name="LevelCurrent" xml:space="preserve">
     <value>current</value>
   </data>
+  <data name="ProcessorUnsupported" xml:space="preserve">
+    <value>This processor lacks instructions speech recognition needs: {0}.</value>
+  </data>
+  <data name="ProcessorUnsupportedHint" xml:space="preserve">
+    <value>Echo cannot work on this computer: recognition needs a processor from about 2013 or newer (Intel Core 4th generation, AMD from 2015, every Ryzen).</value>
+  </data>
 </root>

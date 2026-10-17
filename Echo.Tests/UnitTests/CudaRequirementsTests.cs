@@ -11,9 +11,6 @@ public sealed class CudaRequirementsTests
     [InlineData("8.9", "572.83", nameof(CudaSupport.DriverTooOld))]
     public void Check_FollowsCuda13Requirements(string capability, string driver, string expected)
     {
-        if (!OperatingSystem.IsWindows())
-            return;
-
         // Arrange
         var hardware = new HardwareInfo(
             new NvidiaGpu("GPU", 8192, Version.Parse(driver), Version.Parse(capability)),

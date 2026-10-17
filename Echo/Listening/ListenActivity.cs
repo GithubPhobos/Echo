@@ -15,15 +15,6 @@ internal sealed class ListenActivity(ScreenLog log, Func<bool> isEchoFocused) : 
     private DateTimeOffset _recordingStarted;
     private volatile bool _isPaused;
 
-    /// <summary>
-    ///     Echo's window counts as having the keyboard only when that is known: otherwise a phrase
-    ///     is typed into the window in front, as it would be without the screen.
-    /// </summary>
-    public ListenActivity(ScreenLog log)
-        : this(log, () => TerminalFocus.IsFocused() == true)
-    {
-    }
-
     /// <inheritdoc/>
     public ListenState State
     {

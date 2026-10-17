@@ -212,8 +212,10 @@ public sealed class ListenFrameTests : IDisposable
     [Fact]
     public void Build_APathTooLongForItsRow_GoesWholeOntoTheNextRow()
     {
-        // Arrange
-        const string path = @"C:\Users\Someone\AppData\Roaming\echooo\settings.json";
+        // Arrange: a full path of the system the test runs on
+        string path = OperatingSystem.IsWindows()
+            ? @"C:\Users\Someone\AppData\Roaming\echooo\settings.json"
+            : "/home/someone/.config/echooo/settings.json";
 
         ListenView view = View(ListenState.Listening) with
         {
