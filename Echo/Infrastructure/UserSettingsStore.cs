@@ -64,6 +64,7 @@ internal sealed class UserSettingsStore(IAppPaths paths) : IUserSettingsStore
             ModelName = Read<string>(root, nameof(WhisperSettings), nameof(WhisperSettings.ModelName)),
             HotkeyKey = Read<string>(root, nameof(PushToTalkSettings), nameof(PushToTalkSettings.Key)),
             HotkeyModifier = Read<string>(root, nameof(PushToTalkSettings), nameof(PushToTalkSettings.Modifier)),
+            HotkeyLabel = Read<string>(root, nameof(PushToTalkSettings), nameof(PushToTalkSettings.DesktopShortcut)),
             MicrophoneIndex = Read<int?>(root, nameof(RecordingDeviceSettings), nameof(RecordingDeviceSettings.DeviceIndex)),
             SilenceThreshold = Read<float?>(root, nameof(RecordingDeviceSettings), nameof(RecordingDeviceSettings.SilenceThreshold)),
         };
@@ -74,10 +75,6 @@ internal sealed class UserSettingsStore(IAppPaths paths) : IUserSettingsStore
     {
         JsonObject root = ReadFile();
 
-        // A file that cannot be read is replaced by a fresh one; what the user wrote into it is kept aside
-        if (File.Exists(_paths.SettingsFile) && !IsReadable(_paths.SettingsFile))
-            File.Copy(_paths.SettingsFile, _paths.SettingsFile + DamagedSuffix, overwrite: true);
-
         Write(root, SetupSection, "Version", settings.SetupVersion);
         Write(root, SetupSection, "UiLanguage", settings.UiLanguage);
         Write(root, SetupSection, "MicrophoneName", settings.MicrophoneName);
@@ -87,11 +84,38 @@ internal sealed class UserSettingsStore(IAppPaths paths) : IUserSettingsStore
         Write(root, nameof(WhisperSettings), nameof(WhisperSettings.ModelName), settings.ModelName);
         Write(root, nameof(PushToTalkSettings), nameof(PushToTalkSettings.Key), settings.HotkeyKey);
         Write(root, nameof(PushToTalkSettings), nameof(PushToTalkSettings.Modifier), settings.HotkeyModifier);
+        Write(root, nameof(PushToTalkSettings), nameof(PushToTalkSettings.DesktopShortcut), settings.HotkeyLabel);
 
         foreach (AdditionalSetting setting in AdditionalSettings.All)
             WriteText(root, setting, settings.Additional.Stored(setting));
         Write(root, nameof(RecordingDeviceSettings), nameof(RecordingDeviceSettings.DeviceIndex), settings.MicrophoneIndex);
         Write(root, nameof(RecordingDeviceSettings), nameof(RecordingDeviceSettings.SilenceThreshold), settings.SilenceThreshold);
+
+        WriteFile(root);
+    }
+
+    /// <inheritdoc/>
+    public string? ReadValue(string section, string key) =>
+        Read<string>(ReadFile(), section, key);
+
+    /// <inheritdoc/>
+    public void WriteValue(string section, string key, string? value)
+    {
+        JsonObject root = ReadFile();
+
+        Write(root, section, key, value);
+
+        WriteFile(root);
+    }
+
+    /// <summary>
+    ///     Writes the whole file. A file that could not be read is replaced by a fresh one, and what the user
+    ///     wrote into it is kept aside.
+    /// </summary>
+    private void WriteFile(JsonObject root)
+    {
+        if (File.Exists(_paths.SettingsFile) && !IsReadable(_paths.SettingsFile))
+            File.Copy(_paths.SettingsFile, _paths.SettingsFile + DamagedSuffix, overwrite: true);
 
         Directory.CreateDirectory(Path.GetDirectoryName(_paths.SettingsFile)!);
 

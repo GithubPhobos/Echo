@@ -34,6 +34,12 @@ internal interface ICudaRuntime
     IReadOnlyList<string> FindMissingLibraries();
 
     /// <summary>
+    ///     The programs of the system that unpacking needs and that are not installed. Nothing is downloaded
+    ///     while this list is not empty.
+    /// </summary>
+    IReadOnlyList<string> MissingTools();
+
+    /// <summary>
     ///     Downloads the libraries that are still missing from NVIDIA and unpacks them into <see cref="Directory"/>.
     ///     Every library is put in place as soon as it has arrived, so a download that was stopped does not
     ///     start over with what it already brought.

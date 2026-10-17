@@ -42,6 +42,10 @@ internal sealed class CudaRuntime(IAppPaths paths, IFileDownloader downloader, I
         _libraries.FindMissing(Directory);
 
     /// <inheritdoc/>
+    public IReadOnlyList<string> MissingTools() =>
+        _libraries.MissingTools();
+
+    /// <inheritdoc/>
     public async Task InstallAsync(IProgress<DownloadProgress> progress, IProgress<string> downloaded, CancellationToken cancellationToken)
     {
         // Archives are downloaded and unpacked aside, so nothing unfinished is ever taken for a library.

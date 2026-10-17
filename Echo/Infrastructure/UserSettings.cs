@@ -31,6 +31,11 @@ internal sealed record UserSettings
 
     public string? HotkeyModifier { get; init; }
 
+    /// <summary>
+    ///     How the desktop names the key it assigned, on desktops that assign the key themselves (Wayland).
+    /// </summary>
+    public string? HotkeyLabel { get; init; }
+
     public int? MicrophoneIndex { get; init; }
 
     public string? MicrophoneName { get; init; }

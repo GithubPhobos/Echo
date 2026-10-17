@@ -93,7 +93,7 @@ public sealed class WhisperInferenceServiceTests
         var settings = new Echo.Settings.WhisperSettings { ModelName = "dummy.bin" };
         var optionsMock = Microsoft.Extensions.Options.Options.Create(settings);
 
-        using var service = new WhisperInferenceService(pathsMock.Object, Mock.Of<ICudaLibraries>(), loggerMock.Object, optionsMock);
+        using var service = new WhisperInferenceService(pathsMock.Object, Mock.Of<ICudaLibraries>(), Mock.Of<ISystemLibraries>(), loggerMock.Object, optionsMock);
 
         // Create an empty valid stream (will be evaluated as silent)
         using var silentStream = new MemoryStream(new byte[20000]);
@@ -112,5 +112,26 @@ public sealed class WhisperInferenceServiceTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
+    }
+
+    [Fact]
+    public void TryInitializeWhisperModel_SystemLibraryMissing_SaysWhichInsteadOfLoadingTheModel()
+    {
+        // Arrange: without it the recognition library would take the whole process down
+        var libraries = new Mock<ISystemLibraries>();
+        libraries.Setup(system => system.FindMissing()).Returns(["libgomp.so.1"]);
+
+        using var service = new WhisperInferenceService(
+            Mock.Of<IAppPaths>(),
+            Mock.Of<ICudaLibraries>(),
+            libraries.Object,
+            Mock.Of<ILogger<WhisperInferenceService>>(),
+            Microsoft.Extensions.Options.Options.Create(new Echo.Settings.WhisperSettings { ModelName = "dummy.bin" }));
+
+        // Act
+        var exception = Assert.Throws<Exception>(service.TryInitializeWhisperModel);
+
+        // Assert
+        Assert.Contains("libgomp.so.1", exception.Message);
     }
 }

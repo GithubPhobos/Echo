@@ -8,16 +8,19 @@ namespace Echo.Services;
 /// <inheritdoc cref="IWhisperInferenceService"/>
 /// <param name="paths"><see cref="IAppPaths"/></param>
 /// <param name="cudaLibraries">Finds the NVIDIA libraries the CUDA runtime needs, the way this system does.</param>
+/// <param name="systemLibraries">Finds the libraries of the system recognition needs.</param>
 /// <param name="logger"><see cref="ILogger{WhisperInferenceService}"/></param>
 /// <param name="whisperSettingsOptions"><see cref="IOptions{WhisperSettings}"/></param>
 internal sealed class WhisperInferenceService(
     IAppPaths paths,
     ICudaLibraries cudaLibraries,
+    ISystemLibraries systemLibraries,
     ILogger<WhisperInferenceService> logger,
     IOptions<WhisperSettings> whisperSettingsOptions) : IWhisperInferenceService
 {
     private readonly IAppPaths _paths = paths;
     private readonly ICudaLibraries _cudaLibraries = cudaLibraries;
+    private readonly ISystemLibraries _systemLibraries = systemLibraries;
     private readonly ILogger<WhisperInferenceService> _logger = logger;
     private readonly WhisperSettings _whisperSettings = whisperSettingsOptions.Value;
 
@@ -33,6 +36,14 @@ internal sealed class WhisperInferenceService(
 
             _logger.LogDebug("{Tab}{LoadingEmoji} Loading Whisper model...",
                 LoggerConstants.Tab, LoggerConstants.LoadingEmoji);
+
+            // Without them the recognition library does not fail, it takes the whole process down
+            if (_systemLibraries.FindMissing() is { Count: > 0 } missingLibraries)
+            {
+                throw new Exception(
+                    $"{LoggerConstants.Tab}{LoggerConstants.WarningEmoji} Speech recognition needs these libraries of the system: " +
+                    $"{string.Join(", ", missingLibraries)}. Run '{ApplicationInfo.CommandName} {Commands.SetupCommand.Name}' to see how to install them.");
+            }
 
             // The NVIDIA libraries live in the user's folder, not next to the executable
             _cudaLibraries.PrepareForLoading(_paths.CudaDirectory);

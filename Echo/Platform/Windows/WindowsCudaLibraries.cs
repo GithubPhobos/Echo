@@ -51,6 +51,12 @@ internal sealed class WindowsCudaLibraries : ICudaLibraries
     }
 
     /// <summary>
+    ///     ZIP archives are unpacked by .NET itself.
+    /// </summary>
+    /// <inheritdoc/>
+    public IReadOnlyList<string> MissingTools() => [];
+
+    /// <summary>
     ///     Takes the listed library files out of an archive, wherever inside it they are.
     /// </summary>
     /// <inheritdoc/>

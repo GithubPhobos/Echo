@@ -29,6 +29,12 @@ internal interface ICudaLibraries
     IReadOnlyList<string> FindMissing(string directory);
 
     /// <summary>
+    ///     The programs of the system that unpacking the archives needs and that are not installed; checked before
+    ///     anything is downloaded.
+    /// </summary>
+    IReadOnlyList<string> MissingTools();
+
+    /// <summary>
     ///     Takes the libraries of <paramref name="archive"/> out of the downloaded file into
     ///     <paramref name="stagingDirectory"/>.
     /// </summary>
