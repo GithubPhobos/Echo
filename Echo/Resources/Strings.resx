@@ -418,7 +418,7 @@
     <value>Off</value>
   </data>
   <data name="CalibrationQuestion" xml:space="preserve">
-    <value>Measure the silence level</value>
+    <value>Measuring the silence level</value>
   </data>
   <data name="CalibrationWhy" xml:space="preserve">
     <value>Echo starts recording only when the sound gets louder than the silence level. That keeps the background out of the recording: a fan, the keyboard, the street. With the level too low Echo records noise; with it too high it cuts off the quiet beginning of a phrase.</value>

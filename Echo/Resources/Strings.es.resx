@@ -418,7 +418,7 @@
     <value>Desactivado</value>
   </data>
   <data name="CalibrationQuestion" xml:space="preserve">
-    <value>Mide el nivel de silencio</value>
+    <value>Medición del nivel de silencio</value>
   </data>
   <data name="CalibrationWhy" xml:space="preserve">
     <value>Echo empieza a grabar solo cuando el sonido supera el nivel de silencio. Así el fondo no entra en la grabación: un ventilador, el teclado, la calle. Con un nivel demasiado bajo Echo graba ruido; con uno demasiado alto corta el comienzo suave de la frase.</value>

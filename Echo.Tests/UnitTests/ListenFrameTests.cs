@@ -25,6 +25,11 @@ public sealed class ListenFrameTests : IDisposable
 
     private static readonly DateTimeOffset _time = new(new DateTime(2026, 10, 14, 21, 3, 0, DateTimeKind.Local));
 
+    /// <summary>
+    ///     What stands before the key: the keyboard emoji where the terminal gives it its two cells, the word elsewhere.
+    /// </summary>
+    private static readonly string _keySign = Theme.IsKeyboardEmojiWide ? "⌨️" : "key";
+
     [Fact]
     public void Build_Ready_HasTheStateOnTopTheLogTheCommandBoxAndTheKeysAtTheBottom()
     {
@@ -48,7 +53,7 @@ public sealed class ListenFrameTests : IDisposable
         // The state says Echo is ready, not that it is listening: nothing is heard until the key is held.
         // Only the model and the key follow it; the rest is in /info
         // The key has a keyboard in front of it
-        Assert.Matches("^  ○ ready +--:--  ┊  ············  ┊  tiny  ┊  ⌨️ `$", lines[0].TrimEnd());
+        Assert.Matches($"^  ○ ready +--:--  ┊  ············  ┊  tiny  ┊  {_keySign} `$", lines[0].TrimEnd());
 
         // The rule lies right under the state, and the log right under the rule
         Assert.StartsWith("──────", lines[1]);
@@ -139,7 +144,7 @@ public sealed class ListenFrameTests : IDisposable
 
         // Assert: whole pieces go, the model first, which /info shows too
         Assert.DoesNotContain("tiny", narrow);
-        Assert.Contains("⌨️ `", narrow);
+        Assert.Contains($"{_keySign} `", narrow);
 
         Assert.DoesNotContain("`", narrower);
         Assert.Contains("○ ready", narrower);

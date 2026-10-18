@@ -103,10 +103,12 @@ internal sealed class ListenFrame(Theme theme)
 
     /// <summary>
     ///     What stands before the key in the state line: a keyboard of two cells where the terminal
-    ///     draws emoji, the word elsewhere.
+    ///     draws emoji and gives this one its two cells, the word elsewhere.
     /// </summary>
     private (string Text, int Width) KeySign =>
-        _theme == Theme.Full ? ("\u2328\uFE0F", 2) : (Strings.ListenKey, WidthOf(Strings.ListenKey));
+        _theme == Theme.Full && Theme.IsKeyboardEmojiWide
+            ? ("\u2328\uFE0F", 2)
+            : (Strings.ListenKey, WidthOf(Strings.ListenKey));
 
     /// <summary>
     ///     What stands between the parts of the state line and between the keys: a dashed line,

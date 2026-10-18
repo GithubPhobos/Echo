@@ -418,7 +418,7 @@
     <value>关</value>
   </data>
   <data name="CalibrationQuestion" xml:space="preserve">
-    <value>测量静音阈值</value>
+    <value>静音阈值测量</value>
   </data>
   <data name="CalibrationWhy" xml:space="preserve">
     <value>只有当声音高于静音阈值时，Echo 才开始录音。这样背景声就不会进入录音：风扇、键盘、街道。阈值太低，Echo 会录下噪音；太高，则会截掉句子轻声的开头。</value>

@@ -418,7 +418,7 @@
     <value>Выключено</value>
   </data>
   <data name="CalibrationQuestion" xml:space="preserve">
-    <value>Измерьте порог тишины</value>
+    <value>Измерение порога тишины</value>
   </data>
   <data name="CalibrationWhy" xml:space="preserve">
     <value>Echo начинает запись только тогда, когда звук становится громче порога тишины. Так в запись не попадает фон: вентилятор, клавиатура, улица. Если порог слишком низкий, Echo записывает шум; если слишком высокий — срезает тихое начало фразы.</value>

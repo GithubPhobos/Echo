@@ -418,7 +418,7 @@
     <value>Aus</value>
   </data>
   <data name="CalibrationQuestion" xml:space="preserve">
-    <value>Miss den Stillepegel</value>
+    <value>Messung des Stillepegels</value>
   </data>
   <data name="CalibrationWhy" xml:space="preserve">
     <value>Echo beginnt erst aufzunehmen, wenn der Ton lauter wird als der Stillepegel. So bleibt der Hintergrund draußen: Lüfter, Tastatur, Straße. Ist der Pegel zu niedrig, nimmt Echo Rauschen auf; ist er zu hoch, schneidet es den leisen Anfang eines Satzes ab.</value>

@@ -25,6 +25,21 @@ internal static class XKeys
         _keys.TryGetValue(key, out (uint Keysym, string Name) found) ? found : null;
 
     /// <summary>
+    ///     The key a keysym name stands for, such as "grave" for the key left of 1; null for a name Echo does not know.
+    ///     Letters are matched whatever their case: Linux names "a" and "A" the same key with and without Shift.
+    /// </summary>
+    public static KeyCode? FindByName(string name)
+    {
+        foreach ((KeyCode key, (uint _, string known)) in _keys)
+        {
+            if (string.Equals(known, name, known.Length == 1 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                return key;
+        }
+
+        return null;
+    }
+
+    /// <summary>
     ///     The modifier bit of a 'Modifier' setting, and its name in a shortcut of the desktop portal. X11 does not
     ///     tell the left and the right Ctrl apart in a shortcut, so either one does.
     /// </summary>

@@ -64,7 +64,7 @@ public sealed class DesktopPortalTests
         string? label = await portal.EnsureShortcutAsync("CTRL+grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
 
         // Assert: the registry comes before anything else, and the desktop's own description comes back
-        Assert.Equal("Ctrl+`", label);
+        Assert.Equal("Ctrl + `", label);
         Assert.Equal(DesktopPortal.ApplicationId, desktop.RegisteredId);
         Assert.Equal("org.freedesktop.host.portal.Registry.Register", desktop.Calls[0]);
         Assert.Equal("CTRL+grave", desktop.PreferredTrigger);
@@ -91,7 +91,7 @@ public sealed class DesktopPortalTests
             string? label = await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
 
             // Assert
-            Assert.Equal("Ctrl+`", label);
+            Assert.Equal("Ctrl + `", label);
             Assert.Equal(DesktopPortal.ApplicationId, desktop.RegisteredId);
         }
         finally
@@ -137,7 +137,7 @@ public sealed class DesktopPortalTests
         string? label = await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
 
         // Assert
-        Assert.Equal("Ctrl+`", label);
+        Assert.Equal("Ctrl + `", label);
         Assert.DoesNotContain("org.freedesktop.portal.GlobalShortcuts.BindShortcuts", desktop.Calls);
     }
 

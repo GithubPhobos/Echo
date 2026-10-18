@@ -157,7 +157,7 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
                 cancellationToken);
 
             return code == ResponseSuccess && results.TryGetValue("shortcuts", out VariantValue shortcuts)
-                ? FindTrigger(ToShortcuts(shortcuts)) ?? preferredTrigger
+                ? FindTrigger(ToShortcuts(shortcuts)) ?? DesktopKeyNames.Readable(preferredTrigger)
                 : null;
         }
         catch (DBusErrorReplyException exc) when (_registrationError is not null)
@@ -457,8 +457,9 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
         {
             if (id == SpeakShortcut)
             {
+                // The desktop's own words around the Linux name of the key; Echo shows the key its own way
                 return properties.TryGetValue("trigger_description", out VariantValue trigger) && trigger.GetString() is { Length: > 0 } text
-                    ? text
+                    ? DesktopKeyNames.Readable(text)
                     : null;
             }
         }
