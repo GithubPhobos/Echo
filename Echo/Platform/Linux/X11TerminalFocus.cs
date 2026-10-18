@@ -1,17 +1,19 @@
 ﻿using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Echo.Listening;
 
 namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     Compares the window of the terminal with the window the desktop says is in front. Many X11 terminals
-///     (xterm, Konsole, kitty, Alacritty) name their window in the WINDOWID variable; the ones that do not,
-///     such as GNOME Terminal, leave the question open.
+///     (xterm, Konsole, kitty, Alacritty) name their window in the WINDOWID variable; for the ones that do not,
+///     such as GNOME Terminal, what the terminal itself reports is taken.
 /// </summary>
 /// <param name="variable">Reads an environment variable.</param>
+/// <param name="reports">What the terminal itself says about its window.</param>
 [SupportedOSPlatform("linux")]
-internal sealed class X11TerminalFocus(Func<string, string?> variable) : ITerminalFocus
+internal sealed class X11TerminalFocus(Func<string, string?> variable, TerminalFocusReports reports) : ITerminalFocus
 {
     private const string ActiveWindowAtom = "_NET_ACTIVE_WINDOW";
 
@@ -22,9 +24,16 @@ internal sealed class X11TerminalFocus(Func<string, string?> variable) : ITermin
     private const int MaxDepth = 16;
 
     private readonly Func<string, string?> _variable = variable;
+    private readonly TerminalFocusReports _reports = reports;
 
     /// <inheritdoc/>
-    public bool? IsFocused()
+    public bool? IsFocused() =>
+        FromDesktop() ?? _reports.IsFocused;
+
+    /// <summary>
+    ///     What the desktop says, or null when the terminal does not name its window.
+    /// </summary>
+    private bool? FromDesktop()
     {
         if (!ulong.TryParse(_variable("WINDOWID"), NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong terminal) || terminal == 0)
             return null;

@@ -25,12 +25,14 @@ namespace Echo.Commands;
 /// <param name="setupRunner"><see cref="SetupRunner"/></param>
 /// <param name="audioInput">The microphones, for the name of the one in use.</param>
 /// <param name="terminalFocus">Tells whether Echo's own window is in front.</param>
+/// <param name="focusReports">What the terminal itself says about its window, where the system does not say it.</param>
 internal sealed class ListenCommand(
     IAnsiConsole console,
     IAppPaths paths,
     SetupRunner setupRunner,
     IAudioInput audioInput,
-    ITerminalFocus terminalFocus) : AsyncCommand<ListenCommand.ListenSettings>
+    ITerminalFocus terminalFocus,
+    TerminalFocusReports? focusReports = null) : AsyncCommand<ListenCommand.ListenSettings>
 {
     internal const string Name = "listen";
     internal const string Description = "Starts push-to-talk voice typing (default).";
@@ -55,6 +57,7 @@ internal sealed class ListenCommand(
     private readonly SetupRunner _setupRunner = setupRunner;
     private readonly IAudioInput _audioInput = audioInput;
     private readonly ITerminalFocus _terminalFocus = terminalFocus;
+    private readonly TerminalFocusReports? _focusReports = focusReports;
 
     /// <summary>
     ///     Command line options of <see cref="ListenCommand"/>.
@@ -172,7 +175,8 @@ internal sealed class ListenCommand(
             activity,
             new ListenCommands(activity, levelSwitch, new UserSettingsStore(_paths), () => SummarizeSettings(configuration, activity, levelSwitch)),
             DescribeSettings(configuration),
-            ScreenTick);
+            ScreenTick,
+            _focusReports);
 
         Task starting = Task.Run(() => StartAsync(host, activity, cancellationToken), cancellationToken);
 

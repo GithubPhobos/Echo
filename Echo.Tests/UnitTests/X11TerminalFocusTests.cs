@@ -1,4 +1,5 @@
 ﻿using System.Runtime.Versioning;
+using Echo.Listening;
 using Echo.Platform.Linux;
 
 namespace Echo.Tests.UnitTests;
@@ -24,12 +25,26 @@ public sealed class X11TerminalFocusTests
     }
 
     [Fact]
-    public void IsFocused_TerminalThatNamesNoWindow_CannotTell()
+    public void IsFocused_TerminalThatNamesNoWindowAndReportsNothing_CannotTell()
     {
-        // Arrange: GNOME Terminal sets no WINDOWID
-        var focus = new X11TerminalFocus(_ => null);
+        // Arrange: a terminal that sets no WINDOWID and sends no reports about its window
+        var focus = new X11TerminalFocus(_ => null, new TerminalFocusReports(TimeProvider.System));
 
         // Act & Assert
         Assert.Null(focus.IsFocused());
+    }
+
+    [Fact]
+    public void IsFocused_TerminalThatNamesNoWindowButReportsIt_TakesTheReport()
+    {
+        // Arrange: GNOME Terminal sets no WINDOWID, but answers the request for reports with "active"
+        var reports = new TerminalFocusReports(TimeProvider.System);
+        reports.Started();
+        reports.Handle(new ConsoleKeyInfo('\0', ConsoleKey.PageUp, shift: false, alt: false, control: false));
+
+        var focus = new X11TerminalFocus(_ => null, reports);
+
+        // Act & Assert
+        Assert.True(focus.IsFocused());
     }
 }

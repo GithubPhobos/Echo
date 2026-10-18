@@ -1,4 +1,5 @@
 ﻿using System.Runtime.Versioning;
+using Echo.Listening;
 using Echo.Platform.Linux;
 using Echo.Platform.Windows;
 using Echo.Setup.Hardware;
@@ -78,11 +79,13 @@ internal static class PlatformServiceCollectionExtensions
         bool hasX11 = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"));
 
         var programs = new LinuxPrograms(Environment.GetEnvironmentVariable);
+        var focusReports = new TerminalFocusReports(TimeProvider.System);
         DesktopPortal portal = SharedPortal(paths);
 
         // Given as ready objects, so the services do not close the portal along with themselves
         services.TryAddSingleton(programs);
         services.TryAddSingleton(portal);
+        services.TryAddSingleton(focusReports);
 
         services.TryAddSingleton<IUserSettingsStore, UserSettingsStore>();
         services.TryAddSingleton<IProcessRunner, ProcessRunner>();
@@ -105,7 +108,8 @@ internal static class PlatformServiceCollectionExtensions
             case DisplayServer.X11:
                 services.TryAddSingleton<IHotkeyListener, X11HotkeyListener>();
                 services.TryAddSingleton<IPasteKeys, X11PasteKeys>();
-                services.TryAddSingleton<ITerminalFocus>(new X11TerminalFocus(Environment.GetEnvironmentVariable));
+                services.TryAddSingleton<ITerminalFocus>(provider => new X11TerminalFocus(
+                    Environment.GetEnvironmentVariable, provider.GetRequiredService<TerminalFocusReports>()));
                 services.TryAddSingleton<IDesktopAccess, NoDesktopAccess>();
 
                 break;
@@ -113,7 +117,7 @@ internal static class PlatformServiceCollectionExtensions
             case DisplayServer.Wayland:
                 services.TryAddSingleton<IHotkeyListener, PortalHotkeyListener>();
                 services.TryAddSingleton<IPasteKeys, PortalPasteKeys>();
-                services.TryAddSingleton<ITerminalFocus, UnknownTerminalFocus>();
+                services.TryAddSingleton<ITerminalFocus, ReportedTerminalFocus>();
                 services.TryAddSingleton<IDesktopAccess, PortalDesktopAccess>();
 
                 break;
@@ -121,7 +125,7 @@ internal static class PlatformServiceCollectionExtensions
             default:
                 services.TryAddSingleton<IHotkeyListener, NoHotkeyListener>();
                 services.TryAddSingleton<IPasteKeys, NoPasteKeys>();
-                services.TryAddSingleton<ITerminalFocus, UnknownTerminalFocus>();
+                services.TryAddSingleton<ITerminalFocus, ReportedTerminalFocus>();
                 services.TryAddSingleton<IDesktopAccess, NoDesktopAccess>();
 
                 break;

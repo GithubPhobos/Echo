@@ -13,12 +13,17 @@ namespace Echo.Listening;
 /// <param name="commands"><see cref="ListenCommands"/></param>
 /// <param name="info">What the state line says about the settings.</param>
 /// <param name="tick">How often the screen is refreshed.</param>
+/// <param name="focusReports">
+///     Where the terminal is asked to say when its window becomes active and stops being active; null where
+///     the system itself tells (Windows).
+/// </param>
 internal sealed class ListenScreen(IAnsiConsole console,
                                   Theme theme,
                                   IListenActivity activity,
                                   ListenCommands commands,
                                   ListenInfo info,
-                                  TimeSpan tick)
+                                  TimeSpan tick,
+                                  TerminalFocusReports? focusReports = null)
 {
     private const string EnterAlternateScreen = "\u001b[?1049h";
     private const string LeaveAlternateScreen = "\u001b[?1049l";
@@ -39,6 +44,7 @@ internal sealed class ListenScreen(IAnsiConsole console,
     private readonly ListenCommands _commands = commands;
     private readonly ListenInfo _info = info;
     private readonly TimeSpan _tick = tick;
+    private readonly TerminalFocusReports? _focusReports = focusReports;
     private readonly ListenFrame _frame = new(theme);
     private readonly CommandLine _line = new(commands.All);
     private readonly Stopwatch _clock = Stopwatch.StartNew();
@@ -102,6 +108,12 @@ internal sealed class ListenScreen(IAnsiConsole console,
 
         Write(EnterAlternateScreen + WheelAsArrows + HideCursor);
 
+        if (_focusReports is not null)
+        {
+            _focusReports.Started();
+            Write(TerminalFocusReports.Enable);
+        }
+
         try
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -109,6 +121,10 @@ internal sealed class ListenScreen(IAnsiConsole console,
                 while (_console.Input.IsKeyAvailable())
                 {
                     ConsoleKeyInfo? key = await _console.Input.ReadKeyAsync(intercept: true, cancellationToken);
+
+                    // A report of the terminal about its window, not a key of the user
+                    if (key is ConsoleKeyInfo report && _focusReports?.Handle(report) == true)
+                        continue;
 
                     if (key is ConsoleKeyInfo pressed && Handle(pressed) is var outcome && outcome != ListenOutcome.Continue)
                         return outcome;
@@ -127,6 +143,12 @@ internal sealed class ListenScreen(IAnsiConsole console,
         }
         finally
         {
+            if (_focusReports is not null)
+            {
+                Write(TerminalFocusReports.Disable);
+                _focusReports.Stopped();
+            }
+
             Write(ShowCursor + LeaveAlternateScreen);
 
             if (treatedControlC is bool previous)
