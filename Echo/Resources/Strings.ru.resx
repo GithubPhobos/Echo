@@ -819,4 +819,10 @@
   <data name="AccelerationVulkanTrialHint" xml:space="preserve">
     <value>Для видеокарт AMD и Intel. На Linux ещё не проверен: если распознавание не работает или идёт медленно, выберите процессор.</value>
   </data>
+  <data name="VulkanNoDriver" xml:space="preserve">
+    <value>Vulkan не предлагается: драйвер видеокарты с поддержкой Vulkan не найден.</value>
+  </data>
+  <data name="VulkanSoftwareOnly" xml:space="preserve">
+    <value>Vulkan не предлагается: он не видит видеокарту, только её программную замену, которая работает на процессоре и медленнее, чем сам процессор.</value>
+  </data>
 </root>

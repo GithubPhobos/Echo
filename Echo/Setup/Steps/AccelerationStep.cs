@@ -499,6 +499,17 @@ internal sealed class AccelerationStep : ISetupStep
         if (reason is not null)
             notes.Add(SetupUi.Dim(Markup.Escape(reason)));
 
+        // Vulkan, too, says why it is not on the list
+        string? vulkan = hardware.Vulkan switch
+        {
+            VulkanStatus.NoDriver => Strings.VulkanNoDriver,
+            VulkanStatus.SoftwareOnly => Strings.VulkanSoftwareOnly,
+            _ => null
+        };
+
+        if (vulkan is not null)
+            notes.Add(SetupUi.Dim(Markup.Escape(vulkan)));
+
         return notes;
     }
 

@@ -819,4 +819,10 @@
   <data name="AccelerationVulkanTrialHint" xml:space="preserve">
     <value>Para tarjetas gráficas AMD e Intel. Aún no probado en Linux: si el reconocimiento falla o va lento, elige el procesador.</value>
   </data>
+  <data name="VulkanNoDriver" xml:space="preserve">
+    <value>Vulkan no se ofrece: no se encontró un controlador gráfico con Vulkan.</value>
+  </data>
+  <data name="VulkanSoftwareOnly" xml:space="preserve">
+    <value>Vulkan no se ofrece: no ve ninguna tarjeta gráfica, solo un sustituto por software que funciona en el procesador y sería más lento que el propio procesador.</value>
+  </data>
 </root>

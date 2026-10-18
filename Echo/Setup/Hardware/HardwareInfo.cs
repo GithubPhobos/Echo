@@ -19,4 +19,9 @@ internal sealed record HardwareInfo(NvidiaGpu? Nvidia, bool IsVulkanAvailable, i
     ///     it is offered only for the user to pick by hand.
     /// </summary>
     public bool IsVulkanChosenAutomatically { get; init; } = true;
+
+    /// <summary>
+    ///     Why Vulkan cannot be used, when it cannot; the setup wizard says so under the list.
+    /// </summary>
+    public VulkanStatus Vulkan { get; init; } = IsVulkanAvailable ? VulkanStatus.Available : VulkanStatus.NoDriver;
 }

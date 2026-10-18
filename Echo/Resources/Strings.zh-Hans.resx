@@ -819,4 +819,10 @@
   <data name="AccelerationVulkanTrialHint" xml:space="preserve">
     <value>适用于 AMD 和 Intel 显卡。尚未在 Linux 上验证：如果识别失败或很慢，请选择处理器。</value>
   </data>
+  <data name="VulkanNoDriver" xml:space="preserve">
+    <value>不提供 Vulkan：未找到支持 Vulkan 的显卡驱动。</value>
+  </data>
+  <data name="VulkanSoftwareOnly" xml:space="preserve">
+    <value>不提供 Vulkan：它没有检测到显卡，只有在处理器上运行的软件替代，比直接使用处理器还慢。</value>
+  </data>
 </root>

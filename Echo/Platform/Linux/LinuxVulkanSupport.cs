@@ -1,4 +1,5 @@
 ﻿using System.Runtime.Versioning;
+using Echo.Setup.Hardware;
 
 namespace Echo.Platform.Linux;
 
@@ -23,17 +24,28 @@ internal sealed class LinuxVulkanSupport : IVulkanSupport
     public bool IsChosenAutomatically => false;
 
     /// <inheritdoc/>
-    public bool IsAvailable()
+    public VulkanStatus Check()
     {
         try
         {
-            return DeviceTypes().Any(_graphicsCards.Contains);
+            return Classify(DeviceTypes());
         }
         catch (Exception exc) when (exc is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
         {
             // No Vulkan loader on the system
-            return false;
+            return VulkanStatus.NoDriver;
         }
+    }
+
+    /// <summary>
+    ///     What the kinds of the devices Vulkan offers mean for Echo.
+    /// </summary>
+    internal static VulkanStatus Classify(IReadOnlyList<int> deviceTypes)
+    {
+        if (deviceTypes.Any(_graphicsCards.Contains))
+            return VulkanStatus.Available;
+
+        return deviceTypes.Count > 0 ? VulkanStatus.SoftwareOnly : VulkanStatus.NoDriver;
     }
 
     /// <summary>

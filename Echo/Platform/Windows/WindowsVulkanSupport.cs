@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using Echo.Setup.Hardware;
 
 namespace Echo.Platform.Windows;
 
@@ -13,13 +14,13 @@ internal sealed class WindowsVulkanSupport : IVulkanSupport
     public bool IsChosenAutomatically => true;
 
     /// <inheritdoc/>
-    public bool IsAvailable()
+    public VulkanStatus Check()
     {
         if (!NativeLibrary.TryLoad(VulkanLibrary, out IntPtr handle))
-            return false;
+            return VulkanStatus.NoDriver;
 
         NativeLibrary.Free(handle);
 
-        return true;
+        return VulkanStatus.Available;
     }
 }

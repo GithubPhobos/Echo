@@ -560,4 +560,8 @@ internal static class Strings
     public static string AccelerationVulkanTrial => Get(nameof(AccelerationVulkanTrial));
 
     public static string AccelerationVulkanTrialHint => Get(nameof(AccelerationVulkanTrialHint));
+
+    public static string VulkanNoDriver => Get(nameof(VulkanNoDriver));
+
+    public static string VulkanSoftwareOnly => Get(nameof(VulkanSoftwareOnly));
 }

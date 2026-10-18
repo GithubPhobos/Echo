@@ -27,16 +27,18 @@ internal sealed class HardwareProbe(IProcessRunner processRunner, IVulkanSupport
                 : ParseNvidiaGpus(await _processRunner.RunAsync(NvidiaTool, QueryWithoutCapability, _toolTimeout, cancellationToken), hasCapability: false);
 
         long memoryBytes = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
+        VulkanStatus vulkan = _vulkan.Check();
 
         // Until the user says otherwise, the card with the most memory is the one to use
         return new HardwareInfo(
             cards.OrderByDescending(card => card.MemoryMb).ThenBy(card => card.Index).FirstOrDefault(),
-            _vulkan.IsAvailable(),
+            vulkan == VulkanStatus.Available,
             (int)Math.Round(memoryBytes / (1024d * 1024 * 1024)),
             Environment.ProcessorCount)
         {
             NvidiaCards = cards,
-            IsVulkanChosenAutomatically = _vulkan.IsChosenAutomatically
+            IsVulkanChosenAutomatically = _vulkan.IsChosenAutomatically,
+            Vulkan = vulkan
         };
     }
 

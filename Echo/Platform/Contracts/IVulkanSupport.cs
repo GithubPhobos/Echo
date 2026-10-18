@@ -1,4 +1,6 @@
-﻿namespace Echo.Platform.Contracts;
+﻿using Echo.Setup.Hardware;
+
+namespace Echo.Platform.Contracts;
 
 /// <summary>
 ///     Whether Whisper can run on Vulkan here: the system needs a Vulkan driver, and Echo needs to ship
@@ -6,7 +8,10 @@
 /// </summary>
 internal interface IVulkanSupport
 {
-    bool IsAvailable();
+    /// <summary>
+    ///     Whether Vulkan can be used, and why not when it cannot.
+    /// </summary>
+    VulkanStatus Check();
 
     /// <summary>
     ///     Whether "automatic" may pick Vulkan. Where it has not yet been tried on real graphics cards,
