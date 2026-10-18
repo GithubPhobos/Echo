@@ -187,10 +187,10 @@
     <value>Ein Dateidialog öffnet sich: Wähle eine oder mehrere Modelldateien, und Echo kopiert sie dorthin, wo es seine Modelle aufbewahrt.</value>
   </data>
   <data name="ModelTinyHint" xml:space="preserve">
-    <value>Am schnellsten; macht die meisten Fehler. Belegt etwa 300 MB Speicher. Für schwache Computer und den Betrieb auf dem Prozessor.</value>
+    <value>Am schnellsten, macht aber die meisten Fehler. Belegt etwa 300 MB Speicher. Nicht empfohlen: Auf einem modernen Computer ist small ebenfalls schnell und macht um ein Vielfaches weniger Fehler.</value>
   </data>
   <data name="ModelBaseHint" xml:space="preserve">
-    <value>Sehr schnell, brauchbare Genauigkeit. Belegt etwa 400 MB Speicher. Für ältere Laptops und den Betrieb auf dem Prozessor.</value>
+    <value>Sehr schnell, macht aber deutlich mehr Fehler als small. Belegt etwa 400 MB Speicher. Nicht empfohlen: Auf einem modernen Computer ist small ebenfalls schnell.</value>
   </data>
   <data name="ModelSmallHint" xml:space="preserve">
     <value>Schnell mit guter Genauigkeit. Belegt etwa 900 MB Speicher. Eignet sich für den Prozessor wie für eine Grafikkarte ab 2 GB.</value>
@@ -839,5 +839,8 @@
   </data>
   <data name="AdditionalSilenceThresholdHint" xml:space="preserve">
     <value>Wie laut der Ton sein muss, damit Echo eine Phrase aufnimmt, von 0 bis 1; alles Leisere gilt als Stille. Der Schritt „Ton“ misst ihn für deinen Raum und deine Stimme. Zu niedrig lässt Rauschen in die Aufnahme, zu hoch schneidet den leisen Anfang einer Phrase ab.</value>
+  </data>
+  <data name="TagNotRecommended" xml:space="preserve">
+    <value>Nicht empfohlen</value>
   </data>
 </root>

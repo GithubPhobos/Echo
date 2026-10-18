@@ -187,10 +187,10 @@
     <value>A file chooser opens: pick one or several model files, and Echo copies them to where it keeps its models.</value>
   </data>
   <data name="ModelTinyHint" xml:space="preserve">
-    <value>The fastest; makes the most mistakes. Takes about 300 MB of memory. For weak computers and work on the processor.</value>
+    <value>The fastest, but makes the most mistakes. Takes about 300 MB of memory. Not recommended: on a modern computer small is fast too and makes several times fewer mistakes.</value>
   </data>
   <data name="ModelBaseHint" xml:space="preserve">
-    <value>Very fast, acceptable accuracy. Takes about 400 MB of memory. For older laptops and work on the processor.</value>
+    <value>Very fast, but makes noticeably more mistakes than small. Takes about 400 MB of memory. Not recommended: on a modern computer small is fast too.</value>
   </data>
   <data name="ModelSmallHint" xml:space="preserve">
     <value>Fast with good accuracy. Takes about 900 MB of memory. Suits the processor as well as a graphics card with 2 GB or more.</value>
@@ -839,5 +839,8 @@
   </data>
   <data name="AdditionalSilenceThresholdHint" xml:space="preserve">
     <value>How loud the sound must be for Echo to start recording a phrase, from 0 to 1; anything quieter counts as silence. The sound step measures it for your room and voice. Too low lets noise into the recording; too high cuts off the quiet beginning of a phrase.</value>
+  </data>
+  <data name="TagNotRecommended" xml:space="preserve">
+    <value>Not recommended</value>
   </data>
 </root>

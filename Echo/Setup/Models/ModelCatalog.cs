@@ -37,4 +37,11 @@ internal static class ModelCatalog
         All.GroupBy(model => model.Tier)
             .Select(tier => tier.FirstOrDefault(model => model.IsEnglishOnly == englishOnly) ?? tier.First())
             .ToList();
+
+    /// <summary>
+    ///     Whether the model is offered but advised against for any machine: tiny and base make far more mistakes
+    ///     than small outside English, and a modern computer runs small fast enough. Echo is not tuned for weak ones.
+    /// </summary>
+    public static bool IsNotRecommended(ModelInfo model) =>
+        model.Tier is Tiny or Base;
 }

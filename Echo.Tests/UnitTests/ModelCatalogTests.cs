@@ -27,4 +27,14 @@ public sealed class ModelCatalogTests
         // Assert
         Assert.Equal(["tiny.en", "base.en", "small.en", "medium.en", "large-v3-turbo", "large-v3"], ids);
     }
+
+    [Fact]
+    public void IsNotRecommended_TinyAndBaseInEveryLanguage()
+    {
+        // Act
+        string[] ids = [.. ModelCatalog.All.Where(ModelCatalog.IsNotRecommended).Select(model => model.Id)];
+
+        // Assert
+        Assert.Equal(["tiny", "tiny.en", "base", "base.en"], ids);
+    }
 }

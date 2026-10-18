@@ -647,6 +647,35 @@ public sealed partial class SetupWizardTests : IDisposable
     }
 
     [Fact]
+    public async Task RunAsync_ModelList_MarksTinyAndBaseAsNotRecommended()
+    {
+        // Arrange
+        _keys.Press(ConsoleKey.Enter)
+            .Press(ConsoleKey.Enter)
+            .Press(ConsoleKey.Enter)
+            .Press(ConsoleKey.Enter)
+            .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
+            .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)
+            .Press(ConsoleKey.Enter)                                                // additional settings: continue
+            .Press(ConsoleKey.Enter);
+
+        // Act
+        await CreateRunner().RunAsync(onlyNewSteps: true, CancellationToken.None);
+
+        // Assert: the two smallest models say so on their line; the suggested one does not
+        string[] lines = _console.Output.Split('\n');
+        int tiny = Array.FindIndex(lines, line => line.Contains("○ tiny.en"));
+
+        Assert.Contains("Not recommended", lines[tiny]);
+        Assert.Contains("Not recommended", lines[tiny + 1]);
+        Assert.DoesNotContain("Not recommended", lines[tiny + 2]);
+        Assert.Contains("Recommended", lines[tiny + 2]);
+    }
+
+    [Fact]
     public async Task RunAsync_NarrowTerminal_BreaksTheLineOfStepsOnlyBetweenSteps()
     {
         // Arrange

@@ -256,6 +256,9 @@ internal sealed class ModelStep : ISetupStep
             if (model == recommended)
                 remarks.Add(SetupUi.Recommended(Markup.Escape(Strings.TagRecommended)));
 
+            if (ModelCatalog.IsNotRecommended(model))
+                remarks.Add(SetupUi.Warning(Markup.Escape(Strings.TagNotRecommended)));
+
             string hint = Describe(model, translate) + (model == recommended ? $" {Strings.ModelRecommended}." : string.Empty);
 
             choices.Add(new(model.FileName, model.Id, Summary: Size(model.SizeBytes), Hint: hint)

@@ -5,6 +5,7 @@ namespace Echo.Setup.Models;
 /// <summary>
 ///     Picks the model to suggest for a machine. The thresholds are a starting point taken from the model
 ///     requirements in the readme; the test dictation at the end of setup shows whether the pick was right.
+///     Nothing below small is ever suggested (see <see cref="ModelCatalog.IsNotRecommended"/>).
 /// </summary>
 internal static class ModelRecommender
 {
@@ -17,12 +18,8 @@ internal static class ModelRecommender
     [
         new(ComputeKind.Gpu, 8000, 0, 0, ModelCatalog.LargeTurbo),
         new(ComputeKind.Gpu, 5000, 0, 0, ModelCatalog.Medium),
-        new(ComputeKind.Gpu, 3000, 0, 0, ModelCatalog.Small),
-        new(ComputeKind.Gpu, 1500, 0, 0, ModelCatalog.Base),
-        new(ComputeKind.Gpu, 0, 0, 0, ModelCatalog.Tiny),
-        new(ComputeKind.Cpu, 0, 16, 8, ModelCatalog.Small),
-        new(ComputeKind.Cpu, 0, 8, 4, ModelCatalog.Base),
-        new(ComputeKind.Cpu, 0, 0, 0, ModelCatalog.Tiny),
+        new(ComputeKind.Gpu, 0, 0, 0, ModelCatalog.Small),
+        new(ComputeKind.Cpu, 0, 0, 0, ModelCatalog.Small),
     ];
 
     /// <summary>

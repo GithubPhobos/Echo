@@ -187,10 +187,10 @@
     <value>将打开文件选择窗口：选择一个或多个模型文件，Echo 会把它们复制到存放模型的位置。</value>
   </data>
   <data name="ModelTinyHint" xml:space="preserve">
-    <value>最快，出错最多。占用约 300 MB 内存。适合性能较弱的电脑和在处理器上运行。</value>
+    <value>最快，但出错最多。占用约 300 MB 内存。不推荐：在现代电脑上 small 同样很快，出错少好几倍。</value>
   </data>
   <data name="ModelBaseHint" xml:space="preserve">
-    <value>很快，准确度尚可。占用约 400 MB 内存。适合旧笔记本和在处理器上运行。</value>
+    <value>很快，但出错明显比 small 多。占用约 400 MB 内存。不推荐：在现代电脑上 small 同样很快。</value>
   </data>
   <data name="ModelSmallHint" xml:space="preserve">
     <value>速度快，准确度良好。占用约 900 MB 内存。既适合处理器，也适合 2 GB 以上显存的显卡。</value>
@@ -839,5 +839,8 @@
   </data>
   <data name="AdditionalSilenceThresholdHint" xml:space="preserve">
     <value>声音达到多大音量时 Echo 才开始录制语句，范围 0 到 1，更小的声音视为静音。“声音”步骤会根据您的房间和声音测量它。过低会把噪音录进去，过高会截掉语句开头较轻的部分。</value>
+  </data>
+  <data name="TagNotRecommended" xml:space="preserve">
+    <value>不推荐</value>
   </data>
 </root>
