@@ -134,6 +134,11 @@ internal static class PlatformServiceCollectionExtensions
     private static DesktopPortal SharedPortal(IAppPaths paths)
     {
         lock (_portalLock)
-            return _portal ??= new DesktopPortal(new UserSettingsStore(paths));
+        {
+            return _portal ??= new DesktopPortal(
+                new UserSettingsStore(paths),
+                launcher: DesktopEntry.ForCurrentUser(
+                    Environment.GetEnvironmentVariable, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)));
+        }
     }
 }

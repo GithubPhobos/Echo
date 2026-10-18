@@ -149,10 +149,10 @@ internal sealed class HotkeyStep : ISetupStep
             if (key.Value == ConsoleKey.Tab)
                 return SetupStepResult.Next;
 
-            string? label = await _ui.WaitAsync(
+            (string? label, string? error) = await _ui.WaitAsync(
                 screen,
                 Markup.Escape(Strings.HotkeyDesktopWaiting),
-                () => AssignOrNullAsync(context.Hotkey, cancellationToken),
+                () => AssignOrExplainAsync(context.Hotkey, cancellationToken),
                 cancellationToken);
 
             if (label is not null)
@@ -162,9 +162,15 @@ internal sealed class HotkeyStep : ISetupStep
                 return SetupStepResult.Next;
             }
 
+            List<string> refusal = [_ui.Bad(Markup.Escape(Strings.HotkeyDesktopRefused)), string.Empty, SetupUi.Dim(Markup.Escape(Strings.HotkeyDesktopRefusedNote))];
+
+            // The desktop's own words, for whoever sorts it out
+            if (error is not null)
+                refusal.AddRange([string.Empty, SetupUi.Small(Markup.Escape(error))]);
+
             UiResult<ConsoleKey> retry = await _ui.ShowAsync(
                 screen,
-                [_ui.Bad(Markup.Escape(Strings.HotkeyDesktopRefused)), string.Empty, SetupUi.Dim(Markup.Escape(Strings.HotkeyDesktopRefusedNote))],
+                refusal,
                 [(ConsoleKey.Enter, Strings.HintTryAgain), (ConsoleKey.S, Strings.HintSkip)],
                 cancellationToken);
 
@@ -216,17 +222,18 @@ internal sealed class HotkeyStep : ISetupStep
     }
 
     /// <summary>
-    ///     Asks the desktop for the key; a desktop that has no such window answers like one that gave no key.
+    ///     Asks the desktop for the key. A desktop that has no such window, or that refuses, answers like one that
+    ///     gave no key, and its reason comes along.
     /// </summary>
-    private async Task<string?> AssignOrNullAsync(HotkeyChoice preferred, CancellationToken cancellationToken)
+    private async Task<(string? Label, string? Error)> AssignOrExplainAsync(HotkeyChoice preferred, CancellationToken cancellationToken)
     {
         try
         {
-            return await _desktop.AssignKeyAsync(preferred, cancellationToken);
+            return (await _desktop.AssignKeyAsync(preferred, cancellationToken), null);
         }
         catch (Exception exc) when (exc is not OperationCanceledException)
         {
-            return null;
+            return (null, exc.Message);
         }
     }
 }

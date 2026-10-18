@@ -54,7 +54,7 @@ internal sealed class AppPaths(string configRoot, string dataRoot, string? state
     ///     The folder an XDG variable names. The standard says to ignore a value that is empty or not a full
     ///     path, and to use the default folder instead.
     /// </summary>
-    private static string XdgDirectory(Func<string, string?> variable, string name, string userHome, params string[] fallback)
+    internal static string XdgDirectory(Func<string, string?> variable, string name, string userHome, params string[] fallback)
     {
         string? value = variable(name);
 

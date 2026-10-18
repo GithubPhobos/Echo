@@ -72,6 +72,56 @@ public sealed class DesktopPortalTests
     }
 
     [Fact]
+    public async Task EnsureShortcutAsync_DesktopKnowsProgramsByTheirLaunchers_EchoPutsItsOwnInPlaceFirst()
+    {
+        if (!OperatingSystem.IsLinux() || !FakeDesktop.CanRun)
+            return;
+
+        // Arrange: a desktop that registers only a name it has a launcher for
+        string launchers = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "echooo-tests", Guid.NewGuid().ToString("N"));
+
+        try
+        {
+            await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+            desktop.LaunchersDirectory = launchers;
+
+            using var portal = new DesktopPortal(Mock.Of<IUserSettingsStore>(), desktop.Address, new DesktopEntry(launchers, "/opt/echooo/echooo"));
+
+            // Act
+            string? label = await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
+
+            // Assert
+            Assert.Equal("Ctrl+`", label);
+            Assert.Equal(DesktopPortal.ApplicationId, desktop.RegisteredId);
+        }
+        finally
+        {
+            if (Directory.Exists(launchers))
+                Directory.Delete(launchers, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task EnsureShortcutAsync_DesktopRefusesTheName_SaysWhyAndNotJustThatItWantsOne()
+    {
+        if (!OperatingSystem.IsLinux() || !FakeDesktop.CanRun)
+            return;
+
+        // Arrange: no launcher anywhere
+        await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+        desktop.LaunchersDirectory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "echooo-tests", Guid.NewGuid().ToString("N"));
+
+        using var portal = new DesktopPortal(Mock.Of<IUserSettingsStore>(), desktop.Address);
+
+        // Act
+        var exception = await Assert.ThrowsAsync<DBusErrorReplyException>(
+            () => portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None));
+
+        // Assert
+        Assert.Contains("App info not found", exception.Message);
+    }
+
+    [Fact]
     public async Task EnsureShortcutAsync_KeyGivenInAnEarlierRun_IsFoundWithoutTheWindow()
     {
         if (!OperatingSystem.IsLinux() || !FakeDesktop.CanRun)
@@ -270,6 +320,12 @@ public sealed class DesktopPortalTests
 
         public string? RegisteredId { get; private set; }
 
+        /// <summary>
+        ///     When set, the desktop registers only a name it has a launcher for in this folder, and opens no
+        ///     session for a program it could not register, the way GNOME 50 on Ubuntu 26.04 does.
+        /// </summary>
+        public string? LaunchersDirectory { get; set; }
+
         public string? PreferredTrigger { get; private set; }
 
         public bool IsBound { get; set; }
@@ -339,7 +395,16 @@ public sealed class DesktopPortalTests
             switch (member)
             {
                 case "Register":
-                    RegisteredId = reader.ReadString();
+                    string id = reader.ReadString();
+
+                    if (LaunchersDirectory is not null && !File.Exists(System.IO.Path.Combine(LaunchersDirectory, id + ".desktop")))
+                    {
+                        context.ReplyError("org.freedesktop.portal.Error.Failed", $"Could not register app ID: App info not found for '{id}'");
+
+                        break;
+                    }
+
+                    RegisteredId = id;
                     ReplyEmpty(context);
 
                     break;
@@ -363,6 +428,13 @@ public sealed class DesktopPortalTests
                     break;
 
                 case "CreateSession":
+                    if (LaunchersDirectory is not null && RegisteredId is null)
+                    {
+                        context.ReplyError("org.freedesktop.portal.Error.NotAllowed", "An app id is required");
+
+                        break;
+                    }
+
                     Dictionary<string, VariantValue> options = reader.ReadDictionaryOfStringToVariantValue();
                     string session = $"{ObjectPath}/session/{Sender(request)}/{options["session_handle_token"].GetString()}";
 

@@ -16,8 +16,12 @@ namespace Echo.Platform.Linux;
 /// </remarks>
 /// <param name="settings">Keeps the permission to paste between runs.</param>
 /// <param name="address">The address of the session bus; tests give one of their own.</param>
+/// <param name="launcher">
+///     Echo's launcher in the applications menu, put in place before Echo names itself: the desktop does not
+///     register a name it has no launcher for. Tests leave it out.
+/// </param>
 [SupportedOSPlatform("linux")]
-internal sealed class DesktopPortal(IUserSettingsStore settings, string? address = null) : IDisposable
+internal sealed class DesktopPortal(IUserSettingsStore settings, string? address = null, DesktopEntry? launcher = null) : IDisposable
 {
     /// <summary>
     ///     The name under which the desktop knows Echo. The permissions it gives are tied to it, so it never changes.
@@ -61,8 +65,16 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
     /// </summary>
     private const uint ResponseSuccess = 0;
 
+    /// <summary>
+    ///     How often, and how far apart, Echo names itself again when the desktop has not yet noticed the launcher
+    ///     Echo has just written.
+    /// </summary>
+    private const int RegisterAttempts = 5;
+    private static readonly TimeSpan _registerPause = TimeSpan.FromMilliseconds(400);
+
     private readonly IUserSettingsStore _settings = settings;
     private readonly string? _address = address;
+    private readonly DesktopEntry? _launcher = launcher;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private readonly List<IDisposable> _watches = [];
 
@@ -70,6 +82,11 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
     private int _requests;
     private string? _shortcutsSession;
     private string? _keyboardSession;
+
+    /// <summary>
+    ///     Why the desktop would not register Echo's name, when it would not: the reason it then refuses the key.
+    /// </summary>
+    private string? _registrationError;
 
     /// <summary>
     ///     A key Echo got from the desktop went down; the name of the key comes along.
@@ -142,6 +159,11 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
             return code == ResponseSuccess && results.TryGetValue("shortcuts", out VariantValue shortcuts)
                 ? FindTrigger(ToShortcuts(shortcuts)) ?? preferredTrigger
                 : null;
+        }
+        catch (DBusErrorReplyException exc) when (_registrationError is not null)
+        {
+            // "An app id is required" says little; the refusal to register says why
+            throw new DBusErrorReplyException(exc.ErrorName, $"{exc.ErrorMessage} ({_registrationError})");
         }
         finally
         {
@@ -291,15 +313,7 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
         try
         {
             await connection.ConnectAsync();
-
-            try
-            {
-                await connection.CallMethodAsync(CreateRegister(connection));
-            }
-            catch (DBusErrorReplyException)
-            {
-                // A portal older than the registry knows Echo by other means, or not at all
-            }
+            await RegisterAsync(connection);
 
             _watches.Add(await WatchAsync(connection, ObjectPath, ShortcutsInterface, "Activated", ReadShortcutSignal, value => OnShortcut(value, isPressed: true)));
             _watches.Add(await WatchAsync(connection, ObjectPath, ShortcutsInterface, "Deactivated", ReadShortcutSignal, value => OnShortcut(value, isPressed: false)));
@@ -316,6 +330,46 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
             throw;
         }
     }
+
+    /// <summary>
+    ///     Names Echo to the desktop, its launcher in place first. A launcher written just now may take the desktop
+    ///     a moment to notice, so the name is given again a few times before the refusal is taken as final.
+    /// </summary>
+    private async Task RegisterAsync(DBusConnection connection)
+    {
+        bool isNewLauncher = _launcher?.Ensure() == true;
+
+        for (int attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await connection.CallMethodAsync(CreateRegister(connection));
+
+                _registrationError = null;
+
+                return;
+            }
+            catch (DBusErrorReplyException exc)
+            {
+                // A portal older than the registry knows Echo by other means, or not at all
+                if (IsUnknownMethod(exc))
+                    return;
+
+                _registrationError = exc.ErrorMessage;
+
+                if (!isNewLauncher || attempt == RegisterAttempts)
+                    return;
+            }
+
+            await Task.Delay(_registerPause);
+        }
+    }
+
+    private static bool IsUnknownMethod(DBusErrorReplyException exception) =>
+        exception.ErrorName is "org.freedesktop.DBus.Error.UnknownMethod"
+            or "org.freedesktop.DBus.Error.UnknownInterface"
+            or "org.freedesktop.DBus.Error.UnknownObject"
+            or "org.freedesktop.DBus.Error.ServiceUnknown";
 
     private async Task<string> CreateSessionAsync(DBusConnection connection, string portalInterface, CancellationToken cancellationToken)
     {
