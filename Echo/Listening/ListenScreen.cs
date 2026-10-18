@@ -286,6 +286,14 @@ internal sealed class ListenScreen(IAnsiConsole console,
 
                 break;
 
+            // Ctrl+Backspace takes away the whole word, and so does Ctrl+W, as in Linux terminals
+            case ConsoleKey.Backspace or ConsoleKey.W when key.Modifiers.HasFlag(ConsoleModifiers.Control):
+                _choosing = null;
+                _line.DeleteWord();
+                _selected = 0;
+
+                break;
+
             case ConsoleKey.Backspace:
                 _choosing = null;
                 _line.Backspace();

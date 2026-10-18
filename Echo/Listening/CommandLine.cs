@@ -48,6 +48,22 @@ internal sealed class CommandLine(IReadOnlyList<ListenCommandInfo> commands)
             _text.Length--;
     }
 
+    /// <summary>
+    ///     Takes away the last word, with the spaces after it.
+    /// </summary>
+    public void DeleteWord()
+    {
+        int end = _text.Length;
+
+        while (end > 0 && char.IsWhiteSpace(_text[end - 1]))
+            end--;
+
+        while (end > 0 && !char.IsWhiteSpace(_text[end - 1]))
+            end--;
+
+        _text.Length = end;
+    }
+
     public void Clear() => _text.Clear();
 
     public void Replace(string text)

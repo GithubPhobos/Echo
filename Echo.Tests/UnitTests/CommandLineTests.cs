@@ -41,6 +41,24 @@ public sealed class CommandLineTests : IDisposable
         Assert.Empty(line.Suggestions);
     }
 
+    [Fact]
+    public void DeleteWord_TakesAwayTheLastWordWithTheSpacesAfterIt()
+    {
+        // Arrange
+        var line = new CommandLine(Commands(out _, out _).All);
+        Type(line, "/log debug  ");
+
+        // Act & Assert
+        line.DeleteWord();
+        Assert.Equal("/log ", line.Text);
+
+        line.DeleteWord();
+        Assert.Equal(string.Empty, line.Text);
+
+        line.DeleteWord();
+        Assert.Equal(string.Empty, line.Text);
+    }
+
     private static ListenCommands Commands(out ListenActivity activity, out LoggingLevelSwitch levelSwitch)
     {
         activity = new ListenActivity(new ScreenLog(), () => false);

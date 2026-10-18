@@ -146,6 +146,27 @@ public sealed class ListenScreenTests : IDisposable
         Assert.Contains("line 50", console.Output[drawn..]);
     }
 
+    [Theory]
+    [InlineData(ConsoleKey.Backspace, '\b')]
+    [InlineData(ConsoleKey.W, '\u0017')]
+    public void Handle_CtrlBackspaceOrCtrlW_TakesAwayTheLastWord(ConsoleKey key, char character)
+    {
+        // Arrange: Linux terminals send Ctrl+Backspace as ^H, which .NET reads as Backspace with Ctrl
+        ListenCommands commands = Commands(out ListenActivity activity, out _);
+        (ListenScreen screen, TestConsole console) = Screen(activity, commands);
+
+        foreach (char typed in "/log debug")
+            screen.Handle(new ConsoleKeyInfo(typed, ConsoleKey.NoName, shift: false, alt: false, control: false));
+
+        // Act
+        screen.Handle(new ConsoleKeyInfo(character, key, shift: false, alt: false, control: true));
+        screen.Draw();
+
+        // Assert
+        Assert.Contains("> /log █", console.Output);
+        Assert.DoesNotContain("debug", console.Output);
+    }
+
     private static ListenCommands Commands(out ListenActivity activity, out LoggingLevelSwitch levelSwitch)
     {
         activity = new ListenActivity(new ScreenLog(), () => false);
