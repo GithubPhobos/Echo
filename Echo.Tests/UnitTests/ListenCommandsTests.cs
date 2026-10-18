@@ -56,7 +56,7 @@ public sealed class ListenCommandsTests : IDisposable
             [
                 "/pause", "Echo no longer listens to the key. /resume to continue.",
                 "/resume", "Echo listens to the key again.",
-                "/log warn", "Log detail: warning. Saved: it stays until you change it.",
+                "/log warn", "Log detail: warning.",
                 "/log loud", "No such level: loud. Levels: verbose, debug, information, warning, error, fatal.",
                 "/nothing", "No such command: /nothing. /help lists them.",
                 "hello", "Commands start with /. /help lists them.",

@@ -643,7 +643,7 @@
     <value>Нет такого уровня: {0}. Уровни: {1}.</value>
   </data>
   <data name="ResponseLogLevel" xml:space="preserve">
-    <value>Подробность журнала: {0}. Сохранено: останется, пока вы её не смените.</value>
+    <value>Подробность журнала: {0}.</value>
   </data>
   <data name="ResponseLogLevelNotSaved" xml:space="preserve">
     <value>Подробность журнала: {0}, но сохранить её не удалось, поэтому она действует только до перезапуска Echo: {1}</value>

@@ -643,7 +643,7 @@
     <value>Keine solche Stufe: {0}. Stufen: {1}.</value>
   </data>
   <data name="ResponseLogLevel" xml:space="preserve">
-    <value>Protokolldetail: {0}. Gespeichert: Es bleibt, bis Sie es ändern.</value>
+    <value>Protokolldetail: {0}.</value>
   </data>
   <data name="ResponseLogLevelNotSaved" xml:space="preserve">
     <value>Protokolldetail: {0}, konnte aber nicht gespeichert werden und gilt daher nur bis zum Neustart von Echo: {1}</value>

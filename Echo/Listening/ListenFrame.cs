@@ -514,7 +514,7 @@ internal sealed class ListenFrame(Theme theme)
         MessageTone.Done => Theme.Success,
         MessageTone.Failed => Theme.Failure,
         MessageTone.Progress => LogQuiet,
-        MessageTone.Key => Theme.Highlight,
+        MessageTone.Key => $"bold {Theme.Highlight}",
         MessageTone.Title => "bold #f0f6fc",
         _ => LogText
     };

@@ -70,23 +70,25 @@ internal sealed class AudioRecordingService(
 
         foreach (MicrophoneDevice device in devices)
         {
-            _logger.LogDebug("{Tab}[{i}]: {ProductName}",
+            _logger.LogDebug("{Tab}[{i}]: {ProductName}{InUse}",
                 LoggerConstants.Tab,
                 device.Index,
-                device.Name);
+                device.Name,
+                device.Index == _recordingDeviceSettings.DeviceIndex ? " (in use)" : string.Empty);
         }
 
+        // The devices can change between two starts: the one chosen in setup may be gone
         if (_recordingDeviceSettings.DeviceIndex == -1
             ||
-            _recordingDeviceSettings.DeviceIndex > deviceCount + 1)
+            _recordingDeviceSettings.DeviceIndex >= deviceCount)
         {
             throw new Exception(
                 $"{LoggerConstants.Tab}{LoggerConstants.WarningEmoji} " +
-                $"Invalid selected device index ({_recordingDeviceSettings.DeviceIndex}). " +
-                "Select correct device index from the list above.");
+                $"The microphone chosen in setup ([{_recordingDeviceSettings.DeviceIndex}]) is not in the list above. " +
+                "Choose another one with /setup.");
         }
 
-        _logger.LogDebug("{Tab}{CheckedEmoji} Successfuly analized audio devices.",
+        _logger.LogDebug("{Tab}{CheckedEmoji} Audio devices checked.",
             LoggerConstants.Tab, LoggerConstants.CheckedEmoji);
 
         InitializeMic();
@@ -137,8 +139,6 @@ internal sealed class AudioRecordingService(
                 _isPttActive = true;
             }
 
-            _logger.LogInformation("{Tab}{MicrophoneOnEmoji} Microphone activated, recording audio...",
-                LoggerConstants.Tab, LoggerConstants.MicrophoneOnEmoji);
         }
         catch (Exception exc)
         {
@@ -183,9 +183,6 @@ internal sealed class AudioRecordingService(
                 _audioStream = null; // Clear internal reference to prevent memory leaks
             }
         }
-
-        _logger.LogInformation("{Tab}{MicrophoneOffEmoji} Microphone deactivated.",
-            LoggerConstants.Tab, LoggerConstants.MicrophoneOffEmoji);
 
         return resultStream;
     }

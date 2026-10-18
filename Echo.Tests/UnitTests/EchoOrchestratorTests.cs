@@ -10,7 +10,6 @@ public sealed class EchoOrchestratorTests
     /// </summary>
     private static readonly TimeSpan _patience = TimeSpan.FromSeconds(10);
 
-    private readonly Mock<IAssetsProvider> _assetsMock = new();
     private readonly Mock<ISoundPlayService> _soundMock = new();
     private readonly Mock<ITextInsertionService> _textMock = new();
     private readonly Mock<IAudioRecordingService> _audioMock = new();
@@ -23,7 +22,6 @@ public sealed class EchoOrchestratorTests
     public EchoOrchestratorTests()
     {
         _orchestrator = new EchoOrchestrator(
-            _assetsMock.Object,
             _loggerMock.Object,
             _soundMock.Object,
             _textMock.Object,
@@ -40,7 +38,6 @@ public sealed class EchoOrchestratorTests
         await StartAsync(_orchestrator);
 
         // Assert
-        _assetsMock.Verify(a => a.InitializeAssetsDirectory(), Times.Once);
         _audioMock.Verify(a => a.InititalizeAudioRecordingCapabilities(), Times.Once);
         _whisperMock.Verify(w => w.TryInitializeWhisperModel(), Times.Once);
         _monitorMock.Verify(m => m.InitializePushToTalkHotkeysOrThrow(), Times.Once);
@@ -134,7 +131,6 @@ public sealed class EchoOrchestratorTests
         var insertion = new Mock<ITextInsertionService>();
 
         var orchestrator = new EchoOrchestrator(
-            Mock.Of<IAssetsProvider>(),
             Mock.Of<ILogger<EchoOrchestrator>>(),
             Mock.Of<ISoundPlayService>(),
             insertion.Object,
@@ -213,7 +209,7 @@ public sealed class EchoOrchestratorTests
             .Setup(x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("released")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Recorded")),
                 It.IsAny<Exception?>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()))
             .Callback(new InvocationAction(_ =>
@@ -296,7 +292,6 @@ public sealed class EchoOrchestratorTests
             .ReturnsAsync("second");
 
         var orchestrator = new EchoOrchestrator(
-            _assetsMock.Object,
             _loggerMock.Object,
             _soundMock.Object,
             insertion,
@@ -329,7 +324,6 @@ public sealed class EchoOrchestratorTests
 
     private EchoOrchestrator CreateOrchestrator(IListenActivity activity) =>
         new(
-            _assetsMock.Object,
             _loggerMock.Object,
             _soundMock.Object,
             _textMock.Object,

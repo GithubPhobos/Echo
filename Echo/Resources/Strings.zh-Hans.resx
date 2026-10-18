@@ -643,7 +643,7 @@
     <value>没有这个级别：{0}。级别：{1}。</value>
   </data>
   <data name="ResponseLogLevel" xml:space="preserve">
-    <value>日志详细程度：{0}。已保存：在你更改之前一直有效。</value>
+    <value>日志详细程度：{0}。</value>
   </data>
   <data name="ResponseLogLevelNotSaved" xml:space="preserve">
     <value>日志详细程度：{0}，但无法保存，因此仅在 Echo 重启前有效：{1}</value>

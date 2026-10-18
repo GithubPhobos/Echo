@@ -35,10 +35,6 @@ internal sealed class SoundPlayService(
         if (!_pushToTalkSettings.PlaySound)
             return;
 
-        _logger.LogDebug("{NoteEmoji} Sounds:", LoggerConstants.NoteEmoji);
-        _logger.LogDebug("{Tab}{LoadingEmoji} Searching and loading required files into memory...",
-            LoggerConstants.Tab, LoggerConstants.LoadingEmoji);
-
         string? errorMessage = null;
         try
         {
@@ -80,17 +76,16 @@ internal sealed class SoundPlayService(
             _canPlaySounds = false;
         }
 
+        // One line either way: the sounds are a detail next to the microphone, the model and the key
         if (!_canPlaySounds)
         {
-            _logger.LogDebug("{Tab}{WarningEmoji} Cannot play sounds: {ErrorMessage}",
-                LoggerConstants.Tab, LoggerConstants.WarningEmoji, errorMessage);
+            _logger.LogDebug("{NoteEmoji} Sounds: cannot play them: {ErrorMessage}",
+                LoggerConstants.NoteEmoji, errorMessage);
         }
         else
         {
-            _logger.LogDebug("{Tab}{CheckedEmoji} Audio Engine started and files cached.",
-                LoggerConstants.Tab, LoggerConstants.CheckedEmoji);
-            _logger.LogDebug("{Tab}{InfoEmoji} Volume is set to: {Volume}",
-                LoggerConstants.Tab, LoggerConstants.InfoEmoji, _volume);
+            _logger.LogDebug("{NoteEmoji} Sounds: on, volume {Volume}%.",
+                LoggerConstants.NoteEmoji, (int)Math.Round((_volume ?? 0f) * 100));
         }
     }
 

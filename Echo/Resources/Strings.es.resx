@@ -643,7 +643,7 @@
     <value>No existe el nivel {0}. Niveles: {1}.</value>
   </data>
   <data name="ResponseLogLevel" xml:space="preserve">
-    <value>Detalle del registro: {0}. Guardado: se mantiene hasta que lo cambies.</value>
+    <value>Detalle del registro: {0}.</value>
   </data>
   <data name="ResponseLogLevelNotSaved" xml:space="preserve">
     <value>Detalle del registro: {0}, pero no se pudo guardar, así que solo dura hasta que Echo se reinicie: {1}</value>

@@ -29,7 +29,7 @@ public sealed class SoundPlayServiceTests
             s => s.Log(
                 LogLevel.Debug,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Cannot play sounds")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Sounds: cannot play them")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);

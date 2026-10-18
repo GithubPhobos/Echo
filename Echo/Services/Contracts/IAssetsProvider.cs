@@ -6,11 +6,6 @@
 internal interface IAssetsProvider
 {
     /// <summary>
-    ///     Creates the 'Assets' directory in the application's root if it does not already exist.
-    /// </summary>
-    public void InitializeAssetsDirectory();
-
-    /// <summary>
     ///     Constructs a secure absolute path for a given file name within the 'Assets' directory.
     /// </summary>
     /// <param name="fileName">The name of the file to locate.</param>

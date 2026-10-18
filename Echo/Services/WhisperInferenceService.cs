@@ -113,9 +113,6 @@ internal sealed class WhisperInferenceService(
             return null;
         }
 
-        _logger.LogDebug("{LoadingEmoji} Starting audio recognition...",
-            LoggerConstants.LoadingEmoji);
-
         Stopwatch stopwatch = Stopwatch.StartNew();
 
         var sb = new StringBuilder();
@@ -253,20 +250,12 @@ internal sealed class WhisperInferenceService(
 
     private void LogRecognitionResults(Stopwatch stopwatch, string finalResult)
     {
-        // The working screen shows the recognized phrase in a line of its own; the file keeps these details
+        // The working screen shows the recognized phrase in a line of its own; this line is for the file
         using IDisposable hidden = Serilog.Context.LogContext.PushProperty(Echo.Listening.ScreenLogSink.HiddenProperty, true);
 
-        _logger.LogDebug("{CheckedEmoji} Audio processed:", LoggerConstants.CheckedEmoji);
-
-        _logger.LogDebug("{Tab}{RobotEmoji} Model used: {ModelName}.",
-            LoggerConstants.Tab, LoggerConstants.RobotEmoji, _whisperSettings.ModelName);
-
-        _logger.LogDebug("{Tab}{TimerEmoji} Recognition time: {Elapsed} ms.",
-            LoggerConstants.Tab, LoggerConstants.TimerEmoji, stopwatch.ElapsedMilliseconds);
-
-        _logger.LogDebug("{Tab}{TextEmoji} Final result: {FinalResult}",
-            LoggerConstants.Tab, LoggerConstants.TextEmoji, finalResult);
-
-        _logger.LogDebug("========================================================================");
+        _logger.LogDebug("{TextEmoji} Recognized in {Seconds} s: {FinalResult}",
+            LoggerConstants.TextEmoji,
+            stopwatch.Elapsed.TotalSeconds.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+            finalResult);
     }
 }

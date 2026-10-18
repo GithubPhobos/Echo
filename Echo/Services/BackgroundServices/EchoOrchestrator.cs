@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Globalization;
+using System.Reflection;
 using Echo.Listening;
 using Microsoft.Extensions.Hosting;
 using Whisper.net.LibraryLoader;
@@ -12,14 +13,12 @@ namespace Echo.Services.BackgroundServices;
 /// <param name="pushToTalkMonitorService"><see cref="AssetsProvider"/></param>
 /// <param name="logger"><see cref="ILogger{EchoOrchestrator}"/></param>
 /// <param name="audioRecordingService"><see cref="SoundPlayService"/></param>
-/// <param name="assetsProvider"><see cref="TextInsertionService"/></param>
 /// <param name="soundPlayService"><see cref="AudioRecordingService"/></param>
 /// <param name="textInsertionService"><see cref="WhisperInferenceService"/></param>
 /// <param name="whisperInferenceService"><see cref="PushToTalkMonitorService"/></param>
 /// <param name="errorWindow">Shows an error that stops Echo when there is no working screen to show it on.</param>
 /// <param name="activity">The working screen, when Echo runs with one.</param>
 internal sealed class EchoOrchestrator(
-    IAssetsProvider assetsProvider,
     ILogger<EchoOrchestrator> logger,
     ISoundPlayService soundPlayService,
     ITextInsertionService textInsertionService,
@@ -32,7 +31,6 @@ internal sealed class EchoOrchestrator(
     private readonly IListenActivity? _activity = activity;
 
     private readonly ILogger<EchoOrchestrator> _logger = logger;
-    private readonly IAssetsProvider _assetsProvider = assetsProvider;
     private readonly ISoundPlayService _soundPlayService = soundPlayService;
     private readonly ITextInsertionService _textInsertionService = textInsertionService;
     private readonly IAudioRecordingService _audioRecordingService = audioRecordingService;
@@ -61,6 +59,7 @@ internal sealed class EchoOrchestrator(
     private bool _isStopping;
     private bool _isRecording;
     private int _waitingPhrases;
+    private long _pressedAt;
 
     /// <inheritdoc/>
     /// <param name="stoppingToken"><see cref="CancellationToken"/></param>
@@ -73,15 +72,14 @@ internal sealed class EchoOrchestrator(
                 LoggerConstants.EarEmoji,
                 Assembly.GetExecutingAssembly().GetName().Version?.ToString(3));
 
-            _assetsProvider.InitializeAssetsDirectory();
-
             _audioRecordingService.InititalizeAudioRecordingCapabilities();
 
             _whisperInferenceService.TryInitializeWhisperModel();
 
-            _pushToTalkMonitorService.InitializePushToTalkHotkeysOrThrow();
-
             _soundPlayService.EnsureCanPlaySounds();
+
+            // Last, so that the key's heading is followed by what the keyboard part says when it starts
+            _pushToTalkMonitorService.InitializePushToTalkHotkeysOrThrow();
 
             lock (_stateLock)
             {
@@ -138,7 +136,9 @@ internal sealed class EchoOrchestrator(
 
     private void HandlePushToTalkTriggered(object? sender, EventArgs e)
     {
-        _logger.LogInformation("{BlackSquareButtonEmoji} Push-to-talk pressed.", 
+        _pressedAt = Stopwatch.GetTimestamp();
+
+        _logger.LogInformation("{BlackSquareButtonEmoji} Recording...",
             LoggerConstants.BlackSquareButtonEmoji);
 
         lock (_stateLock)
@@ -155,8 +155,9 @@ internal sealed class EchoOrchestrator(
 
     private void HandlePushToTalkReleased(object? sender, EventArgs e)
     {
-        _logger.LogInformation("{WhiteSquareButtonEmoji} Push-to-talk released.",
-            LoggerConstants.WhiteSquareButtonEmoji);
+        _logger.LogInformation("{WhiteSquareButtonEmoji} Recorded {Seconds} s, recognizing...",
+            LoggerConstants.WhiteSquareButtonEmoji,
+            Stopwatch.GetElapsedTime(_pressedAt).TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture));
 
         lock (_stateLock)
         {

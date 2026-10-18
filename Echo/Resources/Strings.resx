@@ -643,7 +643,7 @@
     <value>No such level: {0}. Levels: {1}.</value>
   </data>
   <data name="ResponseLogLevel" xml:space="preserve">
-    <value>Log detail: {0}. Saved: it stays until you change it.</value>
+    <value>Log detail: {0}.</value>
   </data>
   <data name="ResponseLogLevelNotSaved" xml:space="preserve">
     <value>Log detail: {0}, but it could not be saved, so it lasts only until Echo is restarted: {1}</value>
