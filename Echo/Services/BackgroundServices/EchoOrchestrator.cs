@@ -155,9 +155,21 @@ internal sealed class EchoOrchestrator(
 
     private void HandlePushToTalkReleased(object? sender, EventArgs e)
     {
-        _logger.LogInformation("{WhiteSquareButtonEmoji} Recorded {Seconds} s, recognizing...",
-            LoggerConstants.WhiteSquareButtonEmoji,
-            Stopwatch.GetElapsedTime(_pressedAt).TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture));
+        string seconds = Stopwatch.GetElapsedTime(_pressedAt).TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture);
+
+        MemoryStream? audioStream = _audioRecordingService.StopRecording();
+
+        // A recording without sound is not recognized, so its line does not say it is
+        if (WhisperInferenceService.IsAudioSilentOrEmpty(audioStream))
+        {
+            _logger.LogInformation("{WhiteSquareButtonEmoji} Recorded {Seconds} s.",
+                LoggerConstants.WhiteSquareButtonEmoji, seconds);
+        }
+        else
+        {
+            _logger.LogInformation("{WhiteSquareButtonEmoji} Recorded {Seconds} s, recognizing...",
+                LoggerConstants.WhiteSquareButtonEmoji, seconds);
+        }
 
         lock (_stateLock)
         {
@@ -169,7 +181,7 @@ internal sealed class EchoOrchestrator(
             _waitingPhrases++;
             ShowState();
 
-            Task recognition = Task.Run(RecognizeAsync);
+            Task recognition = Task.Run(() => RecognizeAsync(audioStream));
             _recognitions.Add(recognition);
 
             _ = recognition.ContinueWith(
@@ -185,11 +197,11 @@ internal sealed class EchoOrchestrator(
     /// <summary>
     ///     Recognizes the phrase just said, then tells the screen whether anything is still under way.
     /// </summary>
-    private async Task RecognizeAsync()
+    private async Task RecognizeAsync(MemoryStream? audioStream)
     {
         try
         {
-            await ProcessRecordingPayloadAsync();
+            await ProcessRecordingPayloadAsync(audioStream);
         }
         finally
         {
@@ -256,12 +268,14 @@ internal sealed class EchoOrchestrator(
         base.Dispose();
     }
 
-    internal async Task ProcessRecordingPayloadAsync()
+    /// <summary>
+    ///     Recognizes a finished recording and types the text, one phrase at a time.
+    /// </summary>
+    /// <param name="audioStream">The recording, taken from the microphone when the key was let go.</param>
+    internal async Task ProcessRecordingPayloadAsync(MemoryStream? audioStream)
     {
         try
         {
-            MemoryStream? audioStream = _audioRecordingService.StopRecording();
-
             await _phraseTurn.WaitAsync();
 
             try

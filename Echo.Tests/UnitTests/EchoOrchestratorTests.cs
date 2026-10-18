@@ -65,9 +65,6 @@ public sealed class EchoOrchestratorTests
         var fakeStream = new MemoryStream(new byte[33000]);
         string expectedText = "Hello, world!";
 
-        _audioMock.Setup(a => a.StopRecording())
-                  .Returns(fakeStream);
-
         // We can safely match the exact stream instance now
         _whisperMock.Setup(w => w.ProcessAudioAsync(fakeStream))
                     .ReturnsAsync(expectedText);
@@ -76,10 +73,9 @@ public sealed class EchoOrchestratorTests
                  .Returns(Task.CompletedTask);
 
         // Act
-        await _orchestrator.ProcessRecordingPayloadAsync();
+        await _orchestrator.ProcessRecordingPayloadAsync(fakeStream);
 
         // Assert
-        _audioMock.Verify(a => a.StopRecording(), Times.Once);
         _whisperMock.Verify(w => w.ProcessAudioAsync(fakeStream), Times.Once);
         _textMock.Verify(t => t.InsertTextAsync(expectedText), Times.Once);
     }
@@ -118,6 +114,39 @@ public sealed class EchoOrchestratorTests
             Times.Once);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OnRecordingReleased_SaysItRecognizesOnlyARecordingWithSound(bool hasSound)
+    {
+        // Arrange: a recording long enough to be heard, loud after the 44 bytes of its header or silent
+        byte[] audio = new byte[20000];
+
+        if (hasSound)
+        {
+            audio[50] = 0x88;
+            audio[51] = 0x13;
+        }
+
+        _audioMock.Setup(a => a.StopRecording()).Returns(new MemoryStream(audio));
+
+        await StartAsync(_orchestrator);
+
+        // Act
+        _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty);
+        await _orchestrator.StopAsync(CancellationToken.None);
+
+        // Assert
+        _loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Recorded") && v.ToString()!.Contains("recognizing") == hasSound),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
     [Fact]
     public async Task ProcessRecordingPayloadAsync_PhraseRecognizedWhileEchoHasTheKeyboard_IsShownButNotTyped()
     {
@@ -141,10 +170,10 @@ public sealed class EchoOrchestratorTests
             activity);
 
         // Act
-        await orchestrator.ProcessRecordingPayloadAsync();
+        await orchestrator.ProcessRecordingPayloadAsync(new MemoryStream());
 
         focused = false;
-        await orchestrator.ProcessRecordingPayloadAsync();
+        await orchestrator.ProcessRecordingPayloadAsync(new MemoryStream());
 
         // Assert: shown both times, typed only into another window
         Assert.Equal(2, activity.Log.Snapshot().Count(entry => entry.Kind == EntryKind.Dictated && entry.Text == "hello"));
