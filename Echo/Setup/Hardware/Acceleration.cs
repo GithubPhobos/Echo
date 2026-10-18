@@ -30,7 +30,9 @@ internal static class Acceleration
         if (CudaRequirements.Check(hardware) == CudaSupport.Supported)
             return AccelerationBackend.Cuda;
 
-        return hardware.IsVulkanAvailable ? AccelerationBackend.Vulkan : AccelerationBackend.Cpu;
+        return hardware.IsVulkanAvailable && hardware.IsVulkanChosenAutomatically
+            ? AccelerationBackend.Vulkan
+            : AccelerationBackend.Cpu;
     }
 
     /// <summary>
@@ -39,9 +41,11 @@ internal static class Acceleration
     /// </summary>
     /// <param name="setting">The 'HardwareBackend' setting.</param>
     /// <param name="isCudaInstalled">Whether every NVIDIA library the CUDA runtime needs is in place.</param>
+    /// <param name="isVulkanChosenAutomatically">Whether the automatic setting may load Vulkan on this system.</param>
     /// <param name="defaultOrder">The runtime's own order, used for the automatic setting.</param>
     public static List<RuntimeLibrary> LibraryOrder(string? setting,
                                                     bool isCudaInstalled,
+                                                    bool isVulkanChosenAutomatically,
                                                     IReadOnlyList<RuntimeLibrary> defaultOrder)
     {
         List<RuntimeLibrary> order = Parse(setting) switch
@@ -49,7 +53,7 @@ internal static class Acceleration
             AccelerationBackend.Cuda => [RuntimeLibrary.Cuda, RuntimeLibrary.Cpu],
             AccelerationBackend.Vulkan => [RuntimeLibrary.Vulkan, RuntimeLibrary.Cpu],
             AccelerationBackend.Cpu => [RuntimeLibrary.Cpu],
-            _ => [.. defaultOrder]
+            _ => [.. defaultOrder.Where(library => library != RuntimeLibrary.Vulkan || isVulkanChosenAutomatically)]
         };
 
         // With some of its libraries missing the CUDA runtime does not fail, it takes the process down

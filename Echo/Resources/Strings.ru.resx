@@ -813,4 +813,10 @@
   <data name="RequireRecognitionWithout" xml:space="preserve">
     <value>Без неё распознавание речи не запустится.</value>
   </data>
+  <data name="AccelerationVulkanTrial" xml:space="preserve">
+    <value>Vulkan (пробный)</value>
+  </data>
+  <data name="AccelerationVulkanTrialHint" xml:space="preserve">
+    <value>Для видеокарт AMD и Intel. На Linux ещё не проверен: если распознавание не работает или идёт медленно, выберите процессор.</value>
+  </data>
 </root>

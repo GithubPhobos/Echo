@@ -450,8 +450,13 @@ internal sealed class AccelerationStep : ISetupStep
                     Format.Megabytes(_cudaRuntime.DownloadSizeBytes))));
         }
 
+        // Where Vulkan is still on trial it is there to pick by hand, and says so
         if (hardware.IsVulkanAvailable)
-            choices.Add(new(Acceleration.ToSetting(AccelerationBackend.Vulkan), "Vulkan", Hint: Strings.AccelerationVulkanHint));
+        {
+            choices.Add(hardware.IsVulkanChosenAutomatically
+                ? new(Acceleration.ToSetting(AccelerationBackend.Vulkan), "Vulkan", Hint: Strings.AccelerationVulkanHint)
+                : new(Acceleration.ToSetting(AccelerationBackend.Vulkan), Strings.AccelerationVulkanTrial, Hint: Strings.AccelerationVulkanTrialHint));
+        }
 
         choices.Add(new(Acceleration.ToSetting(AccelerationBackend.Cpu), Strings.AccelerationCpu, Hint: Strings.AccelerationCpuHint));
 

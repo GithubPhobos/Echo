@@ -9,18 +9,21 @@ namespace Echo.Services;
 /// <param name="paths"><see cref="IAppPaths"/></param>
 /// <param name="cudaLibraries">Finds the NVIDIA libraries the CUDA runtime needs, the way this system does.</param>
 /// <param name="systemLibraries">Finds the libraries of the system recognition needs.</param>
+/// <param name="vulkan">Whether the automatic setting may load Vulkan on this system.</param>
 /// <param name="logger"><see cref="ILogger{WhisperInferenceService}"/></param>
 /// <param name="whisperSettingsOptions"><see cref="IOptions{WhisperSettings}"/></param>
 internal sealed class WhisperInferenceService(
     IAppPaths paths,
     ICudaLibraries cudaLibraries,
     ISystemLibraries systemLibraries,
+    IVulkanSupport vulkan,
     ILogger<WhisperInferenceService> logger,
     IOptions<WhisperSettings> whisperSettingsOptions) : IWhisperInferenceService
 {
     private readonly IAppPaths _paths = paths;
     private readonly ICudaLibraries _cudaLibraries = cudaLibraries;
     private readonly ISystemLibraries _systemLibraries = systemLibraries;
+    private readonly IVulkanSupport _vulkan = vulkan;
     private readonly ILogger<WhisperInferenceService> _logger = logger;
     private readonly WhisperSettings _whisperSettings = whisperSettingsOptions.Value;
 
@@ -63,6 +66,7 @@ internal sealed class WhisperInferenceService(
             RuntimeOptions.RuntimeLibraryOrder = Acceleration.LibraryOrder(
                 _whisperSettings.HardwareBackend,
                 isCudaInstalled: missingCudaLibraries.Count == 0,
+                isVulkanChosenAutomatically: _vulkan.IsChosenAutomatically,
                 RuntimeOptions.RuntimeLibraryOrder);
 
             _logger.LogDebug("{Tab}{InfoEmoji} Loading order: {Libraries}",

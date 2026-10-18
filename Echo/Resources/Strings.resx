@@ -813,4 +813,10 @@
   <data name="RequireRecognitionWithout" xml:space="preserve">
     <value>Without it speech recognition does not start.</value>
   </data>
+  <data name="AccelerationVulkanTrial" xml:space="preserve">
+    <value>Vulkan (trial)</value>
+  </data>
+  <data name="AccelerationVulkanTrialHint" xml:space="preserve">
+    <value>For AMD and Intel graphics cards. Not yet tried on Linux: if recognition fails or is slow, pick the processor.</value>
+  </data>
 </root>

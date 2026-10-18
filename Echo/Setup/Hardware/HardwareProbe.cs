@@ -35,7 +35,8 @@ internal sealed class HardwareProbe(IProcessRunner processRunner, IVulkanSupport
             (int)Math.Round(memoryBytes / (1024d * 1024 * 1024)),
             Environment.ProcessorCount)
         {
-            NvidiaCards = cards
+            NvidiaCards = cards,
+            IsVulkanChosenAutomatically = _vulkan.IsChosenAutomatically
         };
     }
 

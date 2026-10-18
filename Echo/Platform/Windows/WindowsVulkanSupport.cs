@@ -10,6 +10,9 @@ internal sealed class WindowsVulkanSupport : IVulkanSupport
     private const string VulkanLibrary = "vulkan-1.dll";
 
     /// <inheritdoc/>
+    public bool IsChosenAutomatically => true;
+
+    /// <inheritdoc/>
     public bool IsAvailable()
     {
         if (!NativeLibrary.TryLoad(VulkanLibrary, out IntPtr handle))

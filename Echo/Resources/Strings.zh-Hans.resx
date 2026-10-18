@@ -813,4 +813,10 @@
   <data name="RequireRecognitionWithout" xml:space="preserve">
     <value>没有它，语音识别无法启动。</value>
   </data>
+  <data name="AccelerationVulkanTrial" xml:space="preserve">
+    <value>Vulkan（试用）</value>
+  </data>
+  <data name="AccelerationVulkanTrialHint" xml:space="preserve">
+    <value>适用于 AMD 和 Intel 显卡。尚未在 Linux 上验证：如果识别失败或很慢，请选择处理器。</value>
+  </data>
 </root>

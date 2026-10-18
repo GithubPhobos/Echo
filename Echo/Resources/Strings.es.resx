@@ -813,4 +813,10 @@
   <data name="RequireRecognitionWithout" xml:space="preserve">
     <value>Sin ella, el reconocimiento de voz no arranca.</value>
   </data>
+  <data name="AccelerationVulkanTrial" xml:space="preserve">
+    <value>Vulkan (de prueba)</value>
+  </data>
+  <data name="AccelerationVulkanTrialHint" xml:space="preserve">
+    <value>Para tarjetas gráficas AMD e Intel. Aún no probado en Linux: si el reconocimiento falla o va lento, elige el procesador.</value>
+  </data>
 </root>

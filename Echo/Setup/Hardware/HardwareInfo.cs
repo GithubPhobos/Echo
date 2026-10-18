@@ -13,4 +13,10 @@ internal sealed record HardwareInfo(NvidiaGpu? Nvidia, bool IsVulkanAvailable, i
     ///     Every NVIDIA graphics card in the machine. With more than one, the user picks which to use.
     /// </summary>
     public IReadOnlyList<NvidiaGpu> NvidiaCards { get; init; } = Nvidia is null ? [] : [Nvidia];
+
+    /// <summary>
+    ///     Whether "automatic" may pick Vulkan here. Where Vulkan has not yet been tried on real graphics cards,
+    ///     it is offered only for the user to pick by hand.
+    /// </summary>
+    public bool IsVulkanChosenAutomatically { get; init; } = true;
 }

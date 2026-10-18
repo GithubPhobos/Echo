@@ -813,4 +813,10 @@
   <data name="RequireRecognitionWithout" xml:space="preserve">
     <value>Ohne sie startet die Spracherkennung nicht.</value>
   </data>
+  <data name="AccelerationVulkanTrial" xml:space="preserve">
+    <value>Vulkan (Probe)</value>
+  </data>
+  <data name="AccelerationVulkanTrialHint" xml:space="preserve">
+    <value>Für Grafikkarten von AMD und Intel. Unter Linux noch nicht erprobt: Wenn die Erkennung nicht klappt oder langsam ist, wähle den Prozessor.</value>
+  </data>
 </root>

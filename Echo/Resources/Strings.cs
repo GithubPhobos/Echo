@@ -556,4 +556,8 @@ internal static class Strings
     public static string RequireRecognition => Get(nameof(RequireRecognition));
 
     public static string RequireRecognitionWithout => Get(nameof(RequireRecognitionWithout));
+
+    public static string AccelerationVulkanTrial => Get(nameof(AccelerationVulkanTrial));
+
+    public static string AccelerationVulkanTrialHint => Get(nameof(AccelerationVulkanTrialHint));
 }

@@ -47,8 +47,10 @@
 		<PackageReference Include="Whisper.net.Runtime.Vulkan" Version="1.9.0" />
 	</ItemGroup>
 
+	<!-- The Vulkan package carries builds for Windows and for Linux, though its description names Windows only -->
 	<ItemGroup Condition="'$(TargetSystem)' == 'linux-x64'">
 		<PackageReference Include="Whisper.net.Runtime.Cuda.Linux" Version="1.9.0" />
+		<PackageReference Include="Whisper.net.Runtime.Vulkan" Version="1.9.0" />
 	</ItemGroup>
 
 	<ItemGroup>
