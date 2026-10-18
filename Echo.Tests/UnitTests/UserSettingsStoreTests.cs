@@ -109,6 +109,7 @@ public sealed class UserSettingsStoreTests : IDisposable
             HotkeyKey = "VcF8",
             HotkeyModifier = "leftalt",
             MicrophoneIndex = 3,
+            MicrophoneName = "Headset",
             Additional = new AdditionalValues().With(AdditionalSettings.SilenceThreshold, "0.02"),
         });
 
@@ -124,9 +125,36 @@ public sealed class UserSettingsStoreTests : IDisposable
         Assert.Equal("VcF8", config["PushToTalkSettings:Key"]);
         Assert.Equal("leftalt", config["PushToTalkSettings:Modifier"]);
         Assert.Equal("3", config["RecordingDeviceSettings:DeviceIndex"]);
+        Assert.Equal("Headset", config.GetSection(nameof(RecordingDeviceSettings)).Get<RecordingDeviceSettings>()!.DeviceName);
 
         // Everything the wizard does not ask about still comes from the bundled defaults
         Assert.True(whisper.SuppressBlank);
+    }
+
+    [Fact]
+    public void Save_MicrophoneNameSavedByAnEarlierVersion_MovesNextToTheMicrophonesNumber()
+    {
+        // Arrange: a file written while the name was kept with the other answers of setup
+        File.WriteAllText(_paths.SettingsFile, """
+            {
+              "Setup": { "Version": 1, "MicrophoneName": "Headset" },
+              "RecordingDeviceSettings": { "DeviceIndex": 2 }
+            }
+            """);
+
+        var store = new UserSettingsStore(_paths);
+
+        // Act
+        UserSettings loaded = store.Load();
+        store.Save(loaded);
+
+        // Assert
+        Assert.Equal("Headset", loaded.MicrophoneName);
+
+        IConfiguration config = new ConfigurationBuilder().AddJsonFile(_paths.SettingsFile).Build();
+
+        Assert.Equal("Headset", config["RecordingDeviceSettings:DeviceName"]);
+        Assert.Null(config["Setup:MicrophoneName"]);
     }
 
     [Fact]

@@ -187,6 +187,9 @@ internal sealed class DictationTester : IDictationTester
             (draft.GraphicsCardIndex ?? 0).ToString(CultureInfo.InvariantCulture),
         [$"{nameof(RecordingDeviceSettings)}:{nameof(RecordingDeviceSettings.DeviceIndex)}"] =
             draft.MicrophoneIndex.ToString(CultureInfo.InvariantCulture),
+
+        // Empty rather than missing: the name saved before must not lead to another microphone than the one just chosen
+        [$"{nameof(RecordingDeviceSettings)}:{nameof(RecordingDeviceSettings.DeviceName)}"] = draft.MicrophoneName ?? string.Empty,
         [$"{nameof(PushToTalkSettings)}:{nameof(PushToTalkSettings.Key)}"] = draft.Hotkey.Key,
         [$"{nameof(PushToTalkSettings)}:{nameof(PushToTalkSettings.Modifier)}"] = draft.Hotkey.Modifier,
 

@@ -57,7 +57,9 @@ internal sealed class UserSettingsStore(IAppPaths paths) : IUserSettingsStore
             Additional = additional,
             SetupVersion = Read<int>(root, SetupSection, "Version"),
             UiLanguage = Read<string>(root, SetupSection, "UiLanguage"),
-            MicrophoneName = Read<string>(root, SetupSection, "MicrophoneName"),
+            // Settings saved before the name moved next to the microphone's number keep it in the setup section
+            MicrophoneName = Read<string>(root, nameof(RecordingDeviceSettings), nameof(RecordingDeviceSettings.DeviceName))
+                ?? Read<string>(root, SetupSection, "MicrophoneName"),
             DictationLanguage = Read<string>(root, nameof(WhisperSettings), nameof(WhisperSettings.Language)),
             HardwareBackend = Read<string>(root, nameof(WhisperSettings), nameof(WhisperSettings.HardwareBackend)),
             GraphicsCardIndex = Read<int?>(root, nameof(WhisperSettings), nameof(WhisperSettings.GpuDeviceIndex)),
@@ -76,7 +78,7 @@ internal sealed class UserSettingsStore(IAppPaths paths) : IUserSettingsStore
 
         Write(root, SetupSection, "Version", settings.SetupVersion);
         Write(root, SetupSection, "UiLanguage", settings.UiLanguage);
-        Write(root, SetupSection, "MicrophoneName", settings.MicrophoneName);
+        Write<string>(root, SetupSection, "MicrophoneName", null);
         Write(root, nameof(WhisperSettings), nameof(WhisperSettings.Language), settings.DictationLanguage);
         Write(root, nameof(WhisperSettings), nameof(WhisperSettings.HardwareBackend), settings.HardwareBackend);
         Write(root, nameof(WhisperSettings), nameof(WhisperSettings.GpuDeviceIndex), settings.GraphicsCardIndex);
@@ -88,6 +90,9 @@ internal sealed class UserSettingsStore(IAppPaths paths) : IUserSettingsStore
         foreach (AdditionalSetting setting in AdditionalSettings.All)
             WriteText(root, setting, settings.Additional.Stored(setting));
         Write(root, nameof(RecordingDeviceSettings), nameof(RecordingDeviceSettings.DeviceIndex), settings.MicrophoneIndex);
+
+        // The name goes next to the number, where the recording service finds the microphone by it
+        Write(root, nameof(RecordingDeviceSettings), nameof(RecordingDeviceSettings.DeviceName), settings.MicrophoneName);
 
         WriteFile(root);
     }

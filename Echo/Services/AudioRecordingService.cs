@@ -68,24 +68,31 @@ internal sealed class AudioRecordingService(
         _logger.LogDebug("{Tab}Found {DeviceCount} recording devices:",
             LoggerConstants.Tab, deviceCount);
 
+        int? chosen = FindChosenDevice(devices);
+
         foreach (MicrophoneDevice device in devices)
         {
             _logger.LogDebug("{Tab}[{i}]: {ProductName}{InUse}",
                 LoggerConstants.Tab,
                 device.Index,
                 device.Name,
-                device.Index == _recordingDeviceSettings.DeviceIndex ? " (in use)" : string.Empty);
+                device.Index == chosen ? " (in use)" : string.Empty);
         }
 
         // The devices can change between two starts: the one chosen in setup may be gone
-        if (_recordingDeviceSettings.DeviceIndex == -1
-            ||
-            _recordingDeviceSettings.DeviceIndex >= deviceCount)
+        if (chosen is not int deviceIndex)
         {
             throw new Exception(
                 $"{LoggerConstants.Tab}{LoggerConstants.WarningEmoji} " +
-                $"The microphone chosen in setup ([{_recordingDeviceSettings.DeviceIndex}]) is not in the list above. " +
-                "Choose another one with /setup.");
+                (_recordingDeviceSettings.DeviceName is { Length: > 0 } name
+                    ? $"The microphone chosen in setup ({name}) is not connected. Connect it, or choose another one with /setup."
+                    : $"The microphone chosen in setup ([{_recordingDeviceSettings.DeviceIndex}]) is not in the list above. Choose another one with /setup."));
+        }
+
+        if (deviceIndex != _recordingDeviceSettings.DeviceIndex)
+        {
+            _logger.LogDebug("{Tab}{InfoEmoji} The microphone has moved in the list since setup: [{Saved}] is now [{Found}].",
+                LoggerConstants.Tab, LoggerConstants.InfoEmoji, _recordingDeviceSettings.DeviceIndex, deviceIndex);
         }
 
         _logger.LogDebug("{Tab}{CheckedEmoji} Audio devices checked.",
@@ -101,7 +108,7 @@ internal sealed class AudioRecordingService(
             try
             {
                 _microphone = _audioInput.Open(
-                    _recordingDeviceSettings.DeviceIndex,
+                    deviceIndex,
                     _recordingDeviceSettings.BufferMs,
                     _recordingDeviceSettings.NumberOfBuffers);
 
@@ -241,6 +248,24 @@ internal sealed class AudioRecordingService(
                 _writer.Write(e.Buffer, 0, e.BytesRecorded);
             }
         }
+    }
+
+    /// <summary>
+    ///     The microphone chosen in setup, found by its name: the order of the devices can change between two
+    ///     starts. Of several devices with that name, the one at the saved place comes first. Settings without
+    ///     a name take the saved place. Null when the microphone is not there.
+    /// </summary>
+    private int? FindChosenDevice(IReadOnlyList<MicrophoneDevice> devices)
+    {
+        int index = _recordingDeviceSettings.DeviceIndex;
+
+        if (_recordingDeviceSettings.DeviceName is not { Length: > 0 } name)
+            return devices.Any(device => device.Index == index) ? index : null;
+
+        MicrophoneDevice? found = devices.FirstOrDefault(device => device.Index == index && device.Name == name)
+            ?? devices.FirstOrDefault(device => device.Name == name);
+
+        return found?.Index;
     }
 
     /// <summary>

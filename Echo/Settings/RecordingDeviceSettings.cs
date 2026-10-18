@@ -11,6 +11,12 @@ internal sealed class RecordingDeviceSettings
     public int DeviceIndex { get; init; }
 
     /// <summary>
+    ///     The name of the microphone, as setup saw it. The microphone is found by it, since the order of the
+    ///     devices can change between two starts; without it, <see cref="DeviceIndex"/> is taken.
+    /// </summary>
+    public string? DeviceName { get; init; }
+
+    /// <summary>
     ///     Minimum volume level (0.0 to 1.0) to start recording.
     /// </summary>
     public float? SilenceThreshold { get; init; }
