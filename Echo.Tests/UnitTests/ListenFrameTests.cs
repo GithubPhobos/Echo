@@ -62,9 +62,9 @@ public sealed class ListenFrameTests : IDisposable
         Assert.Equal("  21:03  └ hello, this is a test  0.42 s", lines[3].TrimEnd());
         Assert.Equal("  21:03  ! Audio was silent or empty", lines[4].TrimEnd());
 
-        // The command box and the keys close the screen
+        // The command box and the keys close the screen; the empty box shows its cursor in front of the hint
         Assert.StartsWith("╭", lines[^4]);
-        Assert.Contains("│ > type / for commands", lines[^3]);
+        Assert.Contains("│ > █type / for commands", lines[^3]);
         Assert.StartsWith("╰", lines[^2]);
         Assert.Equal("  Enter run  ┊  ↑↓ PgUp PgDn log  ┊  Ctrl+C quit", lines[^1].TrimEnd());
 

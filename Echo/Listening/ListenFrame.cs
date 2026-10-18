@@ -625,8 +625,9 @@ internal sealed class ListenFrame(Theme theme)
             // A translation longer than the box is cut, like any line that does not fit
             string placeholder = Wrap(Strings.ListenPlaceholder, textRoom)[0].TrimEnd();
 
-            content = $"[{Theme.Highlight}]>[/] {SetupUi.Dim(Markup.Escape(placeholder))}";
-            content += new string(' ', Math.Max(0, room - 3 - WidthOf(placeholder)));
+            // The cursor stands where the typing will start, in front of the hint
+            content = $"[{Theme.Highlight}]>[/] [{Theme.Highlight}]{_theme.BarFull}[/]{SetupUi.Dim(Markup.Escape(placeholder))}";
+            content += new string(' ', Math.Max(0, room - 3 - 1 - WidthOf(placeholder)));
         }
         else
         {
