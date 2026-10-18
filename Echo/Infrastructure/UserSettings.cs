@@ -39,6 +39,4 @@ internal sealed record UserSettings
     public int? MicrophoneIndex { get; init; }
 
     public string? MicrophoneName { get; init; }
-
-    public float? SilenceThreshold { get; init; }
 }

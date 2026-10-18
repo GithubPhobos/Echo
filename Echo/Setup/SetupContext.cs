@@ -1,4 +1,5 @@
-﻿using Echo.Setup.Audio;
+﻿using System.Globalization;
+using Echo.Setup.Audio;
 using Echo.Setup.Hardware;
 using Echo.Setup.Hotkeys;
 
@@ -56,7 +57,22 @@ internal sealed class SetupContext
 
     public string? MicrophoneName { get; set; }
 
-    public float SilenceThreshold { get; set; } = ThresholdCalculator.Default;
+    /// <summary>
+    ///     The level above which input counts as speech. One of the additional settings, kept at hand because
+    ///     the sound step measures it.
+    /// </summary>
+    public float SilenceThreshold
+    {
+        get => float.TryParse(Additional.Get(AdditionalSettings.SilenceThreshold), NumberStyles.Float, CultureInfo.InvariantCulture, out float level)
+            ? level
+            : ThresholdCalculator.Default;
+        set => Additional.Set(AdditionalSettings.SilenceThreshold, value.ToString(ThresholdFormat, CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>
+    ///     Enough digits for a measured level, and none of the noise of a number stored in binary.
+    /// </summary>
+    private const string ThresholdFormat = "0.######";
 
     /// <summary>
     ///     The backend picked in the list, with "automatic" resolved to the best one the machine offers.
@@ -79,7 +95,6 @@ internal sealed class SetupContext
         HotkeyLabel = settings.HotkeyLabel,
         MicrophoneIndex = settings.MicrophoneIndex ?? 0,
         MicrophoneName = settings.MicrophoneName,
-        SilenceThreshold = settings.SilenceThreshold ?? ThresholdCalculator.Default,
     };
 
     public UserSettings ToSettings(int setupVersion) => new()
@@ -96,6 +111,5 @@ internal sealed class SetupContext
         HotkeyLabel = HotkeyLabel,
         MicrophoneIndex = MicrophoneIndex,
         MicrophoneName = MicrophoneName,
-        SilenceThreshold = SilenceThreshold,
     };
 }

@@ -834,4 +834,10 @@
   <data name="SystemInstalling" xml:space="preserve">
     <value>Installiere, was Echo braucht: {0}</value>
   </data>
+  <data name="AdditionalSilenceThreshold" xml:space="preserve">
+    <value>Stillepegel</value>
+  </data>
+  <data name="AdditionalSilenceThresholdHint" xml:space="preserve">
+    <value>Wie laut der Ton sein muss, damit Echo eine Phrase aufnimmt, von 0 bis 1; alles Leisere gilt als Stille. Der Schritt „Ton“ misst ihn für deinen Raum und deine Stimme. Zu niedrig lässt Rauschen in die Aufnahme, zu hoch schneidet den leisen Anfang einer Phrase ab.</value>
+  </data>
 </root>

@@ -834,4 +834,10 @@
   <data name="SystemInstalling" xml:space="preserve">
     <value>Instalando lo que Echo necesita: {0}</value>
   </data>
+  <data name="AdditionalSilenceThreshold" xml:space="preserve">
+    <value>Nivel de silencio</value>
+  </data>
+  <data name="AdditionalSilenceThresholdHint" xml:space="preserve">
+    <value>Qué tan fuerte debe ser el sonido para que Echo empiece a grabar una frase, de 0 a 1; lo más bajo cuenta como silencio. El paso «Sonido» lo mide para tu sala y tu voz. Muy bajo deja entrar ruido en la grabación; muy alto corta el comienzo suave de una frase.</value>
+  </data>
 </root>

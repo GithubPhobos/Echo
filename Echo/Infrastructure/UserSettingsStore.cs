@@ -66,7 +66,6 @@ internal sealed class UserSettingsStore(IAppPaths paths) : IUserSettingsStore
             HotkeyModifier = Read<string>(root, nameof(PushToTalkSettings), nameof(PushToTalkSettings.Modifier)),
             HotkeyLabel = Read<string>(root, nameof(PushToTalkSettings), nameof(PushToTalkSettings.DesktopShortcut)),
             MicrophoneIndex = Read<int?>(root, nameof(RecordingDeviceSettings), nameof(RecordingDeviceSettings.DeviceIndex)),
-            SilenceThreshold = Read<float?>(root, nameof(RecordingDeviceSettings), nameof(RecordingDeviceSettings.SilenceThreshold)),
         };
     }
 
@@ -89,7 +88,6 @@ internal sealed class UserSettingsStore(IAppPaths paths) : IUserSettingsStore
         foreach (AdditionalSetting setting in AdditionalSettings.All)
             WriteText(root, setting, settings.Additional.Stored(setting));
         Write(root, nameof(RecordingDeviceSettings), nameof(RecordingDeviceSettings.DeviceIndex), settings.MicrophoneIndex);
-        Write(root, nameof(RecordingDeviceSettings), nameof(RecordingDeviceSettings.SilenceThreshold), settings.SilenceThreshold);
 
         WriteFile(root);
     }

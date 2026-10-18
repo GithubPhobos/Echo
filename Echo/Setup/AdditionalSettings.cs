@@ -50,6 +50,15 @@ internal static class AdditionalSettings
     public static readonly AdditionalSetting SuppressRegex = new(
         "SuppressRegex", SettingGroup.Recognition, nameof(WhisperSettings), nameof(WhisperSettings.SuppressRegex), SettingKind.Text, Default: null);
 
+    /// <summary>
+    ///     Measured on the sound step of the wizard; here it can be set by hand as well.
+    /// </summary>
+    public static readonly AdditionalSetting SilenceThreshold = new(
+        "SilenceThreshold", SettingGroup.Recording, nameof(RecordingDeviceSettings), nameof(RecordingDeviceSettings.SilenceThreshold), SettingKind.Fraction, "0.01", Min: 0, Max: 1)
+    {
+        Steps = ["0.005", "0.01", "0.02", "0.03", "0.05", "0.1"]
+    };
+
     public static readonly AdditionalSetting BufferMs = new(
         "BufferMs", SettingGroup.Recording, nameof(RecordingDeviceSettings), nameof(RecordingDeviceSettings.BufferMs), SettingKind.Whole, "50", Min: 10, Max: 500)
     {
@@ -94,6 +103,7 @@ internal static class AdditionalSettings
         Temperature,
         Threads,
         SuppressRegex,
+        SilenceThreshold,
         BufferMs,
         NumberOfBuffers,
         MicrophoneLevelOutput,

@@ -187,8 +187,6 @@ internal sealed class DictationTester : IDictationTester
             (draft.GraphicsCardIndex ?? 0).ToString(CultureInfo.InvariantCulture),
         [$"{nameof(RecordingDeviceSettings)}:{nameof(RecordingDeviceSettings.DeviceIndex)}"] =
             draft.MicrophoneIndex.ToString(CultureInfo.InvariantCulture),
-        [$"{nameof(RecordingDeviceSettings)}:{nameof(RecordingDeviceSettings.SilenceThreshold)}"] =
-            draft.SilenceThreshold.ToString(CultureInfo.InvariantCulture),
         [$"{nameof(PushToTalkSettings)}:{nameof(PushToTalkSettings.Key)}"] = draft.Hotkey.Key,
         [$"{nameof(PushToTalkSettings)}:{nameof(PushToTalkSettings.Modifier)}"] = draft.Hotkey.Modifier,
 

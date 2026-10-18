@@ -118,7 +118,8 @@ public sealed partial class SetupWizardTests : IDisposable
         Assert.Equal(SetupRunner.CurrentVersion, saved.SetupVersion);
         Assert.Equal("en", saved.UiLanguage);
         Assert.Equal("en", saved.DictationLanguage);
-        Assert.Empty(saved.Additional.Changed);
+        // Only the measured silence level differs from what Echo ships with
+        Assert.Equal([AdditionalSettings.SilenceThreshold], saved.Additional.Changed);
         Assert.Equal(Acceleration.Auto, saved.HardwareBackend);
 
         // English only, eight cores and 16 GB of memory: the small English model
@@ -128,7 +129,7 @@ public sealed partial class SetupWizardTests : IDisposable
         Assert.Equal("Desk microphone", saved.MicrophoneName);
 
         // Three times the measured background noise
-        Assert.Equal(0.006f, saved.SilenceThreshold!.Value, precision: 4);
+        Assert.Equal(0.006, double.Parse(saved.Additional.Get(AdditionalSettings.SilenceThreshold)!, System.Globalization.CultureInfo.InvariantCulture), precision: 4);
 
         // English speech has nothing to be translated into, so the last step does not offer it.
         // The settings it does offer come in named blocks
@@ -692,7 +693,7 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.UpArrow).Press(ConsoleKey.Spacebar)                   // recording sound: off
             .Press(ConsoleKey.Enter)                                                // recording sound: on again, Enter flips it too
             .Press(ConsoleKey.UpArrow).Press(ConsoleKey.UpArrow).Press(ConsoleKey.UpArrow)
-            .Press(ConsoleKey.UpArrow).Press(ConsoleKey.UpArrow)
+            .Press(ConsoleKey.UpArrow).Press(ConsoleKey.UpArrow).Press(ConsoleKey.UpArrow)
             .Press(ConsoleKey.Enter).Type("7").Press(ConsoleKey.Escape)             // processor threads: typed, then abandoned
             .Press(ConsoleKey.Spacebar).Press(ConsoleKey.Spacebar)                  // processor threads: from "auto" to 1, then to 2
             .Press(ConsoleKey.UpArrow)
@@ -717,6 +718,7 @@ public sealed partial class SetupWizardTests : IDisposable
                 AdditionalSettings.Prompt,
                 AdditionalSettings.Temperature,
                 AdditionalSettings.Threads,
+                AdditionalSettings.SilenceThreshold,
                 AdditionalSettings.Volume,
                 AdditionalSettings.AutoInsert,
                 AdditionalSettings.LogLevel,

@@ -834,4 +834,10 @@
   <data name="SystemInstalling" xml:space="preserve">
     <value>Устанавливаю то, что нужно Echo: {0}</value>
   </data>
+  <data name="AdditionalSilenceThreshold" xml:space="preserve">
+    <value>Порог тишины</value>
+  </data>
+  <data name="AdditionalSilenceThresholdHint" xml:space="preserve">
+    <value>С какой громкости Echo начинает записывать фразу, от 0 до 1: всё тише считается тишиной. Шаг «Звук» измеряет его под вашу комнату и голос. Слишком низкий — в запись попадает шум, слишком высокий — обрезается тихое начало фразы.</value>
+  </data>
 </root>

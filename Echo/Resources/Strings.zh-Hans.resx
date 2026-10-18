@@ -834,4 +834,10 @@
   <data name="SystemInstalling" xml:space="preserve">
     <value>正在安装 Echo 需要的组件：{0}</value>
   </data>
+  <data name="AdditionalSilenceThreshold" xml:space="preserve">
+    <value>静音阈值</value>
+  </data>
+  <data name="AdditionalSilenceThresholdHint" xml:space="preserve">
+    <value>声音达到多大音量时 Echo 才开始录制语句，范围 0 到 1，更小的声音视为静音。“声音”步骤会根据您的房间和声音测量它。过低会把噪音录进去，过高会截掉语句开头较轻的部分。</value>
+  </data>
 </root>

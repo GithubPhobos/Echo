@@ -18,7 +18,8 @@ public sealed class SetupContextTests
                 .With(AdditionalSettings.Prompt, "Kubernetes, gRPC")
                 .With(AdditionalSettings.Threads, "8")
                 .With(AdditionalSettings.Volume, "0.35")
-                .With(AdditionalSettings.PlaySound, AdditionalSettings.Off),
+                .With(AdditionalSettings.PlaySound, AdditionalSettings.Off)
+                .With(AdditionalSettings.SilenceThreshold, "0.03"),
             HardwareBackend = "Cpu",
             GraphicsCardIndex = 2,
             ModelName = "ggml-tiny.bin",
@@ -26,7 +27,6 @@ public sealed class SetupContextTests
             HotkeyModifier = string.Empty,
             MicrophoneIndex = 1,
             MicrophoneName = "Headset",
-            SilenceThreshold = 0.03f,
         };
 
         // Act & Assert

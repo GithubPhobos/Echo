@@ -570,4 +570,8 @@ internal static class Strings
     public static string SystemCheckInstallNote => Get(nameof(SystemCheckInstallNote));
 
     public static string SystemInstalling => Get(nameof(SystemInstalling));
+
+    public static string AdditionalSilenceThreshold => Get(nameof(AdditionalSilenceThreshold));
+
+    public static string AdditionalSilenceThresholdHint => Get(nameof(AdditionalSilenceThresholdHint));
 }

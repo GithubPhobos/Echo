@@ -53,7 +53,8 @@ public sealed class UserSettingsStoreTests : IDisposable
                 .With(AdditionalSettings.Prompt, "Kubernetes, gRPC")
                 .With(AdditionalSettings.Threads, "8")
                 .With(AdditionalSettings.Volume, "0.35")
-                .With(AdditionalSettings.PlaySound, AdditionalSettings.Off),
+                .With(AdditionalSettings.PlaySound, AdditionalSettings.Off)
+                .With(AdditionalSettings.SilenceThreshold, "0.012"),
             HardwareBackend = "Cuda",
             GraphicsCardIndex = 1,
             ModelName = "ggml-large-v3.bin",
@@ -61,7 +62,6 @@ public sealed class UserSettingsStoreTests : IDisposable
             HotkeyModifier = "leftctrl",
             MicrophoneIndex = 2,
             MicrophoneName = "Микрофон (USB Audio)",
-            SilenceThreshold = 0.012f,
         };
 
         // Act
@@ -109,7 +109,7 @@ public sealed class UserSettingsStoreTests : IDisposable
             HotkeyKey = "VcF8",
             HotkeyModifier = "leftalt",
             MicrophoneIndex = 3,
-            SilenceThreshold = 0.02f,
+            Additional = new AdditionalValues().With(AdditionalSettings.SilenceThreshold, "0.02"),
         });
 
         // Act

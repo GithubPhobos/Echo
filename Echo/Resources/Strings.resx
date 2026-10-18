@@ -834,4 +834,10 @@
   <data name="SystemInstalling" xml:space="preserve">
     <value>Installing what Echo needs: {0}</value>
   </data>
+  <data name="AdditionalSilenceThreshold" xml:space="preserve">
+    <value>Silence level</value>
+  </data>
+  <data name="AdditionalSilenceThresholdHint" xml:space="preserve">
+    <value>How loud the sound must be for Echo to start recording a phrase, from 0 to 1; anything quieter counts as silence. The sound step measures it for your room and voice. Too low lets noise into the recording; too high cuts off the quiet beginning of a phrase.</value>
+  </data>
 </root>
