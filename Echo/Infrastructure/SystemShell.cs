@@ -62,4 +62,31 @@ internal sealed class SystemShell(IFileChooser fileChooser) : ISystemShell
     /// <inheritdoc/>
     public Task<IReadOnlyList<string>> PickFilesAsync(string title, string pattern, CancellationToken cancellationToken) =>
         _fileChooser.PickAsync(title, pattern, cancellationToken);
+
+    /// <inheritdoc/>
+    public async Task<bool> RunInTerminalAsync(IReadOnlyList<string> command, CancellationToken cancellationToken)
+    {
+        // Nothing is redirected: the program has the terminal, and .NET gives it the terminal's own settings back
+        var start = new ProcessStartInfo(command[0]) { UseShellExecute = false };
+
+        foreach (string argument in command.Skip(1))
+            start.ArgumentList.Add(argument);
+
+        try
+        {
+            using Process? process = Process.Start(start);
+
+            if (process is null)
+                return false;
+
+            await process.WaitForExitAsync(cancellationToken);
+
+            return process.ExitCode == 0;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            // The program is not there
+            return false;
+        }
+    }
 }

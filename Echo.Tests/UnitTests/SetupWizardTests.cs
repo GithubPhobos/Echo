@@ -76,8 +76,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)                                                // hardware: automatic
             .Press(ConsoleKey.Enter)                                                // model: the recommended one
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)            // key: keep the default
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)        // test dictation: finish
             .Press(ConsoleKey.Enter)                                                // additional settings: continue
@@ -100,8 +100,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)                                                // hardware: automatic
             .Press(ConsoleKey.Enter)                                                // model: the recommended one
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)            // key: keep the default
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)        // test dictation: finish
             .Press(ConsoleKey.Enter)                                                // additional settings: continue
@@ -204,9 +204,9 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)                                                // "not one of the libraries": continue
             .Press(ConsoleKey.Enter)                                                // model: the recommended one
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)            // key: confirm the pressed one
-            .PressWhen(ConsoleKey.DownArrow, () => _microphones.IsListening(1))     // input device: move to the second one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(2))         // and take it
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(3))      // silence level: measure
+            .Press(ConsoleKey.DownArrow)                                            // input device: move to the second one
+            .Press(ConsoleKey.Enter)                                                // and take it
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)        // test dictation: finish
             .Press(ConsoleKey.DownArrow)                                            
@@ -300,8 +300,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)                                                // libraries: download them now
             .Press(ConsoleKey.Enter)                                                // model
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)
             .Press(ConsoleKey.Enter)                                                // additional settings: continue
@@ -343,8 +343,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Escape)                                               // and leave: back to the list of models
             .Press(ConsoleKey.Enter)                                                // model: download after all
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)
             .Press(ConsoleKey.Enter)                                                // additional settings: continue
@@ -393,15 +393,15 @@ public sealed partial class SetupWizardTests : IDisposable
             .PressWhen(ConsoleKey.Escape, () => _hotkeys.StartCount == 1)           // key -> model
             .Press(ConsoleKey.Enter)                                                // model
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 2)            // key
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Escape, () => _dictation.StartCount == 1 && _dictation.IsPhraseDelivered) // test -> silence level
-            .PressWhen(ConsoleKey.Escape, () => _microphones.IsListening(3))        // silence level -> input device
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(4))         // input device
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(5))      // silence level: measure
+            .PressWhen(ConsoleKey.Escape, () => _microphones.IsListening(2))        // silence level -> input device
+            .Press(ConsoleKey.Enter)                                                // input device
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(3))      // silence level: measure
             .Press(ConsoleKey.Escape)                                               // the result -> the measurement itself
-            .PressWhen(ConsoleKey.S, () => _microphones.IsListening(6))             // silence level: skip, the measured one stays
+            .PressWhen(ConsoleKey.S, () => _microphones.IsListening(4))             // silence level: skip, the measured one stays
             .PressWhen(ConsoleKey.Enter, () => _dictation.StartCount == 2 && _dictation.IsPhraseDelivered)  // test: finish
             .Press(ConsoleKey.Escape)                                               // additional settings -> test dictation
             .PressWhen(ConsoleKey.Enter, () => _dictation.StartCount == 3 && _dictation.IsPhraseDelivered)  // test: finish
@@ -473,8 +473,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.DownArrow).Press(ConsoleKey.Enter)                    // graphics card: the second one
             .Press(ConsoleKey.Enter)                                                // model
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)
             .Press(ConsoleKey.Enter)                                                // additional settings: continue
@@ -520,8 +520,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)                                                // "notes.bin is not a model": continue
             .Press(ConsoleKey.Enter)                                                // model: the copied file is highlighted
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)
             .Press(ConsoleKey.Enter)                                                // additional settings: continue
@@ -564,8 +564,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)
             .Press(ConsoleKey.Enter)
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)
             .Press(ConsoleKey.Enter)                                                // additional settings: continue
@@ -597,8 +597,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)
             .Press(ConsoleKey.Enter)
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)
             .Press(ConsoleKey.Enter)                                                // additional settings: continue
@@ -621,8 +621,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)
             .Press(ConsoleKey.Enter)
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)
             .Press(ConsoleKey.Enter)                                                // additional settings: continue
@@ -656,8 +656,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)
             .Press(ConsoleKey.Enter)
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)
             .Press(ConsoleKey.Enter)                                                // additional settings: continue
@@ -763,27 +763,25 @@ public sealed partial class SetupWizardTests : IDisposable
     }
 
     [Fact]
-    public async Task RunAsync_SingleInputDevice_ArrowKeysLeaveTheMicrophoneOpen()
+    public async Task RunAsync_InputDevicePage_ListsTheDevicesWithoutOpeningAny()
     {
         // Arrange
-        _microphones.Devices.RemoveAt(1);
-
-        int openedOnDevicePage = 0;
+        int openedOnDevicePage = -1;
 
         _keys.Press(ConsoleKey.Enter)
             .Press(ConsoleKey.Enter)
             .Press(ConsoleKey.Enter)
             .Press(ConsoleKey.Enter)
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)
-            .PressWhen(ConsoleKey.DownArrow, () => _microphones.IsHeard)            // input device: nowhere to move
-            .PressWhen(ConsoleKey.UpArrow, () => _microphones.IsHeard)
+            .Press(ConsoleKey.DownArrow)                                            // input device: the second one
+            .Press(ConsoleKey.UpArrow)                                              // and back to the first
             .PressWhen(ConsoleKey.Enter, () =>
             {
                 openedOnDevicePage = _microphones.OpenCount;
 
-                return _microphones.IsHeard;
+                return true;
             })
-            .PressWhen(ConsoleKey.S, () => _microphones.IsHeard && _microphones.OpenCount > openedOnDevicePage)   // silence level: skip
+            .PressWhen(ConsoleKey.S, () => _microphones.IsListening(1))             // silence level: skip
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)
             .Press(ConsoleKey.Enter)                                                // additional settings: continue
             .Press(ConsoleKey.Enter);                                               // review: save
@@ -791,9 +789,9 @@ public sealed partial class SetupWizardTests : IDisposable
         // Act
         await CreateRunner().RunAsync(onlyNewSteps: true, CancellationToken.None);
 
-        // Assert: the device was opened once for its page, however the arrows were pressed
+        // Assert: the list is only a list; the silence level is where the microphone is first listened to
         Assert.Equal(0, _keys.Remaining);
-        Assert.Equal(1, openedOnDevicePage);
+        Assert.Equal(0, openedOnDevicePage);
         Assert.Equal("Desk microphone", CreateStore().Load().MicrophoneName);
     }
 
@@ -808,8 +806,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)
             .Press(ConsoleKey.Enter)
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))
+            .Press(ConsoleKey.Enter)
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))
             .Press(ConsoleKey.Enter)
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)
             .Press(ConsoleKey.DownArrow)                                            // additional settings: round to the first setting
@@ -971,8 +969,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)                                                // hardware: automatic
             .Press(ConsoleKey.Enter)                                                // model: the recommended one
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)            // key: keep the default
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)        // test dictation: finish
             .Press(ConsoleKey.Enter)                                                // additional settings: continue
@@ -987,6 +985,45 @@ public sealed partial class SetupWizardTests : IDisposable
         Assert.Contains("No clipboard without it.", _console.Output);
         Assert.Contains("Install: sudo apt install xsel", _console.Output);
         Assert.Contains("step 2 of 6 · Hardware acceleration · What this system needs", ScreensShown());
+        _requirements.Verify(requirements => requirements.Check(), Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task RunAsync_SystemLacksAPackage_EnterInstallsItInTheTerminalAndLooksAgain()
+    {
+        // Arrange: the clipboard program is missing, and Echo knows how this system installs it
+        string[] command = ["sudo", "apt-get", "install", "-y", "xsel"];
+
+        _requirements.SetupSequence(requirements => requirements.Check())
+            .Returns([new SystemRequirement("Clipboard program (xsel)", IsMet: false, "No clipboard without it.", "Install: sudo apt install xsel", Package: "xsel")])
+            .Returns([new SystemRequirement("Clipboard program (xsel)", IsMet: true, "No clipboard without it.", "Install: sudo apt install xsel", Package: "xsel")]);
+
+        _requirements.Setup(requirements => requirements.InstallCommand(It.Is<IReadOnlyList<string>>(packages => packages.SequenceEqual(new[] { "xsel" }))))
+            .Returns(command);
+
+        _shell.Setup(shell => shell.RunInTerminalAsync(command, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        _keys.Press(ConsoleKey.Enter)                                               // interface language: English
+            .Press(ConsoleKey.Enter)                                                // dictation language: English
+            .Press(ConsoleKey.Enter)                                                // system check: install
+            .Press(ConsoleKey.Enter)                                                // system check: all there, go on
+            .Press(ConsoleKey.Enter)                                                // hardware: automatic
+            .Press(ConsoleKey.Enter)                                                // model: the recommended one
+            .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)            // key: keep the default
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
+            .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)        // test dictation: finish
+            .Press(ConsoleKey.Enter)                                                // additional settings: continue
+            .Press(ConsoleKey.Enter);                                               // review: save
+
+        // Act
+        SetupOutcome outcome = await CreateRunner().RunAsync(onlyNewSteps: true, CancellationToken.None);
+
+        // Assert: the command ran in the terminal, said what it installs, and the system was looked at again
+        Assert.Equal(SetupOutcome.Completed, outcome);
+        _shell.Verify(shell => shell.RunInTerminalAsync(command, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Contains("sudo apt-get install -y xsel", _console.Output);
         _requirements.Verify(requirements => requirements.Check(), Times.Exactly(2));
     }
 
@@ -1007,8 +1044,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)                                                // key: open the desktop's window
             .Press(ConsoleKey.Enter)                                                // pasting: open the desktop's window
             .Press(ConsoleKey.Enter)                                                // pasting: allowed, continue
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)        // test dictation: finish
             .Press(ConsoleKey.Enter)                                                // additional settings: continue
@@ -1037,8 +1074,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)                                                // hardware: automatic
             .Press(ConsoleKey.Enter)                                                // model: the recommended one
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)            // key: keep the default
-            .PressWhen(ConsoleKey.Enter, () => _microphones.IsListening(1))         // input device: the first one
-            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(2))      // silence level: measure
+            .Press(ConsoleKey.Enter)                                                // input device: the first one
+            .PressWhen(ConsoleKey.Enter, () => _microphones.StartMeasuring(1))      // silence level: measure
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered);       // test dictation: finish
 

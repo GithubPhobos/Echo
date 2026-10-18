@@ -10,4 +10,9 @@ internal interface ISystemRequirements
     ///     Looks at the system. Takes a moment: it asks the sound server and the desktop.
     /// </summary>
     IReadOnlyList<SystemRequirement> Check();
+
+    /// <summary>
+    ///     The command line that installs the packages, the program first; null where Echo cannot install them.
+    /// </summary>
+    IReadOnlyList<string>? InstallCommand(IReadOnlyList<string> packages);
 }

@@ -360,6 +360,29 @@ internal sealed class SetupUi(IAnsiConsole console, Theme theme, TimeSpan tick)
     ///     Whether <paramref name="key"/> is the given key. Letters are also recognized by the typed character:
     ///     some terminals deliver them without a key code, depending on the keyboard layout.
     /// </summary>
+    /// <summary>
+    ///     Gives the terminal to a program for a while: the screen is cleared, the heading says what is going on,
+    ///     and once the program is done the wizard draws its screens again from a clean terminal.
+    /// </summary>
+    /// <param name="heading">What is about to happen, as markup.</param>
+    /// <param name="run">Runs the program.</param>
+    public async Task<T> HandOverAsync<T>(string heading, Func<Task<T>> run)
+    {
+        _console.Clear();
+        _console.MarkupLine(heading);
+        _console.WriteLine();
+        _console.Cursor.Show(true);
+
+        try
+        {
+            return await run();
+        }
+        finally
+        {
+            _console.Clear();
+        }
+    }
+
     public static bool IsKey(ConsoleKeyInfo? key, ConsoleKey expected)
     {
         if (key is not ConsoleKeyInfo pressed)
@@ -507,7 +530,26 @@ internal sealed class SetupUi(IAnsiConsole console, Theme theme, TimeSpan tick)
                 break;
         }
 
-        return Build(screen, body, hints, escapeHint, minBodyRows: 0, isCompact: true);
+        Rows compact = Build(screen, body, hints, escapeHint, minBodyRows: 0, isCompact: true);
+
+        if (HeightOf(compact) <= MaxHeight)
+            return compact;
+
+        // Still too tall: the terminal would cut the bottom off, and the keys with it. The explanation under the
+        // question gives way instead, line by line, and "..." says that something is left out
+        List<IRenderable> shortened = [.. body];
+        shortened.Insert(Math.Min(1, shortened.Count), new Markup(Dim(More)));
+
+        while (shortened.Count > 3)
+        {
+            shortened.RemoveAt(2);
+            compact = Build(screen, shortened, hints, escapeHint, minBodyRows: 0, isCompact: true);
+
+            if (HeightOf(compact) <= MaxHeight)
+                break;
+        }
+
+        return compact;
     }
 
     private static int RowsOf(IReadOnlyList<IRenderable> body) =>

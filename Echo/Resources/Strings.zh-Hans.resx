@@ -825,4 +825,13 @@
   <data name="VulkanSoftwareOnly" xml:space="preserve">
     <value>不提供 Vulkan：它没有检测到显卡，只有在处理器上运行的软件替代，比直接使用处理器还慢。</value>
   </data>
+  <data name="HintInstall" xml:space="preserve">
+    <value>安装</value>
+  </data>
+  <data name="SystemCheckInstallNote" xml:space="preserve">
+    <value>按 Enter 安装缺少的组件：系统会询问您的密码，之后 Echo 会重新检查。按 R 重新检查，按 S 跳过继续。</value>
+  </data>
+  <data name="SystemInstalling" xml:space="preserve">
+    <value>正在安装 Echo 需要的组件：{0}</value>
+  </data>
 </root>

@@ -564,4 +564,10 @@ internal static class Strings
     public static string VulkanNoDriver => Get(nameof(VulkanNoDriver));
 
     public static string VulkanSoftwareOnly => Get(nameof(VulkanSoftwareOnly));
+
+    public static string HintInstall => Get(nameof(HintInstall));
+
+    public static string SystemCheckInstallNote => Get(nameof(SystemCheckInstallNote));
+
+    public static string SystemInstalling => Get(nameof(SystemInstalling));
 }

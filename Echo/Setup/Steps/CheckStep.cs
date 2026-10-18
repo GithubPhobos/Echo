@@ -110,8 +110,7 @@ internal sealed class CheckStep : ISetupStep
     }
 
     /// <summary>
-    ///     The list of input devices with a live level meter for the highlighted one, so the user can move
-    ///     between them and see which one reacts.
+    ///     The list of input devices. Nothing is opened here: the next page listens to the chosen one.
     /// </summary>
     private async Task<SetupStepResult> ChooseMicrophoneAsync(SetupContext context,
                                                               SetupScreen screen,
@@ -131,67 +130,26 @@ internal sealed class CheckStep : ISetupStep
                 return SetupStepResult.Back;
         }
 
-        int current = Math.Max(0, devices.ToList().FindIndex(device => device.Index == context.MicrophoneIndex));
-
-        var recent = new Queue<float>(Enumerable.Repeat(0f, MeterWidth));
-
-        using var listener = new MicrophoneListener(_microphoneProbe, _timings.DeviceTimeout, _time);
-        listener.Switch(devices[current].Index);
-
-        string[] hints = [$"{_ui.Theme.Arrows} {Strings.HintSelect}", $"Enter {Strings.HintConfirm}"];
-
-        UiResult<bool> result = await _ui.PollAsync<bool>(
+        // Only the list: the level is measured on the next page, and the test dictation shows the rest
+        UiResult<MicrophoneDevice> picked = await _ui.SelectAsync(
             screen,
-            () =>
-            {
-                List<string> lines = [SetupUi.Question(Markup.Escape(Strings.MicrophoneQuestion)), string.Empty];
-
-                lines.AddRange(devices.Select((device, index) => index == current
-                    ? $"[bold {Theme.Highlight}]{_ui.Theme.Pointer}[/] [{Theme.Accent}]{_ui.Theme.RadioOn}[/] {SetupUi.Accent(Markup.Escape(device.Name))}"
-                    : SetupUi.Dim($"{new string(' ', _ui.Theme.Pointer.Length)} {_ui.Theme.RadioOff} {Markup.Escape(device.Name)}")));
-
-                lines.Add(string.Empty);
-                lines.AddRange(DescribeLevel(listener, recent));
-
-                return (lines, hints);
-            },
-            key =>
-            {
-                if (key?.Key is ConsoleKey.UpArrow or ConsoleKey.DownArrow)
-                {
-                    int next = (current + (key.Value.Key == ConsoleKey.UpArrow ? devices.Count - 1 : 1)) % devices.Count;
-
-                    // With a single device there is nowhere to move: the microphone stays open as it is
-                    if (next == current)
-                        return PollStep<bool>.Continue;
-
-                    current = next;
-                    listener.Switch(devices[current].Index);
-
-                    recent = new Queue<float>(Enumerable.Repeat(0f, MeterWidth));
-
-                    return PollStep<bool>.Continue;
-                }
-
-                if (key?.Key == ConsoleKey.Enter)
-                    return PollStep<bool>.Finish(UiResult<bool>.Done(true));
-
-                if (key is null && listener.Poll() is IMicrophoneSession session)
-                    Push(recent, session.ReadPeak());
-
-                return PollStep<bool>.Continue;
-            },
+            Strings.MicrophoneQuestion,
+            [.. devices.Select(device => new Choice<MicrophoneDevice>(device, device.Name))],
+            Math.Max(0, devices.ToList().FindIndex(device => device.Index == context.MicrophoneIndex)),
+            notes: null,
             cancellationToken);
 
-        if (result.IsBack)
+        if (picked.IsBack)
             return SetupStepResult.Back;
 
+        MicrophoneDevice chosen = picked.Value;
+
         // Another device has another silence level: the one measured before no longer applies
-        if (context.MicrophoneIndex != devices[current].Index || context.MicrophoneName != devices[current].Name)
+        if (context.MicrophoneIndex != chosen.Index || context.MicrophoneName != chosen.Name)
             context.SilenceThreshold = ThresholdCalculator.Default;
 
-        context.MicrophoneIndex = devices[current].Index;
-        context.MicrophoneName = devices[current].Name;
+        context.MicrophoneIndex = chosen.Index;
+        context.MicrophoneName = chosen.Name;
 
         return SetupStepResult.Next;
     }

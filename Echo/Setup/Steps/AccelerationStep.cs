@@ -142,19 +142,31 @@ internal sealed class AccelerationStep : ISetupStep
                     lines.Add($"  {SetupUi.Accent(Markup.Escape(requirement.Fix))}");
             }
 
-            lines.AddRange([string.Empty, SetupUi.Small(Markup.Escape(Strings.SystemCheckNote))]);
+            // What Echo can install itself, all with one command; what it cannot (the desktop's own parts) is
+            // for the user to sort out
+            string[] packages = [.. Requirements().Where(requirement => !requirement.IsMet && requirement.Package is not null).Select(requirement => requirement.Package!).Distinct()];
+            IReadOnlyList<string>? install = packages.Length > 0 ? _system.InstallCommand(packages) : null;
 
-            UiResult<ConsoleKey> key = await _ui.ShowAsync(
-                screen,
-                lines,
-                [(ConsoleKey.Enter, Strings.HintContinue), (ConsoleKey.R, Strings.HintCheckAgain)],
-                cancellationToken);
+            lines.AddRange([string.Empty, SetupUi.Small(Markup.Escape(install is null ? Strings.SystemCheckNote : Strings.SystemCheckInstallNote))]);
+
+            List<(ConsoleKey Key, string Hint)> keys = install is null
+                ? [(ConsoleKey.Enter, Strings.HintContinue), (ConsoleKey.R, Strings.HintCheckAgain)]
+                : [(ConsoleKey.Enter, Strings.HintInstall), (ConsoleKey.R, Strings.HintCheckAgain), (ConsoleKey.S, Strings.HintSkip)];
+
+            UiResult<ConsoleKey> key = await _ui.ShowAsync(screen, lines, keys, cancellationToken);
 
             if (key.IsBack)
                 return SetupStepResult.Back;
 
-            if (key.Value == ConsoleKey.Enter)
+            if (key.Value == ConsoleKey.S || (key.Value == ConsoleKey.Enter && install is null))
                 return SetupStepResult.Next;
+
+            if (key.Value == ConsoleKey.Enter && install is not null)
+            {
+                await _ui.HandOverAsync(
+                    SetupUi.Fill(Strings.SystemInstalling, string.Join(' ', install)),
+                    () => _shell.RunInTerminalAsync(install, cancellationToken));
+            }
 
             _requirements = await _ui.WaitAsync(screen, Markup.Escape(Strings.SystemChecking), () => Task.Run(_system.Check), cancellationToken);
         }

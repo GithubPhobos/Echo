@@ -53,6 +53,28 @@ internal sealed record PackageManager(string Command, string Family)
     /// </summary>
     /// <param name="packages">The name of the package in each family; a family not listed uses the first name.</param>
     public string Install(IReadOnlyDictionary<string, string> packages) =>
-        string.Format(System.Globalization.CultureInfo.InvariantCulture, Command,
-            packages.TryGetValue(Family, out string? name) ? name : packages.Values.First());
+        string.Format(System.Globalization.CultureInfo.InvariantCulture, Command, PackageOf(packages));
+
+    /// <summary>
+    ///     The name of the package in this family of distributions.
+    /// </summary>
+    /// <param name="packages">The name of the package in each family; a family not listed uses the first name.</param>
+    public string PackageOf(IReadOnlyDictionary<string, string> packages) =>
+        packages.TryGetValue(Family, out string? name) ? name : packages.Values.First();
+
+    /// <summary>
+    ///     The command line that installs all the packages at once without asking anything but the password:
+    ///     the program first, then its arguments.
+    /// </summary>
+    public IReadOnlyList<string> InstallCommand(IEnumerable<string> packages) =>
+    [
+        .. Family switch
+        {
+            Fedora => (string[])["sudo", "dnf", "install", "-y"],
+            Arch => ["sudo", "pacman", "-S", "--needed", "--noconfirm"],
+            Suse => ["sudo", "zypper", "--non-interactive", "install"],
+            _ => ["sudo", "apt-get", "install", "-y"],
+        },
+        .. packages.Distinct(),
+    ];
 }

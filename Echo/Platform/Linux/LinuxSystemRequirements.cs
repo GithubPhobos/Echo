@@ -63,12 +63,12 @@ internal sealed class LinuxSystemRequirements(DisplayServer display,
         var requirements = new List<SystemRequirement>
         {
             new(Strings.RequireDesktop, _display != DisplayServer.None, Strings.RequireDesktopWithout, Fix: null),
-            new(Strings.RequireRecognition, _systemLibraries.FindMissing().Count == 0, Strings.RequireRecognitionWithout, Install(_openMpPackages)),
+            Needs(Strings.RequireRecognition, _systemLibraries.FindMissing().Count == 0, Strings.RequireRecognitionWithout, _openMpPackages),
         };
 
         bool hasSound = HasLibrary(SoundLibrary);
 
-        requirements.Add(new(Strings.RequireSound, hasSound, Strings.RequireSoundWithout, Install(_soundPackages)));
+        requirements.Add(Needs(Strings.RequireSound, hasSound, Strings.RequireSoundWithout, _soundPackages));
 
         if (hasSound)
             requirements.Add(new(Strings.RequireMicrophone, _audioInput.GetDevices().Count > 0, Strings.RequireMicrophoneWithout, Strings.RequireMicrophoneFix));
@@ -85,12 +85,12 @@ internal sealed class LinuxSystemRequirements(DisplayServer display,
         {
             bool hasChooser = HasPortal(DesktopPortal.FileChooserInterface) || _programs.Exists("zenity") || _programs.Exists("kdialog");
 
-            requirements.Add(new(Strings.RequireFileChooser, hasChooser, Strings.RequireFileChooserWithout, Install(Same("zenity"))));
+            requirements.Add(Needs(Strings.RequireFileChooser, hasChooser, Strings.RequireFileChooserWithout, Same("zenity")));
         }
 
         // Only a machine with an NVIDIA card downloads the NVIDIA libraries
         if (_programs.Exists("nvidia-smi"))
-            requirements.Add(new(Strings.RequireUnpacker, _programs.Exists("tar") && _programs.Exists("xz"), Strings.RequireUnpackerWithout, Install(_xzPackages)));
+            requirements.Add(Needs(Strings.RequireUnpacker, _programs.Exists("tar") && _programs.Exists("xz"), Strings.RequireUnpackerWithout, _xzPackages));
 
         return requirements;
     }
@@ -105,8 +105,19 @@ internal sealed class LinuxSystemRequirements(DisplayServer display,
         bool isMet = writers.Any(writer => _programs.Exists(writer.Program));
         string suggested = _hasX11 ? "xsel" : "wl-clipboard";
 
-        return new(Strings.Format(nameof(Strings.RequireClipboard), suggested), isMet, Strings.RequireClipboardWithout, Install(Same(suggested)));
+        return Needs(Strings.Format(nameof(Strings.RequireClipboard), suggested), isMet, Strings.RequireClipboardWithout, Same(suggested));
     }
+
+    /// <inheritdoc/>
+    public IReadOnlyList<string>? InstallCommand(IReadOnlyList<string> packages) =>
+        _packageManager?.InstallCommand(packages);
+
+    /// <summary>
+    ///     Something a package brings: the command that installs it, and the package itself where Echo knows
+    ///     how this distribution installs.
+    /// </summary>
+    private SystemRequirement Needs(string name, bool isMet, string consequence, IReadOnlyDictionary<string, string> packages) =>
+        new(name, isMet, consequence, Install(packages), _packageManager?.PackageOf(packages));
 
     private bool HasPortal(string portalInterface) =>
         _portal.VersionAsync(portalInterface).GetAwaiter().GetResult() is not null;

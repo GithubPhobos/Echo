@@ -825,4 +825,13 @@
   <data name="VulkanSoftwareOnly" xml:space="preserve">
     <value>Vulkan wird nicht angeboten: Es sieht keine Grafikkarte, nur einen Software-Ersatz, der auf dem Prozessor läuft und langsamer wäre als der Prozessor selbst.</value>
   </data>
+  <data name="HintInstall" xml:space="preserve">
+    <value>installieren</value>
+  </data>
+  <data name="SystemCheckInstallNote" xml:space="preserve">
+    <value>Enter installiert, was fehlt: Das System fragt nach deinem Passwort, danach prüft Echo erneut. R prüft erneut, S macht ohne weiter.</value>
+  </data>
+  <data name="SystemInstalling" xml:space="preserve">
+    <value>Installiere, was Echo braucht: {0}</value>
+  </data>
 </root>

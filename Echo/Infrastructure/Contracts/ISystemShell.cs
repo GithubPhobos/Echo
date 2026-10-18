@@ -30,4 +30,13 @@ internal interface ISystemShell
     /// <param name="pattern">The file name patterns to show, separated by semicolons, e.g. "*.bin".</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     Task<IReadOnlyList<string>> PickFilesAsync(string title, string pattern, CancellationToken cancellationToken);
+
+    /// <summary>
+    ///     Runs a program in this terminal and waits for it: it writes to the screen and reads the keyboard itself,
+    ///     as when the user typed the command, so it can ask for a password.
+    /// </summary>
+    /// <param name="command">The program, then its arguments.</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <returns>Whether the program ran and succeeded.</returns>
+    Task<bool> RunInTerminalAsync(IReadOnlyList<string> command, CancellationToken cancellationToken);
 }

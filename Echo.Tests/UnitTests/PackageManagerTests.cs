@@ -44,4 +44,21 @@ public sealed class PackageManagerTests
         // Act & Assert
         Assert.Equal("sudo dnf install xsel", manager.Install(new Dictionary<string, string> { [PackageManager.Debian] = "xsel" }));
     }
+
+    [Theory]
+    [InlineData("ID=ubuntu", "sudo apt-get install -y xsel libgomp1")]
+    [InlineData("ID=fedora", "sudo dnf install -y xsel libgomp1")]
+    [InlineData("ID=arch", "sudo pacman -S --needed --noconfirm xsel libgomp1")]
+    [InlineData("ID=opensuse-leap\nID_LIKE=\"suse opensuse\"", "sudo zypper --non-interactive install xsel libgomp1")]
+    public void InstallCommand_SeveralPackages_InstallsThemAllAtOnceAskingOnlyForThePassword(string osRelease, string expected)
+    {
+        // Arrange
+        PackageManager manager = PackageManager.FromOsRelease(osRelease.Split('\n'))!;
+
+        // Act
+        IReadOnlyList<string> command = manager.InstallCommand(["xsel", "libgomp1", "xsel"]);
+
+        // Assert: one command, each package once
+        Assert.Equal(expected, string.Join(' ', command));
+    }
 }
