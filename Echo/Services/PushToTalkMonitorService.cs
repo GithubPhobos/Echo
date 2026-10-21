@@ -13,6 +13,11 @@ internal sealed class PushToTalkMonitorService : IPushToTalkMonitorService
 
     private bool _isRecording;
 
+    /// <summary>
+    ///     Whether the key has been given back for good: see <see cref="Release"/>.
+    /// </summary>
+    private volatile bool _isReleased;
+
     /// <inheritdoc/>
     public event EventHandler? OnRecordingReleased;
 
@@ -59,13 +64,17 @@ internal sealed class PushToTalkMonitorService : IPushToTalkMonitorService
         _listener.Bind(new HotkeyChoice(_pushToTalkSettings.Key, _pushToTalkSettings.Modifier ?? string.Empty));
     }
 
+    /// <inheritdoc/>
+    public void Release() =>
+        _isReleased = true;
+
     /// <summary>
     ///     Holding the key records: the press starts a recording.
     /// </summary>
     internal void OnKeyPressed(object? sender, HotkeyEventArgs e)
     {
-        // Paused, the key does what it does without Echo, and a recording already under way still ends normally
-        if (_activity?.IsPaused == true && !_isRecording)
+        // Paused or given back, the key does what it does without Echo, and a recording already under way still ends normally
+        if ((_activity?.IsPaused == true || _isReleased) && !_isRecording)
         {
             e.IsTaken = false;
 

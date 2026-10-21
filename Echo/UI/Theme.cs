@@ -45,12 +45,6 @@ internal sealed record Theme(
     public static Theme Full { get; } = new("►", "◉", "○", "█", "░", "√", "×", "●", "›", "·", "↑↓", "▁▂▃▄▅▆▇█");
 
     /// <summary>
-    ///     Whether the keyboard emoji takes the two cells it is drawn in. The terminals of Windows give it two;
-    ///     the terminal of GNOME and others count it as one and draw it over the space that follows.
-    /// </summary>
-    public static bool IsKeyboardEmojiWide { get; } = OperatingSystem.IsWindows();
-
-    /// <summary>
     ///     For the classic Windows console: only symbols present in its standard fonts.
     /// </summary>
     public static Theme Safe { get; } = Full with { RadioOn = "●", LevelBars = "_▄▄▄▄███" };

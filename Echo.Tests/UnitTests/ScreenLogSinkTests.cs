@@ -30,6 +30,23 @@ public sealed class ScreenLogSinkTests
     }
 
     [Fact]
+    public void Emit_LineOfTheRecognitionLibrary_IsMarkedAsSuch()
+    {
+        // Arrange
+        var log = new ScreenLog();
+        var sink = new ScreenLogSink(log);
+
+        // Act: a line the library writes about the graphics card, and one of Echo's own next to it
+        sink.Emit(Event(LogEventLevel.Debug, "{Tab}{Message}", ("Tab", "    "), ("Message", "whisper_backend_init_gpu: using CUDA0 backend"), (ScreenLogSink.LibraryProperty, true)));
+        sink.Emit(Event(LogEventLevel.Debug, "{Tab}{Emoji} Whisper model loaded.", ("Tab", "    "), ("Emoji", "✅")));
+
+        // Assert
+        Assert.Equal(
+            [(MessageTone.Library, "whisper_backend_init_gpu: using CUDA0 backend"), (MessageTone.Done, "Whisper model loaded.")],
+            log.Snapshot().Select(entry => (entry.Tone, entry.Text)));
+    }
+
+    [Fact]
     public void Emit_ReadsGroupsAndOutcomesFromTheIndentationAndThePictures()
     {
         // Arrange

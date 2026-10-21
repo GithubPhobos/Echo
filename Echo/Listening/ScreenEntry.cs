@@ -20,4 +20,10 @@ internal sealed record ScreenEntry(DateTimeOffset Time, EntryKind Kind, string T
     public int Depth { get; init; }
 
     public MessageTone Tone { get; init; }
+
+    /// <summary>
+    ///     Parts of the text drawn in a style of their own, such as the name of a log level in the color of that
+    ///     level: where each part starts in the text, how long it is, and its console style.
+    /// </summary>
+    public IReadOnlyList<(int Start, int Length, string Style)> Accents { get; init; } = [];
 }

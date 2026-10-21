@@ -48,6 +48,12 @@ internal sealed class ListenFrame(Theme theme)
     private const int SmoothedPieces = 3;
 
     /// <summary>
+    ///     The color of what the recognition library says about itself, such as how it found the graphics card:
+    ///     fainter than Echo's own lines, since it is there only for whoever looks into a problem.
+    /// </summary>
+    private const string LibraryText = "#6e7681";
+
+    /// <summary>
     ///     The color of the still dots shown while nothing is recorded.
     /// </summary>
     private const string IdleDots = "#3d4450";
@@ -100,15 +106,6 @@ internal sealed class ListenFrame(Theme theme)
     ///     the emoji of two cells where the terminal draws emoji, "@" elsewhere.
     /// </summary>
     private string Ear => _theme == Theme.Full ? "\U0001F442" : "@";
-
-    /// <summary>
-    ///     What stands before the key in the state line: a keyboard of two cells where the terminal
-    ///     draws emoji and gives this one its two cells, the word elsewhere.
-    /// </summary>
-    private (string Text, int Width) KeySign =>
-        _theme == Theme.Full && Theme.IsKeyboardEmojiWide
-            ? ("\u2328\uFE0F", 2)
-            : (Strings.ListenKey, WidthOf(Strings.ListenKey));
 
     /// <summary>
     ///     What stands between the parts of the state line and between the keys: a dashed line,
@@ -230,15 +227,12 @@ internal sealed class ListenFrame(Theme theme)
 
         string gap = SetupUi.Dim(Markup.Escape(separator));
         int gapWidth = WidthOf(separator);
-        (string sign, int signWidth) = KeySign;
 
         (string Markup, int Width) equalizer = (gap + Equalizer(view), gapWidth + EqualizerWidth);
+        (string Markup, int Width) key = ($"{gap}[bold {Theme.Highlight}]{Markup.Escape(view.Key)}[/]", gapWidth + WidthOf(view.Key));
         (string Markup, int Width) model = ($"{gap}[bold {ModelColor}]{Markup.Escape(view.Model)}[/]", gapWidth + WidthOf(view.Model));
-        (string Markup, int Width) key = (
-            $"{gap}[{Muted}]{Markup.Escape(sign)}[/] [bold {Theme.Highlight}]{Markup.Escape(view.Key)}[/]",
-            gapWidth + signWidth + 1 + WidthOf(view.Key));
 
-        List<(string Markup, int Width)> pieces = [("  ", 2), (state, stateWidth), equalizer, model, key];
+        List<(string Markup, int Width)> pieces = [("  ", 2), (state, stateWidth), equalizer, key, model];
 
         // What does not fit is left out whole, since a piece cut in the middle reads as something else:
         // the model first, which /info shows too, then the key, then the equalizer
@@ -460,18 +454,47 @@ internal sealed class ListenFrame(Theme theme)
 
         return rows;
 
-        // The note is drawn faintly wherever the wrapping has put it
+        // The note is drawn faintly and the accents in their own style, wherever the wrapping has put them
         string Styled(string chunk, int offset)
         {
-            int split = Math.Clamp(noteStart - offset, 0, chunk.Length);
+            var styled = new StringBuilder();
+            int end = offset + chunk.Length;
 
-            string main = chunk[..split];
-            string note = chunk[split..];
+            for (int at = offset; at < end;)
+            {
+                int next = entry.Accents
+                    .SelectMany(accent => new[] { accent.Start, accent.Start + accent.Length })
+                    .Append(noteStart)
+                    .Append(end)
+                    .Where(boundary => boundary > at)
+                    .Min();
 
-            return (main.Length > 0 ? $"[{textStyle}]{Markup.Escape(main)}[/]" : string.Empty)
-                + (note.Length > 0 ? SetupUi.Dim(Markup.Escape(note)) : string.Empty);
+                string style = at >= noteStart
+                    ? Theme.Dim
+                    : entry.Accents.FirstOrDefault(accent => at >= accent.Start && at < accent.Start + accent.Length).Style ?? textStyle;
+
+                styled.Append($"[{style}]{Markup.Escape(chunk[(at - offset)..(next - offset)])}[/]");
+                at = next;
+            }
+
+            return styled.ToString();
         }
     }
+
+    /// <summary>
+    ///     The style a log level is named in: the more detailed a level, the fainter; warnings and failures
+    ///     in the colors their lines have in the log.
+    /// </summary>
+    /// <param name="level">The level, as typed after /log.</param>
+    public static string LevelStyle(string level) => level switch
+    {
+        "verbose" => Theme.Dim,
+        "debug" => LogQuiet,
+        "information" => ModelColor,
+        "warning" => Theme.Warning,
+        "error" => Theme.Failure,
+        _ => $"bold {Theme.Failure}"
+    };
 
     /// <summary>
     ///     The lines of the tree in front of a step: "├─ " for a step that has more after it,
@@ -500,7 +523,8 @@ internal sealed class ListenFrame(Theme theme)
         MessageTone.Done => Theme.Success,
         MessageTone.Failed => Theme.Failure,
         MessageTone.Progress => LogQuiet,
-        MessageTone.Key => $"bold {Theme.Highlight}",
+        MessageTone.Key => $"bold {Theme.Success}",
+        MessageTone.Library => LibraryText,
         MessageTone.Title => "bold #f0f6fc",
         _ => LogText
     };
@@ -656,7 +680,7 @@ internal sealed class ListenFrame(Theme theme)
 
         string shownLabel = isSelected
             ? $"[#ffffff on #3b2a52]{Markup.Escape(label)}[/]"
-            : $"[{Muted}]{Markup.Escape(label)}[/]";
+            : $"[{row.LabelStyle ?? Muted}]{Markup.Escape(label)}[/]";
 
         string shownDescription = $"[{(isSelected ? "#e6edf3" : Muted)}]{Markup.Escape(description)}[/]";
         string shownCurrent = current.Length > 0 ? $"[{Theme.Success}]{Markup.Escape(current)}[/]" : string.Empty;

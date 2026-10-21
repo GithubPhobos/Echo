@@ -406,7 +406,6 @@ internal sealed class AccelerationStep : ISetupStep
                         .. DescribeLibraries(ready.ContainsKey),
                     ],
                     (progress, token) => _cudaRuntime.InstallAsync(progress, downloaded, token),
-                    Strings.DownloadPaused,
                     cancellationToken);
 
             if (outcome.IsBack || outcome.Value is null)

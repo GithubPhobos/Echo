@@ -36,4 +36,10 @@ internal interface IPushToTalkMonitorService : IDisposable
     /// </remarks>
     /// <param name="cancellationToken">Stops waiting, as when Echo stops while the desktop still asks the user.</param>
     Task StartListeningAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    ///     Stops taking the key: from now on it does what it does without Echo, as when Echo could not start
+    ///     after the key was already its own. A recording under way still ends when the key comes up.
+    /// </summary>
+    void Release();
 }

@@ -390,6 +390,82 @@ public sealed class EchoOrchestratorTests
         Assert.Equal(ListenState.Listening, activity.State);
     }
 
+    [Fact]
+    public async Task OnRecordingTriggered_KeyPressedWhileTheModelLoads_RecordsAndRecognizesOnceItIsLoaded()
+    {
+        // Arrange: the model takes its time to load
+        using var loading = new ManualResetEventSlim();
+        using var loaded = new ManualResetEventSlim();
+
+        _whisperMock.Setup(w => w.TryInitializeWhisperModel()).Callback(() =>
+        {
+            loading.Set();
+            loaded.Wait(_patience);
+        });
+
+        _whisperMock.Setup(w => w.ProcessAudioAsync(It.IsAny<MemoryStream?>())).ReturnsAsync("hello");
+
+        var activity = new ListenActivity(new ScreenLog(), () => false);
+        EchoOrchestrator orchestrator = CreateOrchestrator(activity);
+
+        await orchestrator.StartAsync(CancellationToken.None);
+        Assert.True(loading.Wait(_patience));
+
+        // Act: the key is already Echo's, so a phrase can be said while the model loads
+        _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
+        bool isRecording = activity.State == ListenState.Recording;
+
+        _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty);
+        bool isRecognizedTooEarly = _whisperMock.Invocations.Any(call => call.Method.Name == nameof(IWhisperInferenceService.ProcessAudioAsync));
+
+        loaded.Set();
+        await orchestrator.ExecuteTask!.WaitAsync(_patience);
+        await orchestrator.StopAsync(CancellationToken.None);
+
+        // Assert: recorded at once, recognized and typed only once the model was there
+        Assert.True(isRecording);
+        Assert.False(isRecognizedTooEarly);
+        _audioMock.Verify(a => a.StartRecording(), Times.Once);
+        _textMock.Verify(t => t.InsertTextAsync("hello"), Times.Once);
+        Assert.Equal(ListenState.Listening, activity.State);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ModelFailsAfterTheKeyWasTaken_GivesTheKeyBackAndDropsThePhrase()
+    {
+        // Arrange: a phrase is said while the model loads, and the model cannot be loaded
+        using var loading = new ManualResetEventSlim();
+        using var failing = new ManualResetEventSlim();
+
+        _whisperMock.Setup(w => w.TryInitializeWhisperModel()).Callback(() =>
+        {
+            loading.Set();
+            failing.Wait(_patience);
+
+            throw new FileNotFoundException("Model 'ggml-large-v3.bin' was not found.");
+        });
+
+        var activity = new ListenActivity(new ScreenLog(), () => false);
+        EchoOrchestrator orchestrator = CreateOrchestrator(activity);
+
+        await orchestrator.StartAsync(CancellationToken.None);
+        Assert.True(loading.Wait(_patience));
+
+        _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
+        _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty);
+
+        // Act
+        failing.Set();
+        await orchestrator.ExecuteTask!.WaitAsync(_patience);
+        await orchestrator.StopAsync(CancellationToken.None);
+
+        // Assert: the key does what it does without Echo again, nothing is recognized, and the screen says Echo failed
+        _monitorMock.Verify(m => m.Release(), Times.Once);
+        _whisperMock.Verify(w => w.ProcessAudioAsync(It.IsAny<MemoryStream?>()), Times.Never);
+        _textMock.Verify(t => t.InsertTextAsync(It.IsAny<string?>()), Times.Never);
+        Assert.Equal(ListenState.Failed, activity.State);
+    }
+
     /// <summary>
     ///     Starts the orchestrator and waits for its start-up, which runs in the background
     ///     and subscribes to the key at its end.

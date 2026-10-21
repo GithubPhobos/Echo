@@ -2,6 +2,7 @@
 using Echo.Extensions;
 using Echo.Listening;
 using Echo.Setup;
+using Echo.UI;
 using Serilog.Core;
 using Serilog.Events;
 using Spectre.Console;
@@ -87,7 +88,7 @@ public sealed class ListenCommandsTests : IDisposable
             store.Save(new UserSettings { SetupVersion = 1, ModelName = "ggml-small.bin" });
 
             var activity = new ListenActivity(new ScreenLog(), () => false);
-            var commands = new ListenCommands(activity, new LoggingLevelSwitch(LogEventLevel.Debug), store, () => []);
+            var commands = new ListenCommands(activity, new LoggingLevelSwitch(LogEventLevel.Debug), store, Mock.Of<ITextClipboard>(), () => []);
 
             // Act
             commands.Run("/log information");
@@ -105,11 +106,104 @@ public sealed class ListenCommandsTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Run_LogDetail_NamesEveryLevelInItsOwnColor()
+    {
+        // Arrange
+        ListenCommands commands = Commands(out ListenActivity activity, out _);
+
+        // Act
+        commands.Run("/log warning");
+        commands.Run("/log");
+
+        // Assert: the level set is drawn in the color of warnings
+        IReadOnlyList<ScreenEntry> log = activity.Log.Snapshot();
+        ScreenEntry changed = log[1];
+
+        Assert.Equal([(changed.Text.IndexOf("warning", StringComparison.Ordinal), "warning".Length, Theme.Warning)], changed.Accents);
+
+        // The answer that lists them all shows every level in its color, and no two levels share one
+        ScreenEntry listed = log[3];
+
+        Assert.Equal(
+            ["warning", "verbose", "debug", "information", "warning", "error", "fatal"],
+            listed.Accents.Select(accent => listed.Text.Substring(accent.Start, accent.Length)));
+
+        Assert.Equal(6, listed.Accents.Select(accent => accent.Style).Distinct().Count());
+
+        // The list the level is picked from has the same colors
+        IReadOnlyList<PanelRow> levels = commands.Options(commands.All.Single(command => command.Name == ListenCommands.LogLevel));
+
+        Assert.Equal(ListenCommands.Levels.Select(ListenFrame.LevelStyle), levels.Select(row => row.LabelStyle));
+    }
+
+    [Fact]
+    public void Run_Copy_PutsTheLastRecognizedPhraseIntoTheClipboard()
+    {
+        // Arrange: two phrases said, and a line of the log after them
+        var clipboard = new Mock<ITextClipboard>();
+        clipboard.Setup(c => c.SetTextAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+
+        ListenCommands commands = Commands(clipboard.Object, out ListenActivity activity);
+
+        activity.Log.Add(EntryKind.Dictated, "first phrase", "0.40 s");
+        activity.Log.Add(EntryKind.Dictated, "second phrase", "0.38 s");
+        activity.Log.Add(EntryKind.Message, "Recording...");
+
+        // Act
+        commands.Run("/copy");
+
+        // Assert
+        clipboard.Verify(c => c.SetTextAsync("second phrase"), Times.Once);
+        Assert.Equal((EntryKind.Answer, "The last recognized text is in the clipboard."), (activity.Log.Snapshot()[^1].Kind, activity.Log.Snapshot()[^1].Text));
+    }
+
+    [Fact]
+    public void Run_CopyBeforeAnyPhrase_SaysThereIsNothingToCopy()
+    {
+        // Arrange
+        var clipboard = new Mock<ITextClipboard>();
+        ListenCommands commands = Commands(clipboard.Object, out ListenActivity activity);
+
+        // Act
+        commands.Run("/copy");
+
+        // Assert
+        clipboard.Verify(c => c.SetTextAsync(It.IsAny<string>()), Times.Never);
+        Assert.Equal("Nothing to copy yet: no phrase has been recognized.", activity.Log.Snapshot()[^1].Text);
+    }
+
+    [Fact]
+    public void Run_CopyClipboardFails_SaysWhyAsAWarning()
+    {
+        // Arrange
+        var clipboard = new Mock<ITextClipboard>();
+        clipboard.Setup(c => c.SetTextAsync(It.IsAny<string>())).ThrowsAsync(new InvalidOperationException("xsel is missing"));
+
+        ListenCommands commands = Commands(clipboard.Object, out ListenActivity activity);
+        activity.Log.Add(EntryKind.Dictated, "hello", "0.40 s");
+
+        // Act
+        commands.Run("/copy");
+
+        // Assert
+        ScreenEntry answer = activity.Log.Snapshot()[^1];
+
+        Assert.Equal((EntryKind.Warning, "The text could not be copied: xsel is missing"), (answer.Kind, answer.Text));
+    }
+
     private static ListenCommands Commands(out ListenActivity activity, out LoggingLevelSwitch levelSwitch)
     {
         activity = new ListenActivity(new ScreenLog(), () => false);
         levelSwitch = new LoggingLevelSwitch(LogEventLevel.Debug);
 
-        return new ListenCommands(activity, levelSwitch, Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), () => [("Model", "ggml-tiny.bin"), ("Microphone", "Desk microphone")]);
+        return new ListenCommands(activity, levelSwitch, Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), Mock.Of<ITextClipboard>(), () => [("Model", "ggml-tiny.bin"), ("Microphone", "Desk microphone")]);
+    }
+
+    private static ListenCommands Commands(ITextClipboard clipboard, out ListenActivity activity)
+    {
+        activity = new ListenActivity(new ScreenLog(), () => false);
+
+        return new ListenCommands(activity, new LoggingLevelSwitch(LogEventLevel.Debug), Mock.Of<IUserSettingsStore>(), clipboard, () => []);
     }
 }

@@ -253,7 +253,7 @@
     <value>Geh näher ans Mikrofon, erhöhe seinen Pegel in den Systemeinstellungen oder wähle ein anderes.</value>
   </data>
   <data name="TestLoading" xml:space="preserve">
-    <value>Modell wird geladen</value>
+    <value>Spracherkennung wird gestartet</value>
   </data>
   <data name="TestStartFailed" xml:space="preserve">
     <value>Das Diktat ließ sich mit diesen Einstellungen nicht starten.</value>
@@ -351,9 +351,6 @@
   <data name="MicrophoneOpening" xml:space="preserve">
     <value>Mikrofon wird geöffnet</value>
   </data>
-  <data name="HintMeasure" xml:space="preserve">
-    <value>messen</value>
-  </data>
   <data name="CudaSourceQuestion" xml:space="preserve">
     <value>Woher sollen sie kommen?</value>
   </data>
@@ -365,12 +362,6 @@
   </data>
   <data name="ModelRecommendationNote" xml:space="preserve">
     <value>Die Empfehlung richtet sich nach deinem System.</value>
-  </data>
-  <data name="DownloadPaused" xml:space="preserve">
-    <value>Der Download ist angehalten. Das bereits Geladene bleibt erhalten.</value>
-  </data>
-  <data name="CopyPaused" xml:space="preserve">
-    <value>Das Kopieren ist angehalten.</value>
   </data>
   <data name="FileCopyFailed" xml:space="preserve">
     <value>Die Datei konnte nicht kopiert werden.</value>
@@ -415,7 +406,7 @@
     <value>Aus</value>
   </data>
   <data name="CalibrationQuestion" xml:space="preserve">
-    <value>Messung des Stillepegels</value>
+    <value>Möchtest du den Stillepegel messen?</value>
   </data>
   <data name="CalibrationWhy" xml:space="preserve">
     <value>Echo beginnt erst aufzunehmen, wenn der Ton lauter wird als der Stillepegel. So bleibt der Hintergrund draußen: Lüfter, Tastatur, Straße. Ist der Pegel zu niedrig, nimmt Echo Rauschen auf; ist er zu hoch, schneidet es den leisen Anfang eines Satzes ab.</value>
@@ -569,9 +560,6 @@
   </data>
   <data name="ListenFailed" xml:space="preserve">
     <value>Fehler</value>
-  </data>
-  <data name="ListenKey" xml:space="preserve">
-    <value>Taste</value>
   </data>
   <data name="ListenScrolled" xml:space="preserve">
     <value>End ganz nach unten</value>
@@ -854,5 +842,38 @@
   </data>
   <data name="CopyDone" xml:space="preserve">
     <value>Fertig</value>
+  </data>
+  <data name="CommandCopy" xml:space="preserve">
+    <value>den zuletzt erkannten Text kopieren</value>
+  </data>
+  <data name="ResponseCopied" xml:space="preserve">
+    <value>Der zuletzt erkannte Text ist in der Zwischenablage.</value>
+  </data>
+  <data name="ResponseNothingToCopy" xml:space="preserve">
+    <value>Noch nichts zu kopieren: Es wurde noch kein Satz erkannt.</value>
+  </data>
+  <data name="ResponseCopyFailed" xml:space="preserve">
+    <value>Der Text konnte nicht kopiert werden: {0}</value>
+  </data>
+  <data name="CalibrationMeasuring" xml:space="preserve">
+    <value>Messung des Stillepegels</value>
+  </data>
+  <data name="CalibrationMeasure" xml:space="preserve">
+    <value>Messen</value>
+  </data>
+  <data name="CalibrationManual" xml:space="preserve">
+    <value>Von Hand festlegen</value>
+  </data>
+  <data name="CalibrationManualHint" xml:space="preserve">
+    <value>Gib den Pegel als Zahl von 0 bis 1 ein: Je größer sie ist, desto lauter muss ein Ton sein, damit Echo mit der Aufnahme beginnt.</value>
+  </data>
+  <data name="CalibrationSkip" xml:space="preserve">
+    <value>Überspringen</value>
+  </data>
+  <data name="CalibrationSkipHint" xml:space="preserve">
+    <value>Der Stillepegel bleibt, wie er ist: {0}.</value>
+  </data>
+  <data name="MicrophoneUnavailable" xml:space="preserve">
+    <value>nicht verfügbar</value>
   </data>
 </root>

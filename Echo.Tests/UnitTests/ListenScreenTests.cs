@@ -26,12 +26,13 @@ public sealed class ListenScreenTests : IDisposable
     [Fact]
     public async Task RunAsync_ArrowsWalkThePanelAndACommandWithValuesOpensTheListOfThem()
     {
-        // Arrange: "/" opens the commands; down four times reaches /log; Enter opens its levels,
+        // Arrange: "/" opens the commands; down five times reaches /log; Enter opens its levels,
         // highlighting the current one; up once and Enter picks the more detailed one
         ListenCommands commands = Commands(out ListenActivity activity, out LoggingLevelSwitch levelSwitch);
         (ListenScreen screen, TestConsole console) = Screen(activity, commands);
 
         console.Input.PushText("/");
+        console.Input.PushKey(ConsoleKey.DownArrow);
         console.Input.PushKey(ConsoleKey.DownArrow);
         console.Input.PushKey(ConsoleKey.DownArrow);
         console.Input.PushKey(ConsoleKey.DownArrow);
@@ -121,7 +122,7 @@ public sealed class ListenScreenTests : IDisposable
         for (int line = 1; line <= 40; line++)
             log.Add(EntryKind.Message, $"line {line}");
 
-        var commands = new ListenCommands(activity, new LoggingLevelSwitch(LogEventLevel.Debug), Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), () => []);
+        var commands = new ListenCommands(activity, new LoggingLevelSwitch(LogEventLevel.Debug), Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), Mock.Of<ITextClipboard>(), () => []);
         (ListenScreen screen, TestConsole console) = Screen(activity, commands);
 
         screen.Draw();
@@ -172,7 +173,7 @@ public sealed class ListenScreenTests : IDisposable
         activity = new ListenActivity(new ScreenLog(), () => false);
         levelSwitch = new LoggingLevelSwitch(LogEventLevel.Debug);
 
-        return new ListenCommands(activity, levelSwitch, Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), () => [("Model", "ggml-tiny.bin"), ("Microphone", "Desk microphone")]);
+        return new ListenCommands(activity, levelSwitch, Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), Mock.Of<ITextClipboard>(), () => [("Model", "ggml-tiny.bin"), ("Microphone", "Desk microphone")]);
     }
 
     private static (ListenScreen Screen, TestConsole Console) Screen(ListenActivity activity, ListenCommands commands)

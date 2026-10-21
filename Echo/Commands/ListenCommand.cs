@@ -173,7 +173,12 @@ internal sealed class ListenCommand(
             _console,
             Theme.Detect(_console),
             activity,
-            new ListenCommands(activity, levelSwitch, new UserSettingsStore(_paths), () => SummarizeSettings(configuration, activity, levelSwitch)),
+            new ListenCommands(
+                activity,
+                levelSwitch,
+                new UserSettingsStore(_paths),
+                host.Services.GetRequiredService<ITextClipboard>(),
+                () => SummarizeSettings(configuration, activity, levelSwitch)),
             DescribeSettings(configuration),
             ScreenTick,
             _focusReports);

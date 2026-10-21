@@ -7,4 +7,5 @@
 /// <param name="Label">What the row is called.</param>
 /// <param name="Description">What it does.</param>
 /// <param name="IsCurrent">Whether it is the value in effect now.</param>
-internal sealed record PanelRow(string Text, string Label, string Description, bool IsCurrent = false);
+/// <param name="LabelStyle">The console style of the name while the row is not highlighted, such as the color of a log level.</param>
+internal sealed record PanelRow(string Text, string Label, string Description, bool IsCurrent = false, string? LabelStyle = null);

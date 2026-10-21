@@ -16,6 +16,12 @@ internal sealed class ScreenLogSink(ScreenLog log) : ILogEventSink
     /// </summary>
     public const string HiddenProperty = "HiddenOnScreen";
 
+    /// <summary>
+    ///     The property that marks a message of the recognition library itself, such as "whisper_backend_init_gpu":
+    ///     the screen shows it more faintly than Echo's own messages.
+    /// </summary>
+    public const string LibraryProperty = "FromLibrary";
+
     private readonly ScreenLog _log = log;
 
     /// <inheritdoc/>
@@ -46,7 +52,9 @@ internal sealed class ScreenLogSink(ScreenLog log) : ILogEventSink
         _log.Add(new ScreenEntry(logEvent.Timestamp, kind, text)
         {
             Depth = depth,
-            Tone = ToneOf(message.TrimStart(), text, depth, logEvent.Level),
+            Tone = logEvent.Properties.ContainsKey(LibraryProperty)
+                ? MessageTone.Library
+                : ToneOf(message.TrimStart(), text, depth, logEvent.Level),
         });
     }
 

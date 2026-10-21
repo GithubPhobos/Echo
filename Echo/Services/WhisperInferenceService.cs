@@ -184,6 +184,9 @@ internal sealed class WhisperInferenceService(
 
         if (arg1 is WhisperLogLevel.Info or WhisperLogLevel.Error)
         {
+            // Lines such as "whisper_backend_init_gpu: ..." are for whoever looks into a problem: the screen dims them
+            using IDisposable fromLibrary = Serilog.Context.LogContext.PushProperty(Echo.Listening.ScreenLogSink.LibraryProperty, true);
+
             _logger.LogDebug("{Tab}{Message}", LoggerConstants.Tab, arg2.Trim());
 
             return;

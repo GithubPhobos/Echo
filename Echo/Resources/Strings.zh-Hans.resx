@@ -253,7 +253,7 @@
     <value>请靠近麦克风、在系统设置中调高其音量，或选择其他麦克风。</value>
   </data>
   <data name="TestLoading" xml:space="preserve">
-    <value>正在加载模型</value>
+    <value>正在启动语音识别</value>
   </data>
   <data name="TestStartFailed" xml:space="preserve">
     <value>无法使用这些设置启动听写。</value>
@@ -351,9 +351,6 @@
   <data name="MicrophoneOpening" xml:space="preserve">
     <value>正在打开麦克风</value>
   </data>
-  <data name="HintMeasure" xml:space="preserve">
-    <value>测量</value>
-  </data>
   <data name="CudaSourceQuestion" xml:space="preserve">
     <value>从哪里获取？</value>
   </data>
@@ -365,12 +362,6 @@
   </data>
   <data name="ModelRecommendationNote" xml:space="preserve">
     <value>推荐基于您的系统。</value>
-  </data>
-  <data name="DownloadPaused" xml:space="preserve">
-    <value>下载已停止。已下载的部分已保留。</value>
-  </data>
-  <data name="CopyPaused" xml:space="preserve">
-    <value>复制已停止。</value>
   </data>
   <data name="FileCopyFailed" xml:space="preserve">
     <value>无法复制文件。</value>
@@ -415,7 +406,7 @@
     <value>关</value>
   </data>
   <data name="CalibrationQuestion" xml:space="preserve">
-    <value>静音阈值测量</value>
+    <value>要测量静音阈值吗？</value>
   </data>
   <data name="CalibrationWhy" xml:space="preserve">
     <value>只有当声音高于静音阈值时，Echo 才开始录音。这样背景声就不会进入录音：风扇、键盘、街道。阈值太低，Echo 会录下噪音；太高，则会截掉句子轻声的开头。</value>
@@ -569,9 +560,6 @@
   </data>
   <data name="ListenFailed" xml:space="preserve">
     <value>错误</value>
-  </data>
-  <data name="ListenKey" xml:space="preserve">
-    <value>按键</value>
   </data>
   <data name="ListenScrolled" xml:space="preserve">
     <value>End 回到最底部</value>
@@ -854,5 +842,38 @@
   </data>
   <data name="CopyDone" xml:space="preserve">
     <value>完成</value>
+  </data>
+  <data name="CommandCopy" xml:space="preserve">
+    <value>复制最后识别的文本</value>
+  </data>
+  <data name="ResponseCopied" xml:space="preserve">
+    <value>最后识别的文本已复制到剪贴板。</value>
+  </data>
+  <data name="ResponseNothingToCopy" xml:space="preserve">
+    <value>还没有可复制的内容：尚未识别任何短语。</value>
+  </data>
+  <data name="ResponseCopyFailed" xml:space="preserve">
+    <value>无法复制文本：{0}</value>
+  </data>
+  <data name="CalibrationMeasuring" xml:space="preserve">
+    <value>静音阈值测量</value>
+  </data>
+  <data name="CalibrationMeasure" xml:space="preserve">
+    <value>测量</value>
+  </data>
+  <data name="CalibrationManual" xml:space="preserve">
+    <value>手动设置</value>
+  </data>
+  <data name="CalibrationManualHint" xml:space="preserve">
+    <value>以 0 到 1 之间的数字输入阈值：数值越大，声音必须越响，Echo 才会开始录音。</value>
+  </data>
+  <data name="CalibrationSkip" xml:space="preserve">
+    <value>跳过</value>
+  </data>
+  <data name="CalibrationSkipHint" xml:space="preserve">
+    <value>静音阈值保持不变：{0}。</value>
+  </data>
+  <data name="MicrophoneUnavailable" xml:space="preserve">
+    <value>不可用</value>
   </data>
 </root>

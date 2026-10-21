@@ -24,5 +24,8 @@ internal enum MessageTone
     Key,
 
     /// <summary>Echo itself starting or being ready.</summary>
-    Title
+    Title,
+
+    /// <summary>What the recognition library says about itself.</summary>
+    Library
 }

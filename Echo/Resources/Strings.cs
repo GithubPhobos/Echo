@@ -249,7 +249,6 @@ internal static class Strings
 
     public static string MicrophoneOpening => Get(nameof(MicrophoneOpening));
 
-    public static string HintMeasure => Get(nameof(HintMeasure));
 
     public static string CudaSourceQuestion => Get(nameof(CudaSourceQuestion));
 
@@ -259,9 +258,7 @@ internal static class Strings
 
     public static string ModelRecommendationNote => Get(nameof(ModelRecommendationNote));
 
-    public static string DownloadPaused => Get(nameof(DownloadPaused));
 
-    public static string CopyPaused => Get(nameof(CopyPaused));
 
     public static string FileCopyFailed => Get(nameof(FileCopyFailed));
 
@@ -395,7 +392,6 @@ internal static class Strings
 
     public static string ListenFailed => Get(nameof(ListenFailed));
 
-    public static string ListenKey => Get(nameof(ListenKey));
 
     public static string ListenScrolled => Get(nameof(ListenScrolled));
 
@@ -584,4 +580,26 @@ internal static class Strings
     public static string CopyDetails => Get(nameof(CopyDetails));
 
     public static string CopyDone => Get(nameof(CopyDone));
+
+    public static string CommandCopy => Get(nameof(CommandCopy));
+
+    public static string ResponseCopied => Get(nameof(ResponseCopied));
+
+    public static string ResponseNothingToCopy => Get(nameof(ResponseNothingToCopy));
+
+    public static string ResponseCopyFailed => Get(nameof(ResponseCopyFailed));
+
+    public static string CalibrationMeasuring => Get(nameof(CalibrationMeasuring));
+
+    public static string CalibrationMeasure => Get(nameof(CalibrationMeasure));
+
+    public static string CalibrationManual => Get(nameof(CalibrationManual));
+
+    public static string CalibrationManualHint => Get(nameof(CalibrationManualHint));
+
+    public static string CalibrationSkip => Get(nameof(CalibrationSkip));
+
+    public static string CalibrationSkipHint => Get(nameof(CalibrationSkipHint));
+
+    public static string MicrophoneUnavailable => Get(nameof(MicrophoneUnavailable));
 }

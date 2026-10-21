@@ -74,47 +74,90 @@ internal sealed class SetupUi(IAnsiConsole console, Theme theme, TimeSpan tick)
     /// <param name="keys">The keys that pick the given row. Asked for the highlighted row only.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns>The picked row and the key it was picked with.</returns>
-    public async Task<UiResult<(T Value, ConsoleKey Key)>> SelectAsync<T>(SetupScreen screen,
-                                                                          string question,
-                                                                          IReadOnlyList<Choice<T>> choices,
-                                                                          ListPosition position,
-                                                                          IReadOnlyList<string>? notes,
-                                                                          Func<T, IReadOnlyList<ListKey>> keys,
-                                                                          CancellationToken cancellationToken)
+    public Task<UiResult<(T Value, ConsoleKey Key)>> SelectAsync<T>(SetupScreen screen,
+                                                                    string question,
+                                                                    IReadOnlyList<Choice<T>> choices,
+                                                                    ListPosition position,
+                                                                    IReadOnlyList<string>? notes,
+                                                                    Func<T, IReadOnlyList<ListKey>> keys,
+                                                                    CancellationToken cancellationToken) =>
+        SelectAsync(screen, question, () => choices, position, () => notes, keys, onTick: null, cancellationToken);
+
+    /// <summary>
+    ///     Lets the user pick one of a list that changes on its own, such as one that shows what every microphone
+    ///     hears: the rows are built anew on every tick, not only on a key press.
+    /// </summary>
+    /// <param name="screen">Where the screen is in the wizard.</param>
+    /// <param name="question">The question above the list.</param>
+    /// <param name="choices">Builds the rows of the list. Their number stays the same.</param>
+    /// <param name="position">Where the list opens, and where it was when it closed.</param>
+    /// <param name="keys">The keys that pick the given row. Asked for the highlighted row only.</param>
+    /// <param name="onTick">Called once per tick, before the list is built again.</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <returns>The picked row and the key it was picked with.</returns>
+    public Task<UiResult<(T Value, ConsoleKey Key)>> SelectLiveAsync<T>(SetupScreen screen,
+                                                                        string question,
+                                                                        Func<IReadOnlyList<Choice<T>>> choices,
+                                                                        ListPosition position,
+                                                                        Func<T, IReadOnlyList<ListKey>> keys,
+                                                                        Action onTick,
+                                                                        CancellationToken cancellationToken) =>
+        SelectAsync(screen, question, choices, position, () => null, keys, onTick, cancellationToken);
+
+    /// <summary>
+    ///     A list that is drawn again on every key press, and also on every tick when <paramref name="onTick"/> is given.
+    /// </summary>
+    private async Task<UiResult<(T Value, ConsoleKey Key)>> SelectAsync<T>(SetupScreen screen,
+                                                                           string question,
+                                                                           Func<IReadOnlyList<Choice<T>>> choices,
+                                                                           ListPosition position,
+                                                                           Func<IReadOnlyList<string>?> notes,
+                                                                           Func<T, IReadOnlyList<ListKey>> keys,
+                                                                           Action? onTick,
+                                                                           CancellationToken cancellationToken)
     {
-        position.Current = Math.Clamp(position.Current, 0, choices.Count - 1);
+        int count = choices().Count;
+
+        position.Current = Math.Clamp(position.Current, 0, count - 1);
 
         return await RunAsync<(T Value, ConsoleKey Key)>(
             screen,
             () =>
             {
+                IReadOnlyList<Choice<T>> rows = choices();
+
                 string[] hints =
                 [
                     $"{Theme.Arrows} {Strings.HintSelect}",
-                    .. keys(choices[position.Current].Value)
+                    .. keys(rows[position.Current].Value)
                         .Where(key => key.Hint is not null)
                         .Select(key => $"{KeyName(key.Key)} {key.Hint}"),
                 ];
 
-                return (BuildSelection(screen, question, choices, position, notes, hints), hints);
+                return (BuildSelection(screen, question, rows, position, notes(), hints), hints);
             },
-            isPolled: false,
+            isPolled: onTick is not null,
             key =>
             {
                 switch (key?.Key)
                 {
+                    case null:
+                        onTick?.Invoke();
+
+                        return PollStep<(T Value, ConsoleKey Key)>.Continue;
+
                     case ConsoleKey.UpArrow:
-                        position.Current = (position.Current + choices.Count - 1) % choices.Count;
+                        position.Current = (position.Current + count - 1) % count;
 
                         return PollStep<(T Value, ConsoleKey Key)>.Continue;
 
                     case ConsoleKey.DownArrow:
-                        position.Current = (position.Current + 1) % choices.Count;
+                        position.Current = (position.Current + 1) % count;
 
                         return PollStep<(T Value, ConsoleKey Key)>.Continue;
                 }
 
-                T value = choices[position.Current].Value;
+                T value = choices()[position.Current].Value;
 
                 foreach (ListKey accepted in keys(value))
                 {
@@ -184,31 +227,29 @@ internal sealed class SetupUi(IAnsiConsole console, Theme theme, TimeSpan tick)
     }
 
     /// <summary>
-    ///     Runs a download with a progress bar. Escape stops the work and leaves the screen open,
-    ///     so it can be continued from there; only a second Escape leaves the screen.
+    ///     Runs a download with a progress bar. Escape stops it and goes back to the screen before; what has come
+    ///     so far stays on the disk, and the next download of the same file goes on from there.
     /// </summary>
     /// <param name="screen">Where the screen is in the wizard.</param>
     /// <param name="header">Builds the markup lines above the bar; asked again on every refresh.</param>
-    /// <param name="work">The work itself. It is started again when the user continues after stopping it.</param>
-    /// <param name="stoppedMessage">What to say while the work is stopped.</param>
+    /// <param name="work">The work itself.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns>Back when the user left; otherwise null on success or the error that stopped the work.</returns>
     public Task<UiResult<Exception?>> ProgressAsync(SetupScreen screen,
                                                     Func<IReadOnlyList<string>> header,
                                                     Func<IProgress<DownloadProgress>, CancellationToken, Task> work,
-                                                    string stoppedMessage,
                                                     CancellationToken cancellationToken) =>
-        RunAsync(screen, latest => [.. header(), string.Empty, .. BuildProgress(latest)], work, stoppedMessage, cancellationToken);
+        RunAsync(screen, latest => [.. header(), string.Empty, .. BuildProgress(latest)], work, cancellationToken);
 
     /// <summary>
     ///     Copies a file the user already has, shown as steps rather than a progress bar: the file was found on the
     ///     disk, it is being copied into Echo's folder, done. Nothing comes from the internet, so nothing looks like
-    ///     a download. Escape stops and continues the copy as it does a download.
+    ///     a download. Escape stops the copy and goes back to the screen before.
     /// </summary>
     /// <param name="screen">Where the screen is in the wizard.</param>
     /// <param name="fileName">The name of the file.</param>
     /// <param name="sizeBytes">The size of the file.</param>
-    /// <param name="work">The copy itself. It is started again when the user continues after stopping it.</param>
+    /// <param name="work">The copy itself.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns>Back when the user left; otherwise null on success or the error that stopped the copy.</returns>
     public Task<UiResult<Exception?>> CopyAsync(SetupScreen screen,
@@ -219,63 +260,47 @@ internal sealed class SetupUi(IAnsiConsole console, Theme theme, TimeSpan tick)
     {
         var clock = Stopwatch.StartNew();
 
-        return RunAsync(screen, latest => BuildCopy(fileName, sizeBytes, latest, clock.Elapsed), work, Strings.CopyPaused, cancellationToken);
+        return RunAsync(screen, latest => BuildCopy(fileName, sizeBytes, latest, clock.Elapsed), work, cancellationToken);
     }
 
     /// <summary>
-    ///     Runs work that reports its progress. Escape stops the work and leaves the screen open, so it can be
-    ///     continued from there; only a second Escape leaves the screen.
+    ///     Runs work that reports its progress. Escape stops the work and goes back to the screen before.
     /// </summary>
     /// <param name="screen">Where the screen is in the wizard.</param>
     /// <param name="lines">Builds the markup lines of the screen from the latest progress; asked again on every refresh.</param>
-    /// <param name="work">The work itself. It is started again when the user continues after stopping it.</param>
-    /// <param name="stoppedMessage">What to say while the work is stopped.</param>
+    /// <param name="work">The work itself.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     private async Task<UiResult<Exception?>> RunAsync(SetupScreen screen,
                                                       Func<DownloadProgress, IReadOnlyList<string>> lines,
                                                       Func<IProgress<DownloadProgress>, CancellationToken, Task> work,
-                                                      string stoppedMessage,
                                                       CancellationToken cancellationToken)
     {
         DownloadProgress latest = default;
         var progress = new InlineProgress<DownloadProgress>(update => latest = update);
 
-        while (true)
-        {
-            using var workCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var workCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-            Task task = Task.Run(() => work(progress, workCancellation.Token), workCancellation.Token);
+        Task task = Task.Run(() => work(progress, workCancellation.Token), workCancellation.Token);
 
-            UiResult<Exception?> result = await PollAsync<Exception?>(
-                screen,
-                () => (lines(latest), []),
-                _ => task.IsCompleted
-                    ? PollStep<Exception?>.Finish(UiResult<Exception?>.Done(task.Exception?.GetBaseException()))
-                    : PollStep<Exception?>.Continue,
-                cancellationToken,
-                escapeHint: Strings.HintCancel);
+        UiResult<Exception?> result = await PollAsync<Exception?>(
+            screen,
+            () => (lines(latest), []),
+            _ => task.IsCompleted
+                ? PollStep<Exception?>.Finish(UiResult<Exception?>.Done(task.Exception?.GetBaseException()))
+                : PollStep<Exception?>.Continue,
+            cancellationToken,
+            escapeHint: Strings.HintCancel);
 
-            if (!result.IsBack)
-                return result;
+        if (!result.IsBack)
+            return result;
 
-            workCancellation.Cancel();
+        workCancellation.Cancel();
 
-            // The partial file must be closed before the work can be continued
-            await task.ContinueWith(_ => { }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+        // The partial file is closed before the screen before is shown: choosing the same file again goes on with it
+        await task.ContinueWith(_ => { }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
 
-            // Escape came just as the work finished: there is nothing left to stop
-            if (task.IsCompletedSuccessfully)
-                return UiResult<Exception?>.Done(null);
-
-            UiResult<ConsoleKey> stopped = await ShowAsync(
-                screen,
-                [.. lines(latest), string.Empty, Warning(Markup.Escape(stoppedMessage))],
-                [(ConsoleKey.Enter, Strings.HintContinue)],
-                cancellationToken);
-
-            if (stopped.IsBack)
-                return UiResult<Exception?>.Back;
-        }
+        // Escape came just as the work finished: there is nothing left to stop
+        return task.IsCompletedSuccessfully ? UiResult<Exception?>.Done(null) : UiResult<Exception?>.Back;
     }
 
     /// <summary>

@@ -312,7 +312,6 @@ internal sealed class ModelStep : ISetupStep
                     screen,
                     () => [$"{SetupUi.Fill(Strings.ModelDownloading, model.FileName)}  {SetupUi.Emphasis(Markup.Escape(Format.Megabytes(model.SizeBytes)))}"],
                     (progress, token) => _downloader.DownloadAsync(request, target, progress, token),
-                    Strings.DownloadPaused,
                     cancellationToken);
 
             if (outcome.IsBack)

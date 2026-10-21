@@ -253,7 +253,7 @@
     <value>Acércate al micrófono, sube su nivel en la configuración del sistema o elige otro.</value>
   </data>
   <data name="TestLoading" xml:space="preserve">
-    <value>Cargando el modelo</value>
+    <value>Iniciando el reconocimiento de voz</value>
   </data>
   <data name="TestStartFailed" xml:space="preserve">
     <value>No se pudo iniciar el dictado con esta configuración.</value>
@@ -351,9 +351,6 @@
   <data name="MicrophoneOpening" xml:space="preserve">
     <value>Abriendo el micrófono</value>
   </data>
-  <data name="HintMeasure" xml:space="preserve">
-    <value>medir</value>
-  </data>
   <data name="CudaSourceQuestion" xml:space="preserve">
     <value>¿De dónde las obtenemos?</value>
   </data>
@@ -365,12 +362,6 @@
   </data>
   <data name="ModelRecommendationNote" xml:space="preserve">
     <value>La recomendación se basa en tu sistema.</value>
-  </data>
-  <data name="DownloadPaused" xml:space="preserve">
-    <value>La descarga está detenida. Lo ya descargado se conserva.</value>
-  </data>
-  <data name="CopyPaused" xml:space="preserve">
-    <value>La copia está detenida.</value>
   </data>
   <data name="FileCopyFailed" xml:space="preserve">
     <value>No se pudo copiar el archivo.</value>
@@ -415,7 +406,7 @@
     <value>Desactivado</value>
   </data>
   <data name="CalibrationQuestion" xml:space="preserve">
-    <value>Medición del nivel de silencio</value>
+    <value>¿Quieres medir el nivel de silencio?</value>
   </data>
   <data name="CalibrationWhy" xml:space="preserve">
     <value>Echo empieza a grabar solo cuando el sonido supera el nivel de silencio. Así el fondo no entra en la grabación: un ventilador, el teclado, la calle. Con un nivel demasiado bajo Echo graba ruido; con uno demasiado alto corta el comienzo suave de la frase.</value>
@@ -569,9 +560,6 @@
   </data>
   <data name="ListenFailed" xml:space="preserve">
     <value>error</value>
-  </data>
-  <data name="ListenKey" xml:space="preserve">
-    <value>tecla</value>
   </data>
   <data name="ListenScrolled" xml:space="preserve">
     <value>End para ir al final</value>
@@ -854,5 +842,38 @@
   </data>
   <data name="CopyDone" xml:space="preserve">
     <value>Listo</value>
+  </data>
+  <data name="CommandCopy" xml:space="preserve">
+    <value>copiar el último texto reconocido</value>
+  </data>
+  <data name="ResponseCopied" xml:space="preserve">
+    <value>El último texto reconocido está en el portapapeles.</value>
+  </data>
+  <data name="ResponseNothingToCopy" xml:space="preserve">
+    <value>Todavía no hay nada que copiar: no se ha reconocido ninguna frase.</value>
+  </data>
+  <data name="ResponseCopyFailed" xml:space="preserve">
+    <value>No se pudo copiar el texto: {0}</value>
+  </data>
+  <data name="CalibrationMeasuring" xml:space="preserve">
+    <value>Medición del nivel de silencio</value>
+  </data>
+  <data name="CalibrationMeasure" xml:space="preserve">
+    <value>Medir</value>
+  </data>
+  <data name="CalibrationManual" xml:space="preserve">
+    <value>Fijarlo a mano</value>
+  </data>
+  <data name="CalibrationManualHint" xml:space="preserve">
+    <value>Escribe el nivel como un número de 0 a 1: cuanto mayor sea, más fuerte debe ser el sonido para que Echo empiece a grabar.</value>
+  </data>
+  <data name="CalibrationSkip" xml:space="preserve">
+    <value>Omitir</value>
+  </data>
+  <data name="CalibrationSkipHint" xml:space="preserve">
+    <value>El nivel de silencio se queda como está: {0}.</value>
+  </data>
+  <data name="MicrophoneUnavailable" xml:space="preserve">
+    <value>no disponible</value>
   </data>
 </root>

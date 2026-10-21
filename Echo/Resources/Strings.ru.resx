@@ -253,7 +253,7 @@
     <value>Подвиньтесь ближе к микрофону, увеличьте его уровень в настройках системы или выберите другой.</value>
   </data>
   <data name="TestLoading" xml:space="preserve">
-    <value>Загружаю модель</value>
+    <value>Запускаю распознавание речи</value>
   </data>
   <data name="TestStartFailed" xml:space="preserve">
     <value>С этими настройками диктовку запустить не удалось.</value>
@@ -351,9 +351,6 @@
   <data name="MicrophoneOpening" xml:space="preserve">
     <value>Открываю микрофон</value>
   </data>
-  <data name="HintMeasure" xml:space="preserve">
-    <value>измерить</value>
-  </data>
   <data name="CudaSourceQuestion" xml:space="preserve">
     <value>Откуда их взять?</value>
   </data>
@@ -365,12 +362,6 @@
   </data>
   <data name="ModelRecommendationNote" xml:space="preserve">
     <value>Рекомендация рассчитана на основе вашей системы.</value>
-  </data>
-  <data name="DownloadPaused" xml:space="preserve">
-    <value>Скачивание остановлено. Уже скачанная часть сохранена.</value>
-  </data>
-  <data name="CopyPaused" xml:space="preserve">
-    <value>Копирование остановлено.</value>
   </data>
   <data name="FileCopyFailed" xml:space="preserve">
     <value>Не удалось скопировать файл.</value>
@@ -415,7 +406,7 @@
     <value>Выключено</value>
   </data>
   <data name="CalibrationQuestion" xml:space="preserve">
-    <value>Измерение порога тишины</value>
+    <value>Хотите измерить порог тишины?</value>
   </data>
   <data name="CalibrationWhy" xml:space="preserve">
     <value>Echo начинает запись только тогда, когда звук становится громче порога тишины. Так в запись не попадает фон: вентилятор, клавиатура, улица. Если порог слишком низкий, Echo записывает шум; если слишком высокий — срезает тихое начало фразы.</value>
@@ -569,9 +560,6 @@
   </data>
   <data name="ListenFailed" xml:space="preserve">
     <value>ошибка</value>
-  </data>
-  <data name="ListenKey" xml:space="preserve">
-    <value>клавиша</value>
   </data>
   <data name="ListenScrolled" xml:space="preserve">
     <value>End — в самый низ</value>
@@ -854,5 +842,38 @@
   </data>
   <data name="CopyDone" xml:space="preserve">
     <value>Готово</value>
+  </data>
+  <data name="CommandCopy" xml:space="preserve">
+    <value>скопировать последний распознанный текст</value>
+  </data>
+  <data name="ResponseCopied" xml:space="preserve">
+    <value>Последний распознанный текст скопирован в буфер обмена.</value>
+  </data>
+  <data name="ResponseNothingToCopy" xml:space="preserve">
+    <value>Пока нечего копировать: ещё ни одна фраза не распознана.</value>
+  </data>
+  <data name="ResponseCopyFailed" xml:space="preserve">
+    <value>Не удалось скопировать текст: {0}</value>
+  </data>
+  <data name="CalibrationMeasuring" xml:space="preserve">
+    <value>Измерение порога тишины</value>
+  </data>
+  <data name="CalibrationMeasure" xml:space="preserve">
+    <value>Измерить</value>
+  </data>
+  <data name="CalibrationManual" xml:space="preserve">
+    <value>Задать вручную</value>
+  </data>
+  <data name="CalibrationManualHint" xml:space="preserve">
+    <value>Введите порог числом от 0 до 1: чем оно больше, тем громче должен быть звук, чтобы Echo начал запись.</value>
+  </data>
+  <data name="CalibrationSkip" xml:space="preserve">
+    <value>Пропустить</value>
+  </data>
+  <data name="CalibrationSkipHint" xml:space="preserve">
+    <value>Порог тишины останется прежним: {0}.</value>
+  </data>
+  <data name="MicrophoneUnavailable" xml:space="preserve">
+    <value>недоступно</value>
   </data>
 </root>

@@ -7,7 +7,7 @@ namespace Echo.Setup.Steps;
 
 /// <summary>
 ///     Step 6: the settings nobody has to touch, listed in blocks. Space moves the highlighted setting on
-///     to its next value, Enter opens a value for typing; the row the list starts on simply leads onwards.
+///     to its next value, Enter opens a value for typing; the row under the list leads onwards.
 /// </summary>
 internal sealed class AdditionalSettingsStep : ISetupStep
 {
@@ -55,9 +55,9 @@ internal sealed class AdditionalSettingsStep : ISetupStep
                                                     SetupScreen screen,
                                                     CancellationToken cancellationToken)
     {
-        // Enter on every other screen means "go on", and so it does here: the row that leads onwards is
-        // highlighted from the start, while the list above it is shown from its first setting
-        var position = new ListPosition(BuildChoices(context).Count - 1);
+        // The list is read from the top, so it is highlighted from its first setting; the row that leads
+        // onwards stays in sight under it, one arrow up from there
+        var position = new ListPosition(0);
 
         while (true)
         {
@@ -79,7 +79,7 @@ internal sealed class AdditionalSettingsStep : ISetupStep
                 return SetupStepResult.Next;
 
             if (IsTyped(setting, key))
-                await EditAsync(context, screen, setting, cancellationToken);
+                await EditAsync(_ui, context, screen, setting, cancellationToken);
             else
                 context.Additional.Step(setting);
         }
@@ -113,11 +113,12 @@ internal sealed class AdditionalSettingsStep : ISetupStep
 
     /// <summary>
     ///     Lets the user type a new value over the one in effect. Leaving the field empty returns the setting
-    ///     to the shipped value; Escape leaves it as it was.
+    ///     to the shipped value; Escape leaves it as it was. The sound step types the silence level with it too.
     /// </summary>
-    private async Task EditAsync(SetupContext context, SetupScreen screen, AdditionalSetting setting, CancellationToken cancellationToken)
+    /// <returns>Whether a value was typed; false when the user went back.</returns>
+    internal static async Task<bool> EditAsync(SetupUi ui, SetupContext context, SetupScreen screen, AdditionalSetting setting, CancellationToken cancellationToken)
     {
-        UiResult<string> typed = await _ui.InputAsync(
+        UiResult<string> typed = await ui.InputAsync(
             screen,
             setting.Label,
             [SetupUi.Dim(Markup.Escape(setting.Hint)), SetupUi.Dim(Markup.Escape(Strings.InputEmptyNote))],
@@ -125,8 +126,12 @@ internal sealed class AdditionalSettingsStep : ISetupStep
             text => Check(setting, text),
             cancellationToken);
 
-        if (!typed.IsBack)
-            context.Additional.Set(setting, FromTyped(setting, typed.Value));
+        if (typed.IsBack)
+            return false;
+
+        context.Additional.Set(setting, FromTyped(setting, typed.Value));
+
+        return true;
     }
 
     private static List<Choice<AdditionalSetting?>> BuildChoices(SetupContext context)

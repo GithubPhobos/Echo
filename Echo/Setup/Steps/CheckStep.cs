@@ -8,14 +8,20 @@ using Spectre.Console;
 namespace Echo.Setup.Steps;
 
 /// <summary>
-///     Step 5: sound. The input device is chosen by watching which of them hears the user; its silence level
-///     is measured on a page of its own, which says what that level is for; then the user dictates one phrase
-///     through the real pipeline, with the model, backend and key picked on the previous steps.
+///     Step 5: sound. The input device is chosen from a list in which every device shows how loud its sound is,
+///     so the one that hears the user stands out; the silence level is measured, typed or left as it is on a page
+///     of its own, which says what that level is for; then the user dictates one phrase through the real pipeline,
+///     with the model, backend and key picked on the previous steps.
 /// </summary>
 internal sealed class CheckStep : ISetupStep
 {
     private const int MeterWidth = 40;
     private const int MeterRows = 3;
+
+    /// <summary>
+    ///     How many columns the level of each device takes in the list of devices.
+    /// </summary>
+    private const int DeviceMeterWidth = 16;
 
     private const int BriefNameLength = 20;
     private const string BriefCutMark = "...";
@@ -28,23 +34,24 @@ internal sealed class CheckStep : ISetupStep
     private const double SlowRecognitionMs = 2500;
 
     /// <summary>
-    ///     What the silence level page is doing.
+    ///     What the measuring of the silence level is doing.
     /// </summary>
     private enum Phase
     {
-        Explaining,
+        Opening,
         MeasuringSilence,
         MeasuringVoice,
         VoiceNotHeard
     }
 
     /// <summary>
-    ///     How the silence level page was left.
+    ///     What the user chose to do about the silence level.
     /// </summary>
-    private enum Measurement
+    private enum Calibrating
     {
-        Done,
-        Skipped
+        Measure,
+        Manual,
+        Skip
     }
 
     private enum TestState
@@ -110,7 +117,8 @@ internal sealed class CheckStep : ISetupStep
     }
 
     /// <summary>
-    ///     The list of input devices. Nothing is opened here: the next page listens to the chosen one.
+    ///     The list of input devices. Every one of them is listened to while the list is open and shows next to its
+    ///     name how loud its sound is, so the device that hears the user is the one that moves.
     /// </summary>
     private async Task<SetupStepResult> ChooseMicrophoneAsync(SetupContext context,
                                                               SetupScreen screen,
@@ -130,19 +138,42 @@ internal sealed class CheckStep : ISetupStep
                 return SetupStepResult.Back;
         }
 
-        // Only the list: the level is measured on the next page, and the test dictation shows the rest
-        UiResult<MicrophoneDevice> picked = await _ui.SelectAsync(
-            screen,
-            Strings.MicrophoneQuestion,
-            [.. devices.Select(device => new Choice<MicrophoneDevice>(device, device.Name))],
-            Math.Max(0, devices.ToList().FindIndex(device => device.Index == context.MicrophoneIndex)),
-            notes: null,
-            cancellationToken);
+        List<MicrophoneListener> listeners = [.. devices.Select(_ => new MicrophoneListener(_microphoneProbe, _timings.DeviceTimeout, _time))];
+        List<Queue<float>> recent = [.. devices.Select(_ => new Queue<float>(Enumerable.Repeat(0f, DeviceMeterWidth)))];
+
+        for (int index = 0; index < devices.Count; index++)
+            listeners[index].Switch(devices[index].Index);
+
+        UiResult<(MicrophoneDevice Value, ConsoleKey Key)> picked;
+
+        try
+        {
+            picked = await _ui.SelectLiveAsync<MicrophoneDevice>(
+                screen,
+                Strings.MicrophoneQuestion,
+                () => [.. devices.Select((device, index) => new Choice<MicrophoneDevice>(device, device.Name, Summary: DeviceLevel(listeners[index], recent[index])))],
+                new ListPosition(Math.Max(0, devices.ToList().FindIndex(device => device.Index == context.MicrophoneIndex))),
+                _ => [new ListKey(ConsoleKey.Enter, Strings.HintConfirm)],
+                () =>
+                {
+                    for (int index = 0; index < devices.Count; index++)
+                    {
+                        if (listeners[index].Poll() is IMicrophoneSession session)
+                            Push(recent[index], session.ReadPeak());
+                    }
+                },
+                cancellationToken);
+        }
+        finally
+        {
+            // Each device takes a moment to stop, and the next page opens the chosen one again: they are closed together
+            await Task.WhenAll(listeners.Select(listener => Task.Run(listener.Dispose)));
+        }
 
         if (picked.IsBack)
             return SetupStepResult.Back;
 
-        MicrophoneDevice chosen = picked.Value;
+        MicrophoneDevice chosen = picked.Value.Value;
 
         // Another device has another silence level: the one measured before no longer applies
         if (context.MicrophoneIndex != chosen.Index || context.MicrophoneName != chosen.Name)
@@ -155,22 +186,75 @@ internal sealed class CheckStep : ISetupStep
     }
 
     /// <summary>
-    ///     Says what the silence level is for and measures it: first the room, then the user's voice.
+    ///     How loud a device of the list is right now, on one row: its latest pieces of sound, the newest on the right.
+    ///     Dots while it is still opening, a word when it cannot be listened to.
+    /// </summary>
+    private string DeviceLevel(MicrophoneListener listener, Queue<float> recent)
+    {
+        if (listener.Error is not null)
+            return SetupUi.Dim(Markup.Escape(Strings.MicrophoneUnavailable));
+
+        if (listener.Session is null)
+            return SetupUi.Dim(Markup.Escape(string.Concat(Enumerable.Repeat(_ui.Theme.Dot, DeviceMeterWidth))));
+
+        return _ui.Meter([.. recent], rows: 1)[0];
+    }
+
+    /// <summary>
+    ///     Asks whether to measure the silence level, says what it is for, and does what the user chose:
+    ///     measures it, lets them type it, or leaves it as it is.
     /// </summary>
     private async Task<SetupStepResult> MeasureSilenceAsync(SetupContext context,
                                                             SetupScreen screen,
                                                             CancellationToken cancellationToken)
     {
+        var position = new ListPosition(0);
+
         while (true)
         {
-            (UiResult<Measurement> outcome, Calibration calibration) = await ListenForLevelsAsync(context, screen, cancellationToken);
+            string current = Level(context.SilenceThreshold);
 
-            if (outcome.IsBack)
+            UiResult<(Calibrating Value, ConsoleKey Key)> picked = await _ui.SelectAsync(
+                screen,
+                Strings.CalibrationQuestion,
+                [
+                    new Choice<Calibrating>(Calibrating.Measure, Strings.CalibrationMeasure, Hint: Strings.CalibrationHow),
+                    new Choice<Calibrating>(Calibrating.Manual, Strings.CalibrationManual, Hint: Strings.CalibrationManualHint),
+                    new Choice<Calibrating>(Calibrating.Skip, Strings.CalibrationSkip, Hint: Strings.Format(nameof(Strings.CalibrationSkipHint), current)),
+                ],
+                position,
+                [SetupUi.Dim(Markup.Escape(Strings.CalibrationWhy)), string.Empty, SetupUi.Dim(SetupUi.Fill(Strings.CalibrationCurrent, current))],
+                _ => [new ListKey(ConsoleKey.Enter, Strings.HintConfirm)],
+                cancellationToken);
+
+            if (picked.IsBack)
                 return SetupStepResult.Back;
 
-            // Skipping keeps the level the microphone had before
-            if (outcome.Value == Measurement.Skipped)
+            // The same setting as among the additional settings, typed the same way
+            bool isDone = picked.Value.Value switch
+            {
+                Calibrating.Skip => true,
+                Calibrating.Manual => await AdditionalSettingsStep.EditAsync(_ui, context, screen, AdditionalSettings.SilenceThreshold, cancellationToken),
+                _ => await MeasureAsync(context, screen, cancellationToken)
+            };
+
+            // Escape from the typing or the measuring comes back to the question
+            if (isDone)
                 return SetupStepResult.Next;
+        }
+    }
+
+    /// <summary>
+    ///     Measures the silence level and shows what came out. False when the user went back to the question instead.
+    /// </summary>
+    private async Task<bool> MeasureAsync(SetupContext context, SetupScreen screen, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            (UiResult<bool> outcome, Calibration calibration) = await ListenForLevelsAsync(context, screen, cancellationToken);
+
+            if (outcome.IsBack)
+                return false;
 
             context.SilenceThreshold = calibration.Threshold;
 
@@ -186,15 +270,19 @@ internal sealed class CheckStep : ISetupStep
 
             // Escape from the result leads to the screen before it: the measurement, to be taken again
             if (!seen.IsBack)
-                return SetupStepResult.Next;
+                return true;
         }
     }
 
-    private async Task<(UiResult<Measurement> Outcome, Calibration Calibration)> ListenForLevelsAsync(SetupContext context,
-                                                                                                    SetupScreen screen,
-                                                                                                    CancellationToken cancellationToken)
+    /// <summary>
+    ///     Listens first to the room, then to the user's voice, with the seconds left on the screen. It starts as soon
+    ///     as the microphone answers.
+    /// </summary>
+    private async Task<(UiResult<bool> Outcome, Calibration Calibration)> ListenForLevelsAsync(SetupContext context,
+                                                                                            SetupScreen screen,
+                                                                                            CancellationToken cancellationToken)
     {
-        Phase phase = Phase.Explaining;
+        Phase phase = Phase.Opening;
         Calibration calibration = default;
 
         var quiet = new List<float>();
@@ -207,17 +295,13 @@ internal sealed class CheckStep : ISetupStep
         using var listener = new MicrophoneListener(_microphoneProbe, _timings.DeviceTimeout, _time);
         listener.Switch(context.MicrophoneIndex);
 
-        UiResult<Measurement> outcome = await _ui.PollAsync<Measurement>(
+        UiResult<bool> outcome = await _ui.PollAsync<bool>(
             screen,
             () =>
             {
                 List<string> lines =
                 [
-                    SetupUi.Question(Markup.Escape(Strings.CalibrationQuestion)),
-                    SetupUi.Dim(Markup.Escape(Strings.CalibrationWhy)),
-                    SetupUi.Dim(Markup.Escape(Strings.CalibrationHow)),
-                    string.Empty,
-                    SetupUi.Dim(SetupUi.Fill(Strings.CalibrationCurrent, Level(context.SilenceThreshold))),
+                    SetupUi.Question(Markup.Escape(Strings.CalibrationMeasuring)),
                     string.Empty,
                     .. DescribeLevel(listener, recent),
                     string.Empty,
@@ -239,33 +323,34 @@ internal sealed class CheckStep : ISetupStep
                     _ => [string.Empty, string.Empty]
                 });
 
-                string[] hints = phase switch
-                {
-                    Phase.MeasuringSilence or Phase.MeasuringVoice => [$"S {Strings.HintSkip}"],
-                    Phase.VoiceNotHeard => [$"Enter {Strings.HintTryAgain}", $"S {Strings.HintSkip}"],
-                    _ when listener.Session is null => [$"S {Strings.HintSkip}"],
-                    _ => [$"Enter {Strings.HintMeasure}", $"S {Strings.HintSkip}"]
-                };
+                // Trying again is offered only when there is something to try again
+                string[] hints = phase == Phase.VoiceNotHeard || listener.Error is not null ? [$"Enter {Strings.HintTryAgain}"] : [];
 
                 return (lines, hints);
             },
             key =>
             {
-                if (SetupUi.IsKey(key, ConsoleKey.S))
-                    return PollStep<Measurement>.Finish(UiResult<Measurement>.Done(Measurement.Skipped));
-
-                if (key?.Key == ConsoleKey.Enter && listener.Session is not null && phase is Phase.Explaining or Phase.VoiceNotHeard)
+                if (key?.Key == ConsoleKey.Enter && listener.Error is not null)
                 {
-                    phase = Phase.MeasuringSilence;
-                    quiet.Clear();
-                    speech.Clear();
-                    measuringSince = _time.GetTimestamp();
+                    listener.Switch(context.MicrophoneIndex);
+                    phase = Phase.Opening;
 
-                    return PollStep<Measurement>.Continue;
+                    return PollStep<bool>.Continue;
+                }
+
+                if (key?.Key == ConsoleKey.Enter && phase == Phase.VoiceNotHeard)
+                {
+                    Start();
+
+                    return PollStep<bool>.Continue;
                 }
 
                 if (key is not null || listener.Poll() is not IMicrophoneSession session)
-                    return PollStep<Measurement>.Continue;
+                    return PollStep<bool>.Continue;
+
+                // The measurement starts as soon as the microphone answers
+                if (phase == Phase.Opening)
+                    Start();
 
                 float level = session.ReadPeak();
 
@@ -287,17 +372,25 @@ internal sealed class CheckStep : ISetupStep
                         calibration = ThresholdCalculator.Calculate(quiet, speech);
 
                         if (calibration.IsVoiceHeard)
-                            return PollStep<Measurement>.Finish(UiResult<Measurement>.Done(Measurement.Done));
+                            return PollStep<bool>.Finish(UiResult<bool>.Done(true));
 
                         phase = Phase.VoiceNotHeard;
                     }
                 }
 
-                return PollStep<Measurement>.Continue;
+                return PollStep<bool>.Continue;
             },
             cancellationToken);
 
         return (outcome, calibration);
+
+        void Start()
+        {
+            phase = Phase.MeasuringSilence;
+            quiet.Clear();
+            speech.Clear();
+            measuringSince = _time.GetTimestamp();
+        }
     }
 
     /// <summary>
@@ -453,7 +546,7 @@ internal sealed class CheckStep : ISetupStep
     }
 
     /// <summary>
-    ///     Keeps the highlighted microphone open. A device is opened in the background and given up on after
+    ///     Keeps a microphone open while a page listens to it. A device is opened in the background and given up on after
     ///     a while: one that is held by another program may never answer, and the screen must stay alive.
     /// </summary>
     /// <param name="probe"><see cref="IMicrophoneProbe"/></param>

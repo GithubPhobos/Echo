@@ -1,4 +1,5 @@
-﻿using Echo.Setup;
+﻿using System.Text.RegularExpressions;
+using Echo.Setup;
 using Serilog.Core;
 using Serilog.Events;
 
@@ -10,14 +11,17 @@ namespace Echo.Listening;
 /// <param name="activity"><see cref="IListenActivity"/></param>
 /// <param name="levelSwitch">The log detail of the running program.</param>
 /// <param name="settingsStore">Where a setting changed here is saved, so it stays until the user changes it again.</param>
+/// <param name="clipboard">Where <see cref="Copy"/> puts the last recognized text.</param>
 /// <param name="describeSettings">The main settings Echo runs with, as label and value, for <see cref="Info"/>.</param>
-internal sealed class ListenCommands(IListenActivity activity,
-                                     LoggingLevelSwitch levelSwitch,
-                                     IUserSettingsStore settingsStore,
-                                     Func<IReadOnlyList<(string Label, string Value)>> describeSettings)
+internal sealed partial class ListenCommands(IListenActivity activity,
+                                             LoggingLevelSwitch levelSwitch,
+                                             IUserSettingsStore settingsStore,
+                                             ITextClipboard clipboard,
+                                             Func<IReadOnlyList<(string Label, string Value)>> describeSettings)
 {
     public const string Setup = "/setup";
     public const string Info = "/info";
+    public const string Copy = "/copy";
     public const string Pause = "/pause";
     public const string Resume = "/resume";
     public const string LogLevel = "/log";
@@ -32,12 +36,14 @@ internal sealed class ListenCommands(IListenActivity activity,
     private readonly IListenActivity _activity = activity;
     private readonly LoggingLevelSwitch _levelSwitch = levelSwitch;
     private readonly IUserSettingsStore _settingsStore = settingsStore;
+    private readonly ITextClipboard _clipboard = clipboard;
     private readonly Func<IReadOnlyList<(string Label, string Value)>> _describeSettings = describeSettings;
 
     public IReadOnlyList<ListenCommandInfo> All { get; } =
     [
         new(Setup, () => Strings.CommandSetup),
         new(Info, () => Strings.CommandInfo),
+        new(Copy, () => Strings.CommandCopy),
         new(Pause, () => Strings.CommandPause),
         new(Resume, () => Strings.CommandResume),
         new(LogLevel, () => Strings.CommandLog, Levels),
@@ -65,7 +71,8 @@ internal sealed class ListenCommands(IListenActivity activity,
                 $"{LogLevel} {level}",
                 level,
                 descriptions[index],
-                IsCurrent: index == (int)_levelSwitch.MinimumLevel)),
+                IsCurrent: index == (int)_levelSwitch.MinimumLevel,
+                LabelStyle: ListenFrame.LevelStyle(level))),
         ];
     }
 
@@ -101,6 +108,11 @@ internal sealed class ListenCommands(IListenActivity activity,
 
             case Info:
                 AddTable(Strings.ResponseInfoTitle, _describeSettings());
+
+                break;
+
+            case Copy:
+                _ = CopyLastPhraseAsync();
 
                 break;
 
@@ -164,7 +176,7 @@ internal sealed class ListenCommands(IListenActivity activity,
 
         if (typed is null)
         {
-            log.Add(EntryKind.Answer, Strings.Format(nameof(Strings.ResponseLogLevelNow), Levels[(int)_levelSwitch.MinimumLevel], all));
+            log.Add(WithLevels(Strings.Format(nameof(Strings.ResponseLogLevelNow), Levels[(int)_levelSwitch.MinimumLevel], all)));
 
             return;
         }
@@ -173,7 +185,7 @@ internal sealed class ListenCommands(IListenActivity activity,
 
         if (index < 0)
         {
-            log.Add(EntryKind.Answer, Strings.Format(nameof(Strings.ResponseUnknownLevel), typed, all));
+            log.Add(WithLevels(Strings.Format(nameof(Strings.ResponseUnknownLevel), typed, all)));
 
             return;
         }
@@ -186,11 +198,49 @@ internal sealed class ListenCommands(IListenActivity activity,
             settings.Additional.Set(AdditionalSettings.LogLevel, AdditionalSettings.LogLevel.Steps[index]);
             _settingsStore.Save(settings);
 
-            log.Add(EntryKind.Answer, Strings.Format(nameof(Strings.ResponseLogLevel), Levels[index]));
+            log.Add(WithLevels(Strings.Format(nameof(Strings.ResponseLogLevel), Levels[index])));
         }
         catch (Exception exc) when (exc is IOException or UnauthorizedAccessException)
         {
             log.Add(EntryKind.Warning, Strings.Format(nameof(Strings.ResponseLogLevelNotSaved), Levels[index], exc.Message));
         }
     }
+
+    /// <summary>
+    ///     An answer in which every level named is drawn in the color of that level, so the levels are told apart at a glance.
+    /// </summary>
+    private static ScreenEntry WithLevels(string answer) =>
+        new(DateTimeOffset.Now, EntryKind.Answer, answer)
+        {
+            Accents = [.. LevelName().Matches(answer).Select(match => (match.Index, match.Length, ListenFrame.LevelStyle(match.Value)))],
+        };
+
+    /// <summary>
+    ///     Puts the phrase recognized last into the clipboard, for when it went into the wrong window or nowhere.
+    /// </summary>
+    private async Task CopyLastPhraseAsync()
+    {
+        ScreenLog log = _activity.Log;
+
+        if (log.Snapshot().LastOrDefault(entry => entry.Kind == EntryKind.Dictated) is not { } phrase)
+        {
+            log.Add(EntryKind.Answer, Strings.ResponseNothingToCopy);
+
+            return;
+        }
+
+        try
+        {
+            await _clipboard.SetTextAsync(phrase.Text);
+
+            log.Add(EntryKind.Answer, Strings.ResponseCopied);
+        }
+        catch (Exception exc) when (exc is not OutOfMemoryException)
+        {
+            log.Add(EntryKind.Warning, Strings.Format(nameof(Strings.ResponseCopyFailed), exc.Message));
+        }
+    }
+
+    [GeneratedRegex(@"\b(verbose|debug|information|warning|error|fatal)\b")]
+    private static partial Regex LevelName();
 }

@@ -109,6 +109,30 @@ public sealed class PushToTalkMonitorServiceTests
     }
 
     [Fact]
+    public void OnKeyPressed_Released_TheKeyReachesOtherProgramsAndRecordsNothing()
+    {
+        // Arrange: Echo could not start after the key had become its own
+        using PushToTalkMonitorService service = CreateService(modifier: null);
+
+        int starts = 0;
+        service.OnRecordingTriggered += (_, _) => Interlocked.Increment(ref starts);
+
+        var pressed = new HotkeyEventArgs();
+        var released = new HotkeyEventArgs();
+
+        // Act
+        service.Release();
+
+        _listenerMock.Raise(listener => listener.Pressed += null, pressed);
+        _listenerMock.Raise(listener => listener.Released += null, released);
+
+        // Assert
+        Assert.False(pressed.IsTaken);
+        Assert.False(released.IsTaken);
+        Assert.Equal(0, Volatile.Read(ref starts));
+    }
+
+    [Fact]
     public async Task OnKeyLost_WhileRecording_DropsThePhraseInsteadOfEndingIt()
     {
         // Arrange

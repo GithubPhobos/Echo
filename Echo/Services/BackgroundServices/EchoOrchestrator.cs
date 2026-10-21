@@ -56,8 +56,16 @@ internal sealed class EchoOrchestrator(
     /// </summary>
     private readonly HashSet<Task> _recognitions = [];
 
+    /// <summary>
+    ///     Whether everything a phrase needs is there: the model loaded and the pasting prepared. True once the
+    ///     start-up is through, false when it failed or Echo stopped before it was through.
+    /// </summary>
+    private readonly TaskCompletionSource<bool> _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     private bool _isStopping;
     private bool _isRecording;
+    private bool _isReady;
+    private bool _hasFailed;
     private int _waitingPhrases;
     private long _pressedAt;
 
@@ -74,11 +82,10 @@ internal sealed class EchoOrchestrator(
 
             _audioRecordingService.InititalizeAudioRecordingCapabilities();
 
-            _whisperInferenceService.TryInitializeWhisperModel();
-
             _soundPlayService.EnsureCanPlaySounds();
 
-            // Last, so that the key's heading is followed by what the keyboard part says when it starts
+            // The key is taken before the model, which takes the longest to load: pressed meanwhile, it records
+            // instead of being typed into Echo's own window, and the phrase waits for the model
             _pushToTalkMonitorService.InitializePushToTalkHotkeysOrThrow();
 
             lock (_stateLock)
@@ -94,13 +101,23 @@ internal sealed class EchoOrchestrator(
 
             // Both may wait for the user to answer a window of the desktop; stopping Echo stops the waiting
             await _pushToTalkMonitorService.StartListeningAsync(stoppingToken);
+
+            _whisperInferenceService.TryInitializeWhisperModel();
+
             await _textInsertionService.PrepareAsync(stoppingToken);
 
-            if (_activity is not null)
+            lock (_stateLock)
             {
-                _activity.Runtime = RuntimeName(RuntimeOptions.LoadedLibrary);
-                _activity.SetState(ListenState.Listening);
+                _isReady = true;
+
+                if (_activity is not null)
+                    _activity.Runtime = RuntimeName(RuntimeOptions.LoadedLibrary);
+
+                // A phrase said while the model loaded may still be recording or waiting: the state says so
+                ShowState();
             }
+
+            _ready.TrySetResult(true);
 
             Log.Information(
                 "Ech{EarEmoji} is ready and running.",
@@ -109,15 +126,26 @@ internal sealed class EchoOrchestrator(
         catch (OperationCanceledException) when (_isStopping)
         {
             // Stopped before it was ready: nothing failed
+            _ready.TrySetResult(false);
         }
         catch (Exception exc)
         {
             _logger.LogError("{ErrorMessage}", exc.Message);
 
+            // The key may already be Echo's: it goes back to doing what it does without Echo
+            _pushToTalkMonitorService.Release();
+
+            lock (_stateLock)
+            {
+                _hasFailed = true;
+                ShowState();
+            }
+
+            _ready.TrySetResult(false);
+
             // On the working screen the reason stays in sight, and the user can change the settings from there
             if (_activity is not null)
             {
-                _activity.SetState(ListenState.Failed);
                 _activity.Log.Add(EntryKind.Answer, Strings.ListenFailedHint);
 
                 return;
@@ -225,7 +253,16 @@ internal sealed class EchoOrchestrator(
     {
         try
         {
-            await ProcessRecordingPayloadAsync(audioStream);
+            // A phrase said while the model was loading waits for it
+            if (await _ready.Task)
+            {
+                await ProcessRecordingPayloadAsync(audioStream);
+            }
+            else
+            {
+                _logger.LogWarning("{WarningEmoji} The phrase is dropped: Echo did not get ready to recognize it.",
+                    LoggerConstants.WarningEmoji);
+            }
         }
         finally
         {
@@ -239,12 +276,15 @@ internal sealed class EchoOrchestrator(
 
     /// <summary>
     ///     What the screen shows follows everything under way, not the latest event: a phrase that is
-    ///     recognized while the next one is said leaves the state at "recording".
+    ///     recognized while the next one is said leaves the state at "recording", and a phrase said while the model
+    ///     is still loading goes back to "starting", not to "ready".
     /// </summary>
     private void ShowState() =>
-        _activity?.SetState(_isRecording ? ListenState.Recording
+        _activity?.SetState(_hasFailed ? ListenState.Failed
+            : _isRecording ? ListenState.Recording
             : _waitingPhrases > 0 ? ListenState.Transcribing
-            : ListenState.Listening);
+            : _isReady ? ListenState.Listening
+            : ListenState.Starting);
 
     /// <inheritdoc/>
     public override async Task StopAsync(CancellationToken cancellationToken)

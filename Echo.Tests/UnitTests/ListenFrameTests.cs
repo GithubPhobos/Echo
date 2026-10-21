@@ -25,11 +25,6 @@ public sealed class ListenFrameTests : IDisposable
 
     private static readonly DateTimeOffset _time = new(new DateTime(2026, 10, 14, 21, 3, 0, DateTimeKind.Local));
 
-    /// <summary>
-    ///     What stands before the key: the keyboard emoji where the terminal gives it its two cells, the word elsewhere.
-    /// </summary>
-    private static readonly string _keySign = Theme.IsKeyboardEmojiWide ? "⌨️" : "key";
-
     [Fact]
     public void Build_Ready_HasTheStateOnTopTheLogTheCommandBoxAndTheKeysAtTheBottom()
     {
@@ -51,9 +46,8 @@ public sealed class ListenFrameTests : IDisposable
         Assert.Equal(29, lines.Length);
 
         // The state says Echo is ready, not that it is listening: nothing is heard until the key is held.
-        // Only the model and the key follow it; the rest is in /info
-        // The key has a keyboard in front of it
-        Assert.Matches($"^  ○ ready +--:--  ┊  ············  ┊  tiny  ┊  {_keySign} `$", lines[0].TrimEnd());
+        // Only the key and the model follow it, the key first and with nothing in front of it; the rest is in /info
+        Assert.Matches("^  ○ ready +--:--  ┊  ············  ┊  `  ┊  tiny$", lines[0].TrimEnd());
 
         // The rule lies right under the state, and the log right under the rule
         Assert.StartsWith("──────", lines[1]);
@@ -79,7 +73,7 @@ public sealed class ListenFrameTests : IDisposable
         string[] moments = [.. new[] { 0.0, 0.6, 1.2 }.Select(seconds => Render(View(ListenState.Listening) with { Clock = TimeSpan.FromSeconds(seconds) }, width: 100, height: 30)[0])];
 
         // Assert: nothing moves while nothing is recorded
-        Assert.All(moments, line => Assert.Matches("○ ready +--:--  ┊  ············  ┊  tiny", line));
+        Assert.All(moments, line => Assert.Matches("○ ready +--:--  ┊  ············  ┊  `  ┊  tiny", line));
         Assert.Single(moments.Distinct());
         Assert.Contains("············", Render(View(ListenState.Paused), width: 100, height: 30)[0]);
     }
@@ -103,7 +97,7 @@ public sealed class ListenFrameTests : IDisposable
         string state = Render(view, width: 100, height: 30)[0];
 
         // Assert: twelve columns, so everything after them stays where it is while ready
-        Assert.Contains($"00:02  ┊  {expected}  ┊  tiny", state);
+        Assert.Contains($"00:02  ┊  {expected}  ┊  `  ┊  tiny", state);
         Assert.Matches("● recording +00:02", state);
 
         string ready = Render(View(ListenState.Listening), width: 100, height: 30)[0];
@@ -118,7 +112,7 @@ public sealed class ListenFrameTests : IDisposable
         string state = Render(View(ListenState.Transcribing), width: 100, height: 30)[0];
 
         // Assert
-        Assert.Matches("⠋ recognizing +--:--  ┊  ·····👂·····  ┊  tiny", state);
+        Assert.Matches("⠋ recognizing +--:--  ┊  ·····👂·····  ┊  `  ┊  tiny", state);
     }
 
     [Fact]
@@ -144,7 +138,7 @@ public sealed class ListenFrameTests : IDisposable
 
         // Assert: whole pieces go, the model first, which /info shows too
         Assert.DoesNotContain("tiny", narrow);
-        Assert.Contains($"{_keySign} `", narrow);
+        Assert.EndsWith("┊  `", narrow.TrimEnd());
 
         Assert.DoesNotContain("`", narrower);
         Assert.Contains("○ ready", narrower);
@@ -167,8 +161,8 @@ public sealed class ListenFrameTests : IDisposable
         int box = Array.FindIndex(lines, row => row.Contains("│ > /█"));
 
         Assert.Equal(
-            ["/setup", "/info", "/pause", "/resume", "/log", "/help", "/quit"],
-            lines[(box + 2)..(box + 9)].Select(row => row.Trim().Split(' ')[0]));
+            ["/setup", "/info", "/copy", "/pause", "/resume", "/log", "/help", "/quit"],
+            lines[(box + 2)..(box + 10)].Select(row => row.Trim().Split(' ')[0]));
 
         Assert.Equal("   /info     summary of the main settings", lines[box + 3].TrimEnd());
         Assert.Equal(string.Empty, lines[^2].Trim());
@@ -269,6 +263,36 @@ public sealed class ListenFrameTests : IDisposable
             lines[2..7].Select(line => line.TrimEnd()));
     }
 
+    [Fact]
+    public void Rows_AnswerNamingALevel_DrawsTheLevelInItsColor()
+    {
+        // Arrange
+        var entry = new ScreenEntry(_time, EntryKind.Answer, "Log detail: warning.") { Accents = [(12, 7, Theme.Warning)] };
+
+        // Act
+        string row = new ListenFrame(Theme.Full).Rows(entry, width: 100)[0];
+
+        // Assert: only the level has the color of its own, the rest of the answer the color of the log
+        Assert.Contains($"[{Theme.Warning}]warning[/]", row);
+        Assert.EndsWith($"[{Theme.Warning}]warning[/][#c9d1d9].[/]", row);
+        Assert.Equal("  21:03  Log detail: warning.", Markup.Remove(row));
+    }
+
+    [Fact]
+    public void Rows_LinesOfTheRecognitionLibraryAndOfTheKey_StandApartByTheirColor()
+    {
+        // Arrange
+        var frame = new ListenFrame(Theme.Full);
+
+        // Act
+        string library = frame.Rows(new ScreenEntry(_time, EntryKind.Message, "whisper_backend_init_gpu: using CUDA0 backend") { Depth = 1, Tone = MessageTone.Library }, width: 100)[0];
+        string key = frame.Rows(new ScreenEntry(_time, EntryKind.Message, "Recording...") { Tone = MessageTone.Key }, width: 100)[0];
+
+        // Assert: what the library says about itself is grey and faint, a press of the key green
+        Assert.Contains("[#6e7681]whisper_backend_init_gpu: using CUDA0 backend[/]", library);
+        Assert.Contains($"[bold {Theme.Success}]Recording...[/]", key);
+    }
+
     [Theory]
     [InlineData("en", 40, 10, false)]
     [InlineData("en", 40, 10, true)]
@@ -362,7 +386,7 @@ public sealed class ListenFrameTests : IDisposable
         activity = new ListenActivity(new ScreenLog(), () => false);
         levelSwitch = new LoggingLevelSwitch(LogEventLevel.Debug);
 
-        return new ListenCommands(activity, levelSwitch, Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), () => [("Model", "ggml-tiny.bin"), ("Microphone", "Desk microphone")]);
+        return new ListenCommands(activity, levelSwitch, Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), Mock.Of<ITextClipboard>(), () => [("Model", "ggml-tiny.bin"), ("Microphone", "Desk microphone")]);
     }
 
     /// <summary>
