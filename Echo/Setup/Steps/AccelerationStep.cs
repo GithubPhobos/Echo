@@ -355,11 +355,11 @@ internal sealed class AccelerationStep : ISetupStep
             UiResult<Exception?> outcome = free < size
                 ? UiResult<Exception?>.Done(new IOException(Strings.Format(
                     nameof(Strings.DiskSpaceLow), Format.Megabytes(size), Format.Megabytes(free))))
-                : await _ui.ProgressAsync(
+                : await _ui.CopyAsync(
                     screen,
-                    () => [$"{SetupUi.Fill(Strings.FileCopying, library)}  {SetupUi.Emphasis(Markup.Escape(Format.Megabytes(size)))}"],
+                    library,
+                    size,
                     (progress, token) => FileCopier.CopyAsync(source, target, progress, token),
-                    Strings.CopyPaused,
                     cancellationToken);
 
             if (outcome.IsBack)

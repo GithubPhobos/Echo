@@ -184,7 +184,7 @@ internal sealed class SetupUi(IAnsiConsole console, Theme theme, TimeSpan tick)
     }
 
     /// <summary>
-    ///     Runs a download or a copy with a progress bar. Escape stops the work and leaves the screen open,
+    ///     Runs a download with a progress bar. Escape stops the work and leaves the screen open,
     ///     so it can be continued from there; only a second Escape leaves the screen.
     /// </summary>
     /// <param name="screen">Where the screen is in the wizard.</param>
@@ -193,11 +193,49 @@ internal sealed class SetupUi(IAnsiConsole console, Theme theme, TimeSpan tick)
     /// <param name="stoppedMessage">What to say while the work is stopped.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns>Back when the user left; otherwise null on success or the error that stopped the work.</returns>
-    public async Task<UiResult<Exception?>> ProgressAsync(SetupScreen screen,
-                                                          Func<IReadOnlyList<string>> header,
-                                                          Func<IProgress<DownloadProgress>, CancellationToken, Task> work,
-                                                          string stoppedMessage,
-                                                          CancellationToken cancellationToken)
+    public Task<UiResult<Exception?>> ProgressAsync(SetupScreen screen,
+                                                    Func<IReadOnlyList<string>> header,
+                                                    Func<IProgress<DownloadProgress>, CancellationToken, Task> work,
+                                                    string stoppedMessage,
+                                                    CancellationToken cancellationToken) =>
+        RunAsync(screen, latest => [.. header(), string.Empty, .. BuildProgress(latest)], work, stoppedMessage, cancellationToken);
+
+    /// <summary>
+    ///     Copies a file the user already has, shown as steps rather than a progress bar: the file was found on the
+    ///     disk, it is being copied into Echo's folder, done. Nothing comes from the internet, so nothing looks like
+    ///     a download. Escape stops and continues the copy as it does a download.
+    /// </summary>
+    /// <param name="screen">Where the screen is in the wizard.</param>
+    /// <param name="fileName">The name of the file.</param>
+    /// <param name="sizeBytes">The size of the file.</param>
+    /// <param name="work">The copy itself. It is started again when the user continues after stopping it.</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <returns>Back when the user left; otherwise null on success or the error that stopped the copy.</returns>
+    public Task<UiResult<Exception?>> CopyAsync(SetupScreen screen,
+                                                string fileName,
+                                                long sizeBytes,
+                                                Func<IProgress<DownloadProgress>, CancellationToken, Task> work,
+                                                CancellationToken cancellationToken)
+    {
+        var clock = Stopwatch.StartNew();
+
+        return RunAsync(screen, latest => BuildCopy(fileName, sizeBytes, latest, clock.Elapsed), work, Strings.CopyPaused, cancellationToken);
+    }
+
+    /// <summary>
+    ///     Runs work that reports its progress. Escape stops the work and leaves the screen open, so it can be
+    ///     continued from there; only a second Escape leaves the screen.
+    /// </summary>
+    /// <param name="screen">Where the screen is in the wizard.</param>
+    /// <param name="lines">Builds the markup lines of the screen from the latest progress; asked again on every refresh.</param>
+    /// <param name="work">The work itself. It is started again when the user continues after stopping it.</param>
+    /// <param name="stoppedMessage">What to say while the work is stopped.</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    private async Task<UiResult<Exception?>> RunAsync(SetupScreen screen,
+                                                      Func<DownloadProgress, IReadOnlyList<string>> lines,
+                                                      Func<IProgress<DownloadProgress>, CancellationToken, Task> work,
+                                                      string stoppedMessage,
+                                                      CancellationToken cancellationToken)
     {
         DownloadProgress latest = default;
         var progress = new InlineProgress<DownloadProgress>(update => latest = update);
@@ -210,7 +248,7 @@ internal sealed class SetupUi(IAnsiConsole console, Theme theme, TimeSpan tick)
 
             UiResult<Exception?> result = await PollAsync<Exception?>(
                 screen,
-                () => ([.. header(), string.Empty, .. BuildProgress(latest)], []),
+                () => (lines(latest), []),
                 _ => task.IsCompleted
                     ? PollStep<Exception?>.Finish(UiResult<Exception?>.Done(task.Exception?.GetBaseException()))
                     : PollStep<Exception?>.Continue,
@@ -231,7 +269,7 @@ internal sealed class SetupUi(IAnsiConsole console, Theme theme, TimeSpan tick)
 
             UiResult<ConsoleKey> stopped = await ShowAsync(
                 screen,
-                [.. header(), string.Empty, .. BuildProgress(latest), string.Empty, Warning(Markup.Escape(stoppedMessage))],
+                [.. lines(latest), string.Empty, Warning(Markup.Escape(stoppedMessage))],
                 [(ConsoleKey.Enter, Strings.HintContinue)],
                 cancellationToken);
 
@@ -1096,6 +1134,28 @@ internal sealed class SetupUi(IAnsiConsole console, Theme theme, TimeSpan tick)
                 Format.Megabytes((long)progress.BytesPerSecond));
 
         return [bar, Dim(Markup.Escape(details))];
+    }
+
+    /// <summary>
+    ///     A copy of the user's own file as three steps: found on the disk, copying into Echo's folder with how much
+    ///     is done, done. The step under way turns where the font has the dots that go round.
+    /// </summary>
+    internal IReadOnlyList<string> BuildCopy(string fileName, long sizeBytes, DownloadProgress progress, TimeSpan clock)
+    {
+        long total = progress.BytesTotal > 0 ? progress.BytesTotal : sizeBytes;
+        double share = total > 0 ? Math.Clamp((double)progress.BytesDone / total, 0, 1) : 0;
+
+        string done = Strings.Format(nameof(Strings.CopyDetails), Format.Megabytes(progress.BytesDone), Format.Megabytes(total));
+
+        // A mark as wide as the others: the plain theme draws "( )" for a choice not taken
+        string waiting = Theme == Theme.Ascii ? Theme.Dot : Theme.RadioOff;
+
+        return
+        [
+            Good($"{Fill(Strings.CopyFound, fileName)}  {Emphasis(Markup.Escape(Format.Megabytes(sizeBytes)))}"),
+            $"[bold {Theme.Highlight}]{Theme.Spinner(clock)}[/] {Markup.Escape(Strings.CopyIntoEcho)}   {Dim(Markup.Escape(done))}  [bold]{share * 100:0}%[/]",
+            Dim($"{waiting} {Markup.Escape(Strings.CopyDone)}"),
+        ];
     }
 
     private static List<IRenderable> ToRenderables(IReadOnlyList<string> lines) =>

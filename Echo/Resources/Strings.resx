@@ -372,9 +372,6 @@
   <data name="CopyPaused" xml:space="preserve">
     <value>Copying is stopped.</value>
   </data>
-  <data name="FileCopying" xml:space="preserve">
-    <value>Copying {0}</value>
-  </data>
   <data name="FileCopyFailed" xml:space="preserve">
     <value>The file could not be copied.</value>
   </data>
@@ -845,5 +842,17 @@
   </data>
   <data name="DesktopShortcutDescription" xml:space="preserve">
     <value>Echo: hold to speak</value>
+  </data>
+  <data name="CopyFound" xml:space="preserve">
+    <value>Found on your disk: {0}</value>
+  </data>
+  <data name="CopyIntoEcho" xml:space="preserve">
+    <value>Copying into Echo's folder</value>
+  </data>
+  <data name="CopyDetails" xml:space="preserve">
+    <value>{0} of {1}</value>
+  </data>
+  <data name="CopyDone" xml:space="preserve">
+    <value>Done</value>
   </data>
 </root>

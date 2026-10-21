@@ -263,8 +263,6 @@ internal static class Strings
 
     public static string CopyPaused => Get(nameof(CopyPaused));
 
-    public static string FileCopying => Get(nameof(FileCopying));
-
     public static string FileCopyFailed => Get(nameof(FileCopyFailed));
 
     public static string CudaAlreadyHaveSummary => Get(nameof(CudaAlreadyHaveSummary));
@@ -578,4 +576,12 @@ internal static class Strings
     public static string TagNotRecommended => Get(nameof(TagNotRecommended));
 
     public static string DesktopShortcutDescription => Get(nameof(DesktopShortcutDescription));
+
+    public static string CopyFound => Get(nameof(CopyFound));
+
+    public static string CopyIntoEcho => Get(nameof(CopyIntoEcho));
+
+    public static string CopyDetails => Get(nameof(CopyDetails));
+
+    public static string CopyDone => Get(nameof(CopyDone));
 }

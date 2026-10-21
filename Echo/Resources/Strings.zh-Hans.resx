@@ -372,9 +372,6 @@
   <data name="CopyPaused" xml:space="preserve">
     <value>复制已停止。</value>
   </data>
-  <data name="FileCopying" xml:space="preserve">
-    <value>正在复制 {0}</value>
-  </data>
   <data name="FileCopyFailed" xml:space="preserve">
     <value>无法复制文件。</value>
   </data>
@@ -845,5 +842,17 @@
   </data>
   <data name="DesktopShortcutDescription" xml:space="preserve">
     <value>Echo：按住说话</value>
+  </data>
+  <data name="CopyFound" xml:space="preserve">
+    <value>已在磁盘上找到：{0}</value>
+  </data>
+  <data name="CopyIntoEcho" xml:space="preserve">
+    <value>正在复制到 Echo 的文件夹</value>
+  </data>
+  <data name="CopyDetails" xml:space="preserve">
+    <value>{0} / {1}</value>
+  </data>
+  <data name="CopyDone" xml:space="preserve">
+    <value>完成</value>
   </data>
 </root>

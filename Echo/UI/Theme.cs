@@ -61,6 +61,21 @@ internal sealed record Theme(
     public static Theme Ascii { get; } = new(">", "(*)", "( )", "#", "-", "+", "x", "*", ">", "-", "Up/Down", "_..::|||");
 
     /// <summary>
+    ///     The mark of work under way: dots going round, a turn every second, where the font has them;
+    ///     the mark of a recording elsewhere.
+    /// </summary>
+    /// <param name="clock">How long the work has been going on.</param>
+    public string Spinner(TimeSpan clock)
+    {
+        if (this != Full)
+            return Record;
+
+        const string frames = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏";
+
+        return frames[(int)(clock.TotalMilliseconds / 100) % frames.Length].ToString();
+    }
+
+    /// <summary>
     ///     Picks the richest set of symbols the terminal is known to draw.
     /// </summary>
     public static Theme Detect(IAnsiConsole console)
