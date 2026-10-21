@@ -8,12 +8,9 @@ namespace Echo.Tests.UnitTests;
 [SupportedOSPlatform("windows")]
 public sealed class CtrlVPasteKeysTests
 {
-    [Fact]
+    [WindowsFact]
     public async Task PasteAsync_PressesCtrlV()
     {
-        if (!OperatingSystem.IsWindows())
-            return;
-
         // Arrange
         var keyboardMock = new Mock<IKeyboardSimulator>();
         var inputMock = new Mock<IInputSimulator>();

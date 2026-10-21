@@ -6,5 +6,8 @@
 internal sealed class NoPasteKeys : IPasteKeys
 {
     /// <inheritdoc/>
+    public Task PrepareAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <inheritdoc/>
     public Task<bool> PasteAsync() => Task.FromResult(false);
 }

@@ -237,7 +237,7 @@ internal sealed class DictationTester : IDictationTester
             _pushToTalk.OnRecordingTriggered += OnPressed;
             _pushToTalk.OnRecordingReleased += OnReleased;
 
-            _pushToTalk.StartListeningAsync().GetAwaiter().GetResult();
+            _pushToTalk.StartListeningAsync(CancellationToken.None).GetAwaiter().GetResult();
 
             Runtime = RuntimeOptions.LoadedLibrary;
         }

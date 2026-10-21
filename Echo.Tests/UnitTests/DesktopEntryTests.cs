@@ -1,4 +1,5 @@
 ﻿using System.Runtime.Versioning;
+using System.Text;
 using Echo.Platform.Linux;
 
 namespace Echo.Tests.UnitTests;
@@ -61,10 +62,27 @@ public sealed class DesktopEntryTests : IDisposable
     [InlineData("/home/user/echooo/echooo", "\"/home/user/echooo/echooo\"")]
     [InlineData("/home/user/my apps/echooo", "\"/home/user/my apps/echooo\"")]
     [InlineData("/home/user/$weird\"`/echooo", "\"/home/user/\\$weird\\\"\\`/echooo\"")]
+    [InlineData("/home/user/100%good/echooo", "\"/home/user/100%%good/echooo\"")]
     public void Quote_PathOfTheExecLine_IsQuotedWithItsSpecialCharactersEscaped(string path, string expected)
     {
         // Act & Assert
         Assert.Equal(expected, DesktopEntry.Quote(path));
+    }
+
+    [Theory]
+    [InlineData("/home/user/echooo/echooo")]
+    [InlineData("/home/user/my apps/echooo")]
+    [InlineData("/home/user/100%good/echooo")]
+    [InlineData("/home/user/back\\slash/echooo")]
+    [InlineData("/home/user/$weird\"`'/echooo")]
+    [InlineData("/home/user/two\nlines\tand tab/echooo")]
+    public void Content_ExecLine_GivesThePathBackWhenReadByTheRulesOfLaunchers(string path)
+    {
+        // Act
+        string exec = DesktopEntry.Content(path).Split('\n').Single(line => line.StartsWith("Exec=", StringComparison.Ordinal))["Exec=".Length..];
+
+        // Assert: the text value first, then the quoted argument, the way the Desktop Entry Specification reads them
+        Assert.Equal(path, ReadArgument(ReadValue(exec)));
     }
 
     [Fact]
@@ -75,5 +93,60 @@ public sealed class DesktopEntryTests : IDisposable
 
         // Assert
         Assert.Equal(Path.Combine("/data", "applications", DesktopPortal.ApplicationId + ".desktop"), entry.FilePath);
+    }
+
+    /// <summary>
+    ///     A text value of a launcher as the specification reads it: "\\", "\n", "\t", "\r" and "\s" stand for
+    ///     one character each.
+    /// </summary>
+    private static string ReadValue(string value)
+    {
+        var text = new StringBuilder();
+
+        for (int index = 0; index < value.Length; index++)
+        {
+            if (value[index] != '\\')
+            {
+                text.Append(value[index]);
+
+                continue;
+            }
+
+            text.Append(value[++index] switch
+            {
+                'n' => '\n',
+                't' => '\t',
+                'r' => '\r',
+                's' => ' ',
+                char other => other
+            });
+        }
+
+        return text.ToString();
+    }
+
+    /// <summary>
+    ///     The one argument of an Exec line, in double quotes, as the specification reads it: a backslash keeps
+    ///     the character after it, and "%%" stands for '%'.
+    /// </summary>
+    private static string ReadArgument(string exec)
+    {
+        Assert.StartsWith("\"", exec);
+        Assert.EndsWith("\"", exec);
+
+        string inside = exec[1..^1];
+        var argument = new StringBuilder();
+
+        for (int index = 0; index < inside.Length; index++)
+        {
+            if (inside[index] == '\\')
+                argument.Append(inside[++index]);
+            else if (inside[index] == '%')
+                argument.Append(inside[++index] == '%' ? '%' : throw new Xunit.Sdk.XunitException($"A field code in \"{inside}\"."));
+            else
+                argument.Append(inside[index]);
+        }
+
+        return argument.ToString();
     }
 }

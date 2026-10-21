@@ -843,4 +843,7 @@
   <data name="TagNotRecommended" xml:space="preserve">
     <value>Не рекомендуется</value>
   </data>
+  <data name="DesktopShortcutDescription" xml:space="preserve">
+    <value>Echo: держите и говорите</value>
+  </data>
 </root>

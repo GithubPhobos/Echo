@@ -9,6 +9,11 @@ namespace Echo.Tests.UnitTests;
 [SupportedOSPlatform("linux")]
 public sealed class LinuxCudaLibrariesTests : IDisposable
 {
+    /// <summary>
+    ///     A real library of the system that takes the place of a CUDA library where only loading it matters.
+    /// </summary>
+    private const string StandInLibrary = "/lib/x86_64-linux-gnu/libm.so.6";
+
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "echooo-tests", Guid.NewGuid().ToString("N"));
     private readonly LinuxCudaLibraries _libraries = new(new LinuxPrograms(Environment.GetEnvironmentVariable));
 
@@ -30,12 +35,9 @@ public sealed class LinuxCudaLibrariesTests : IDisposable
         Assert.Equal(["libcudart.so.13", "libcublasLt.so.13", "libcublas.so.13"], _libraries.Archives.SelectMany(archive => archive.Libraries));
     }
 
-    [Fact]
+    [LinuxFact("tar", "xz")]
     public void ExtractAndMoveIntoPlace_ArchiveLikeNvidias_KeepsTheVersionedFileAndItsShortName()
     {
-        if (!OperatingSystem.IsLinux() || _libraries.MissingTools().Count > 0)
-            return;
-
         // Arrange: an archive laid out the way NVIDIA's are, with a static library that is not wanted
         string archivePath = CreateArchive(
             ("cuda_cudart-archive/lib/libcudart.so.13.4.92", "the library"),
@@ -60,12 +62,9 @@ public sealed class LinuxCudaLibrariesTests : IDisposable
         Assert.Equal(["libcudart.so.13", "libcudart.so.13.4.92"], Directory.GetFileSystemEntries(target).Select(Path.GetFileName).Order());
     }
 
-    [Fact]
+    [LinuxFact("tar", "xz")]
     public void Extract_LibraryMissingFromArchive_Throws()
     {
-        if (!OperatingSystem.IsLinux() || _libraries.MissingTools().Count > 0)
-            return;
-
         // Arrange
         string archivePath = CreateArchive(("archive/LICENSE", "nothing useful"));
 
@@ -73,18 +72,33 @@ public sealed class LinuxCudaLibrariesTests : IDisposable
         Assert.Throws<DownloadException>(() => _libraries.Extract(archivePath, Archive(["libcublas.so.13"]), _directory));
     }
 
-    [Fact]
+    [LinuxFact]
     public void FindMissing_LibrariesCopiedIntoTheFolder_AreNotMissing()
     {
-        if (!OperatingSystem.IsLinux())
-            return;
-
         // Arrange
         foreach (string library in new[] { "libcudart.so.13", "libcublasLt.so.13", "libcublas.so.13" })
             File.WriteAllText(Path.Combine(_directory, library), string.Empty);
 
         // Act & Assert
         Assert.Empty(_libraries.FindMissing(_directory));
+    }
+
+    [LinuxFact(StandInLibrary)]
+    public void PrepareForLoading_OnlySomeLibrariesInTheFolder_LoadsThoseAndTheRestOnceTheyArrive()
+    {
+        // Arrange: libcudart is the system's, Echo has downloaded cuBLAS in two goes; a real library stands in
+        File.Copy(StandInLibrary, Path.Combine(_directory, "libcublasLt.so.13"));
+
+        // Act
+        _libraries.PrepareForLoading(_directory);
+        IReadOnlyCollection<string> first = _libraries.Loaded;
+
+        File.Copy(StandInLibrary, Path.Combine(_directory, "libcublas.so.13"));
+        _libraries.PrepareForLoading(_directory);
+
+        // Assert
+        Assert.Equal(["libcublasLt.so.13"], first);
+        Assert.Equal(["libcublas.so.13", "libcublasLt.so.13"], _libraries.Loaded.Order());
     }
 
     private static CudaArchive Archive(IReadOnlyList<string> libraries) =>

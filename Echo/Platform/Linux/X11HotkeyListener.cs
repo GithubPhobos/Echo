@@ -52,6 +52,16 @@ internal sealed class X11HotkeyListener(ILogger<X11HotkeyListener> logger) : IHo
     /// <inheritdoc/>
     public event EventHandler<HotkeyEventArgs>? Released;
 
+    /// <summary>
+    ///     A key taken from X11 stays Echo's for as long as Echo runs.
+    /// </summary>
+    /// <inheritdoc/>
+    public event EventHandler? Lost
+    {
+        add { }
+        remove { }
+    }
+
     /// <inheritdoc/>
     public void Bind(HotkeyChoice hotkey)
     {
@@ -66,7 +76,7 @@ internal sealed class X11HotkeyListener(ILogger<X11HotkeyListener> logger) : IHo
     }
 
     /// <inheritdoc/>
-    public async Task StartAsync()
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         _logger.LogDebug("{KeyboardEmoji} Keyboard (X11):", LoggerConstants.KeyboardEmoji);
 
@@ -78,7 +88,7 @@ internal sealed class X11HotkeyListener(ILogger<X11HotkeyListener> logger) : IHo
         // Whether the key could be taken is known only once X11 has answered
         try
         {
-            await started.Task.WaitAsync(_startTimeout);
+            await started.Task.WaitAsync(_startTimeout, cancellationToken);
         }
         catch (TimeoutException)
         {
@@ -137,7 +147,7 @@ internal sealed class X11HotkeyListener(ILogger<X11HotkeyListener> logger) : IHo
 
             started.TrySetResult();
 
-            Loop(display, xEvent);
+            Loop(display, xEvent, keycode);
 
             foreach (uint state in _lockStates)
                 X11Native.UngrabKey(display, keycode, _modifier | state, root);
@@ -176,7 +186,7 @@ internal sealed class X11HotkeyListener(ILogger<X11HotkeyListener> logger) : IHo
         return false;
     }
 
-    private void Loop(IntPtr display, IntPtr xEvent)
+    private void Loop(IntPtr display, IntPtr xEvent, int keycode)
     {
         var descriptors = new[] { new X11Native.PollDescriptor { Descriptor = X11Native.ConnectionNumber(display), Events = X11Native.PollIn } };
         bool isDown = false;
@@ -193,15 +203,18 @@ internal sealed class X11HotkeyListener(ILogger<X11HotkeyListener> logger) : IHo
 
             X11Native.NextEvent(display, xEvent);
 
-            switch (Marshal.ReadInt32(xEvent))
+            int type = Marshal.ReadInt32(xEvent);
+            int eventKeycode = type is X11Native.KeyPress or X11Native.KeyRelease ? Marshal.ReadInt32(xEvent, X11Native.KeycodeOffset) : 0;
+
+            switch (Change(type, eventKeycode, keycode, isDown))
             {
-                case X11Native.KeyPress when !isDown:
+                case true:
                     isDown = true;
                     Pressed?.Invoke(this, new HotkeyEventArgs());
 
                     break;
 
-                case X11Native.KeyRelease when isDown:
+                case false:
                     isDown = false;
                     Released?.Invoke(this, new HotkeyEventArgs());
 
@@ -209,6 +222,21 @@ internal sealed class X11HotkeyListener(ILogger<X11HotkeyListener> logger) : IHo
             }
         }
     }
+
+    /// <summary>
+    ///     What an event of X11 means for the push-to-talk key: it went down (true), it came up (false), or nothing
+    ///     (null). While the key is held, X11 hands Echo the whole keyboard, so other keys come too, the modifier of
+    ///     the combination among them; only the key itself starts and ends a phrase. Its repeats are left out.
+    /// </summary>
+    /// <param name="type">The type of the event.</param>
+    /// <param name="eventKeycode">The key of the event.</param>
+    /// <param name="keycode">The push-to-talk key.</param>
+    /// <param name="isDown">Whether the push-to-talk key is held now.</param>
+    internal static bool? Change(int type, int eventKeycode, int keycode, bool isDown) =>
+        eventKeycode != keycode ? null
+        : type == X11Native.KeyPress && !isDown ? true
+        : type == X11Native.KeyRelease && isDown ? false
+        : null;
 
     private static int OnError(IntPtr display, IntPtr errorEvent)
     {

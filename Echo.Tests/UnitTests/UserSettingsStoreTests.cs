@@ -29,6 +29,32 @@ public sealed class UserSettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task WriteValue_TwoStoresChangingDifferentSettingsAtOnce_KeepBothAndTheRest()
+    {
+        // The desktop's permission to paste and the name of the key are saved by different parts of Echo, each with
+        // a store of its own, and can come at the same moment
+        for (int attempt = 0; attempt < 25; attempt++)
+        {
+            // Arrange
+            File.WriteAllText(_paths.SettingsFile, """{ "Setup": { "Version": 1 } }""");
+
+            var first = new UserSettingsStore(_paths);
+            var second = new UserSettingsStore(_paths);
+            using var start = new Barrier(2);
+
+            // Act
+            await Task.WhenAll(
+                Task.Run(() => { start.SignalAndWait(); first.WriteValue("Desktop", "RemoteDesktopToken", $"token {attempt}"); }),
+                Task.Run(() => { start.SignalAndWait(); second.WriteValue("PushToTalkSettings", "DesktopShortcut", $"F{attempt}"); }));
+
+            // Assert
+            Assert.Equal($"token {attempt}", first.ReadValue("Desktop", "RemoteDesktopToken"));
+            Assert.Equal($"F{attempt}", first.ReadValue("PushToTalkSettings", "DesktopShortcut"));
+            Assert.Equal(1, first.Load().SetupVersion);
+        }
+    }
+
+    [Fact]
     public void Load_UnreadableSettingsFile_IsTreatedAsNotSetUp()
     {
         // Arrange

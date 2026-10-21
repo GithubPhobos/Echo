@@ -6,12 +6,9 @@ namespace Echo.Tests.UnitTests;
 [SupportedOSPlatform("linux")]
 public sealed class LinuxProgramsTests
 {
-    [Fact]
+    [LinuxFact]
     public void Exists_ProgramOnTheSearchPathOrNot_IsToldApart()
     {
-        if (!OperatingSystem.IsLinux())
-            return;
-
         // Arrange
         var programs = new LinuxPrograms(Environment.GetEnvironmentVariable);
 
@@ -20,12 +17,9 @@ public sealed class LinuxProgramsTests
         Assert.False(programs.Exists("no-such-program-anywhere"));
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task FeedAsync_Text_ReachesTheProgramWhole()
     {
-        if (!OperatingSystem.IsLinux())
-            return;
-
         // Arrange: tee writes what it gets into the file it is given
         string file = Path.Combine(Path.GetTempPath(), $"echooo-{Guid.NewGuid():N}.txt");
         var programs = new LinuxPrograms(Environment.GetEnvironmentVariable);
@@ -44,16 +38,36 @@ public sealed class LinuxProgramsTests
         }
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task FeedAsync_ProgramFails_Throws()
     {
-        if (!OperatingSystem.IsLinux())
-            return;
-
         // Arrange
         var programs = new LinuxPrograms(Environment.GetEnvironmentVariable);
 
         // Act & Assert
         await Assert.ThrowsAsync<IOException>(() => programs.FeedAsync("false", string.Empty, "anything"));
+    }
+
+    [LinuxFact]
+    public async Task FeedAsync_ProgramStopsReading_IsEndedWithinTheTimeLimit()
+    {
+        // Arrange: a program that never reads, and more text than the pipe to it holds
+        var programs = new LinuxPrograms(Environment.GetEnvironmentVariable, TimeSpan.FromMilliseconds(300));
+
+        // Act: the outer limit only keeps a broken time limit from hanging the tests
+        Task feeding = programs.FeedAsync("sleep", "30", new string('x', 1024 * 1024));
+
+        // Assert
+        await Assert.ThrowsAsync<IOException>(() => feeding.WaitAsync(TimeSpan.FromSeconds(10)));
+    }
+
+    [LinuxFact]
+    public async Task FeedAsync_ProgramEndsWithoutReading_Throws()
+    {
+        // Arrange
+        var programs = new LinuxPrograms(Environment.GetEnvironmentVariable, TimeSpan.FromSeconds(5));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<IOException>(() => programs.FeedAsync("true", string.Empty, new string('x', 1024 * 1024)).WaitAsync(TimeSpan.FromSeconds(10)));
     }
 }

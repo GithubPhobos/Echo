@@ -70,6 +70,20 @@ public sealed class TerminalFocusReportsTests
     }
 
     [Fact]
+    public void Handle_PageUpOfAPersonQuickAfterTheScreenAppears_IsTheUsersKey()
+    {
+        // Arrange: a terminal without the reports; even a quick person needs longer than the terminal's answer
+        var reports = new TerminalFocusReports(_clock);
+        reports.Started();
+
+        _clock.Advance(TimeSpan.FromMilliseconds(200));
+
+        // Act & Assert: it scrolls the log and leaves the state unknown, so the text is still typed elsewhere
+        Assert.False(reports.Handle(PageUp));
+        Assert.Null(reports.IsFocused);
+    }
+
+    [Fact]
     public void Handle_KeysThatAreNoReports_AreLeftAlone()
     {
         // Arrange

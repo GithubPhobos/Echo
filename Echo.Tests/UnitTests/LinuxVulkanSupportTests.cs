@@ -14,12 +14,9 @@ public sealed class LinuxVulkanSupportTests
         Assert.False(new LinuxVulkanSupport().IsChosenAutomatically);
     }
 
-    [Fact]
+    [LinuxFact]
     public void IsAvailable_WithOrWithoutAVulkanDriver_AnswersWithoutThrowing()
     {
-        if (!OperatingSystem.IsLinux())
-            return;
-
         // Act & Assert: a machine without the Vulkan loader says so instead of failing
         Assert.Null(Record.Exception(() => new LinuxVulkanSupport().Check()));
     }

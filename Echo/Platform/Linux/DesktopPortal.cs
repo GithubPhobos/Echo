@@ -56,6 +56,12 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
     private const string RegistryInterface = "org.freedesktop.host.portal.Registry";
     private const string PropertiesInterface = "org.freedesktop.DBus.Properties";
 
+    /// <summary>
+    ///     The message bus itself, which says who holds a name.
+    /// </summary>
+    private const string BusService = "org.freedesktop.DBus";
+    private const string BusPath = "/org/freedesktop/DBus";
+
     public const string ShortcutsInterface = "org.freedesktop.portal.GlobalShortcuts";
     public const string RemoteDesktopInterface = "org.freedesktop.portal.RemoteDesktop";
     public const string FileChooserInterface = "org.freedesktop.portal.FileChooser";
@@ -76,12 +82,32 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
     private readonly string? _address = address;
     private readonly DesktopEntry? _launcher = launcher;
     private readonly SemaphoreSlim _lock = new(1, 1);
+    private readonly SemaphoreSlim _connectLock = new(1, 1);
+    private readonly object _sessionsLock = new();
     private readonly List<IDisposable> _watches = [];
 
     private DBusConnection? _connection;
     private int _requests;
     private string? _shortcutsSession;
     private string? _keyboardSession;
+
+    /// <summary>
+    ///     Whether Echo has named itself to the portal service that runs now, and which service that is: a restarted
+    ///     service has a new unique name on the bus and knows nothing of Echo.
+    /// </summary>
+    private bool _isRegistered;
+    private string? _portalOwner;
+
+    /// <summary>
+    ///     Whether the session of the keys has taken its keys: a session takes them once.
+    /// </summary>
+    private bool _isShortcutsBound;
+
+    /// <summary>
+    ///     Whether the permission to paste was lost during this run: it is then not asked for again before the
+    ///     setup wizard asks.
+    /// </summary>
+    private bool _isKeyboardLost;
 
     /// <summary>
     ///     Why the desktop would not register Echo's name, when it would not: the reason it then refuses the key.
@@ -102,6 +128,13 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
     ///     The user changed the push-to-talk key in the settings of the desktop; its new description comes along.
     /// </summary>
     public event EventHandler<string>? ShortcutChanged;
+
+    /// <summary>
+    ///     The key Echo got from the desktop no longer reaches Echo: the desktop closed its session (as when the user
+    ///     takes the key back), or its portal service was restarted. A key held down then never comes up. Why comes
+    ///     along.
+    /// </summary>
+    public event EventHandler<string>? ShortcutsLost;
 
     /// <summary>
     ///     Whether the user gave Echo the permission to paste in an earlier run, so it can be renewed without asking.
@@ -151,9 +184,23 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
             if (!askAgain && FindTrigger(await ListShortcutsAsync(connection, cancellationToken)) is { } known)
                 return known;
 
+            // A session takes its keys once: asking again, as the setup wizard does after the working screen,
+            // takes a new session, and the old one is closed
+            if (_isShortcutsBound)
+            {
+                string old = _shortcutsSession;
+
+                _shortcutsSession = await CreateSessionAsync(connection, ShortcutsInterface, cancellationToken);
+                Close(connection, old, SessionInterface);
+            }
+
+            _isShortcutsBound = true;
+
+            string session = _shortcutsSession;
+
             (uint code, Dictionary<string, VariantValue> results) = await RequestAsync(
                 connection,
-                token => CreateBindShortcuts(connection, _shortcutsSession, token, preferredTrigger, description),
+                token => CreateBindShortcuts(connection, session, token, preferredTrigger, description),
                 cancellationToken);
 
             return code == ResponseSuccess && results.TryGetValue("shortcuts", out VariantValue shortcuts)
@@ -172,8 +219,37 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
     }
 
     /// <summary>
+    ///     Finds the key the desktop gave Echo again, in a new session, after the old one was lost. Never shows the
+    ///     window: a key the user has taken back is asked for again only in the setup wizard.
+    /// </summary>
+    /// <returns>The description of the key, or null when the desktop gives Echo none now.</returns>
+    public async Task<string?> RestoreShortcutAsync(CancellationToken cancellationToken)
+    {
+        await _lock.WaitAsync(cancellationToken);
+
+        try
+        {
+            DBusConnection connection = await ConnectAsync();
+
+            _shortcutsSession ??= await CreateSessionAsync(connection, ShortcutsInterface, cancellationToken);
+
+            return FindTrigger(await ListShortcutsAsync(connection, cancellationToken));
+        }
+        catch (Exception exc) when (IsUnavailable(exc))
+        {
+            return null;
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    /// <summary>
     ///     Makes sure Echo may press keys. With a permission kept from an earlier run the desktop renews it without
-    ///     a window; otherwise the window is shown only when <paramref name="mayAsk"/>.
+    ///     a window; otherwise the window is shown only when <paramref name="mayAsk"/>. A permission lost during this
+    ///     run is not renewed without <paramref name="mayAsk"/>: the desktop could show its window then, in the
+    ///     middle of dictation.
     /// </summary>
     /// <returns>Whether Echo may press keys now.</returns>
     public async Task<bool> EnsureKeyboardAsync(bool mayAsk, CancellationToken cancellationToken)
@@ -184,6 +260,9 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
         {
             if (_keyboardSession is not null)
                 return true;
+
+            if (_isKeyboardLost && !mayAsk)
+                return false;
 
             string? token = _settings.ReadValue(SettingsSection, TokenKey);
 
@@ -220,6 +299,7 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
             }
 
             _keyboardSession = session;
+            _isKeyboardLost = false;
 
             return true;
         }
@@ -257,7 +337,11 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
         }
         catch (Exception exc) when (IsUnavailable(exc))
         {
-            _keyboardSession = null;
+            lock (_sessionsLock)
+            {
+                _keyboardSession = null;
+                _isKeyboardLost = true;
+            }
 
             return false;
         }
@@ -297,27 +381,45 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
 
         _connection?.Dispose();
         _lock.Dispose();
+        _connectLock.Dispose();
     }
 
     /// <summary>
-    ///     Connects once, and before anything else tells the desktop which application Echo is: newer portals
-    ///     refuse programs that do not say so. Older portals have no such registry and need nothing.
+    ///     Connects once, and makes sure the portal service that runs now knows Echo.
     /// </summary>
     private async Task<DBusConnection> ConnectAsync()
     {
-        if (_connection is not null)
-            return _connection;
+        await _connectLock.WaitAsync();
 
+        try
+        {
+            DBusConnection connection = _connection ?? await OpenAsync();
+
+            await FollowPortalAsync(connection);
+
+            return connection;
+        }
+        finally
+        {
+            _connectLock.Release();
+        }
+    }
+
+    /// <summary>
+    ///     Opens the connection to the session bus, and listens to the keys and to the portal service coming and going.
+    /// </summary>
+    private async Task<DBusConnection> OpenAsync()
+    {
         var connection = new DBusConnection(_address ?? DBusAddress.Session ?? throw new InvalidOperationException("No session bus."));
 
         try
         {
             await connection.ConnectAsync();
-            await RegisterAsync(connection);
 
             _watches.Add(await WatchAsync(connection, ObjectPath, ShortcutsInterface, "Activated", ReadShortcutSignal, value => OnShortcut(value, isPressed: true)));
             _watches.Add(await WatchAsync(connection, ObjectPath, ShortcutsInterface, "Deactivated", ReadShortcutSignal, value => OnShortcut(value, isPressed: false)));
             _watches.Add(await WatchAsync(connection, ObjectPath, ShortcutsInterface, "ShortcutsChanged", ReadShortcutsChanged, OnShortcutsChanged));
+            _watches.Add(await WatchAsync(connection, BusPath, BusService, "NameOwnerChanged", ReadNameOwnerChanged, OnNameOwnerChanged));
 
             _connection = connection;
 
@@ -332,10 +434,50 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
     }
 
     /// <summary>
+    ///     Before anything else, tells the desktop which application Echo is: newer portals refuse programs that do
+    ///     not say so. The portal service can be restarted while Echo runs, and the new one knows nothing of Echo:
+    ///     when another service holds the name than the one Echo named itself to, what Echo had of the old one is
+    ///     forgotten, and Echo names itself again.
+    /// </summary>
+    private async Task FollowPortalAsync(DBusConnection connection)
+    {
+        string? owner = await OwnerAsync(connection);
+
+        if (_isRegistered && owner == _portalOwner)
+            return;
+
+        if (_isRegistered)
+            Forget("the desktop's portal service was restarted");
+
+        if (await RegisterAsync(connection))
+        {
+            _isRegistered = true;
+            _portalOwner = owner ?? await OwnerAsync(connection);
+        }
+    }
+
+    /// <summary>
+    ///     The name on the bus of the portal service that runs now, or null while none runs: the bus starts the
+    ///     service with the first call to it.
+    /// </summary>
+    private static async Task<string?> OwnerAsync(DBusConnection connection)
+    {
+        try
+        {
+            return await connection.CallMethodAsync(CreateGetNameOwner(connection), (message, _) => message.GetBodyReader().ReadString());
+        }
+        catch (DBusErrorReplyException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
     ///     Names Echo to the desktop, its launcher in place first. A launcher written just now may take the desktop
     ///     a moment to notice, so the name is given again a few times before the refusal is taken as final.
     /// </summary>
-    private async Task RegisterAsync(DBusConnection connection)
+    /// <returns>Whether that is settled; false when no portal service could be reached, to be tried again next time.</returns>
+    private async Task<bool> RegisterAsync(DBusConnection connection)
     {
         bool isNewLauncher = _launcher?.Ensure() == true;
 
@@ -347,18 +489,21 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
 
                 _registrationError = null;
 
-                return;
+                return true;
             }
             catch (DBusErrorReplyException exc)
             {
+                if (exc.ErrorName == "org.freedesktop.DBus.Error.ServiceUnknown")
+                    return false;
+
                 // A portal older than the registry knows Echo by other means, or not at all
                 if (IsUnknownMethod(exc))
-                    return;
+                    return true;
 
                 _registrationError = exc.ErrorMessage;
 
                 if (!isNewLauncher || attempt == RegisterAttempts)
-                    return;
+                    return true;
             }
 
             await Task.Delay(_registerPause);
@@ -368,8 +513,7 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
     private static bool IsUnknownMethod(DBusErrorReplyException exception) =>
         exception.ErrorName is "org.freedesktop.DBus.Error.UnknownMethod"
             or "org.freedesktop.DBus.Error.UnknownInterface"
-            or "org.freedesktop.DBus.Error.UnknownObject"
-            or "org.freedesktop.DBus.Error.ServiceUnknown";
+            or "org.freedesktop.DBus.Error.UnknownObject";
 
     private async Task<string> CreateSessionAsync(DBusConnection connection, string portalInterface, CancellationToken cancellationToken)
     {
@@ -426,7 +570,29 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
 
         await connection.CallMethodAsync(createCall(token), (message, _) => message.GetBodyReader().ReadObjectPathAsString());
 
-        return await response.Task.WaitAsync(cancellationToken);
+        try
+        {
+            return await response.Task.WaitAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Nobody waits for the answer any more, as when Echo stops: the desktop closes its window too
+            Close(connection, requestPath, RequestInterface);
+
+            throw;
+        }
+    }
+
+    /// <summary>
+    ///     Tells the desktop to close a request or a session of Echo's, without waiting for it to do so.
+    /// </summary>
+    private static void Close(DBusConnection connection, string path, string closedInterface)
+    {
+        using MessageWriter writer = connection.GetMessageWriter();
+
+        writer.WriteMethodCallHeader(Service, path, closedInterface, "Close", null, MessageFlags.NoReplyExpected);
+
+        connection.TrySendMessage(writer.CreateMessage());
     }
 
     /// <summary>
@@ -548,11 +714,60 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
 
     private void OnSessionClosed(string session)
     {
-        if (_keyboardSession == session)
-            _keyboardSession = null;
+        bool isShortcutsLost = false;
 
-        if (_shortcutsSession == session)
+        lock (_sessionsLock)
+        {
+            if (_keyboardSession == session)
+            {
+                _keyboardSession = null;
+                _isKeyboardLost = true;
+            }
+
+            if (_shortcutsSession == session)
+            {
+                _shortcutsSession = null;
+                _isShortcutsBound = false;
+                isShortcutsLost = true;
+            }
+        }
+
+        if (isShortcutsLost)
+            ShortcutsLost?.Invoke(this, "the desktop closed the session of the key");
+    }
+
+    /// <summary>
+    ///     Another portal service holds the name now: it knows neither Echo nor its sessions. Only a new holder counts;
+    ///     the old one leaving says nothing yet, and the bus starts a new one with the next call.
+    /// </summary>
+    private void OnNameOwnerChanged((string Name, string OldOwner, string NewOwner) value)
+    {
+        if (value.Name == Service && value.NewOwner.Length > 0 && _isRegistered && value.NewOwner != _portalOwner)
+            Forget("the desktop's portal service was restarted");
+    }
+
+    /// <summary>
+    ///     Forgets what Echo had of a portal service that is gone, so Echo names itself to the next one. A permission
+    ///     to paste that was in use counts as lost; a key in use is reported as lost.
+    /// </summary>
+    private void Forget(string reason)
+    {
+        bool isShortcutsLost;
+
+        lock (_sessionsLock)
+        {
+            isShortcutsLost = _shortcutsSession is not null;
+
+            _isKeyboardLost |= _keyboardSession is not null;
+            _keyboardSession = null;
             _shortcutsSession = null;
+            _isShortcutsBound = false;
+            _isRegistered = false;
+            _portalOwner = null;
+        }
+
+        if (isShortcutsLost)
+            ShortcutsLost?.Invoke(this, reason);
     }
 
     /// <summary>
@@ -560,6 +775,23 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
     /// </summary>
     private static bool IsUnavailable(Exception exception) =>
         exception is DBusExceptionBase or InvalidOperationException;
+
+    private static (string Name, string OldOwner, string NewOwner) ReadNameOwnerChanged(Message message, object? state)
+    {
+        Reader reader = message.GetBodyReader();
+
+        return (reader.ReadString(), reader.ReadString(), reader.ReadString());
+    }
+
+    private static MessageBuffer CreateGetNameOwner(DBusConnection connection)
+    {
+        using MessageWriter writer = connection.GetMessageWriter();
+
+        writer.WriteMethodCallHeader(BusService, BusPath, BusService, "GetNameOwner", "s", MessageFlags.None);
+        writer.WriteString(Service);
+
+        return writer.CreateMessage();
+    }
 
     private static MessageBuffer CreateRegister(DBusConnection connection)
     {

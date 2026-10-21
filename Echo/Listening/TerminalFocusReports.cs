@@ -21,9 +21,11 @@ internal sealed class TerminalFocusReports(TimeProvider time)
     public const string Disable = "\u001b[?1004l";
 
     /// <summary>
-    ///     How soon after the reports are asked for the terminal's first answer is expected.
+    ///     How soon after <see cref="Started"/> (called once the first frame is on the screen) the terminal's first
+    ///     answer is expected. The terminal of GNOME answers within milliseconds; a person cannot press Page Up that
+    ///     soon after the screen appears, so a real key is not taken for the answer (decided 2026-10-18).
     /// </summary>
-    private static readonly TimeSpan _firstAnswer = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan _firstAnswer = TimeSpan.FromMilliseconds(100);
 
     private readonly TimeProvider _time = time;
     private readonly object _lock = new();

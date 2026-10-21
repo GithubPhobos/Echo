@@ -109,13 +109,15 @@ internal sealed class ListenScreen(IAnsiConsole console,
         Write(EnterAlternateScreen + WheelAsArrows + HideCursor);
 
         if (_focusReports is not null)
-        {
-            _focusReports.Started();
             Write(TerminalFocusReports.Enable);
-        }
 
         try
         {
+            // The terminal answers while the first frame is drawn; the time for its answer starts only after it,
+            // so a frame that is slow to draw does not make the answer look late
+            Draw();
+            _focusReports?.Started();
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 while (_console.Input.IsKeyAvailable())

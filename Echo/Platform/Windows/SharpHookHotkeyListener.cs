@@ -35,6 +35,16 @@ internal sealed class SharpHookHotkeyListener : IHotkeyListener
     /// <inheritdoc/>
     public event EventHandler<HotkeyEventArgs>? Released;
 
+    /// <summary>
+    ///     The hook keeps hearing the key for as long as Echo runs.
+    /// </summary>
+    /// <inheritdoc/>
+    public event EventHandler? Lost
+    {
+        add { }
+        remove { }
+    }
+
     /// <param name="logger"><see cref="ILogger{SharpHookHotkeyListener}"/></param>
     public SharpHookHotkeyListener(ILogger<SharpHookHotkeyListener> logger)
     {
@@ -74,7 +84,7 @@ internal sealed class SharpHookHotkeyListener : IHotkeyListener
     }
 
     /// <inheritdoc/>
-    public Task StartAsync()
+    public Task StartAsync(CancellationToken cancellationToken)
     {
         _logger.LogDebug("{KeyboardEmoji} Keyboard hook:", LoggerConstants.KeyboardEmoji);
 

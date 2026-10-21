@@ -2,12 +2,9 @@
 
 public sealed class SystemShellTests
 {
-    [Fact]
+    [LinuxFact]
     public void FreeSpaceOf_FolderOnADiskMountedInsideTheTree_CountsThatDisk()
     {
-        if (OperatingSystem.IsWindows())
-            return;
-
         // Arrange: a full root and a roomy home, as on a Linux machine with a separate '/home'
         var freeSpace = new Dictionary<string, long> { ["/"] = 10, ["/home"] = 5_000 };
 
@@ -18,12 +15,9 @@ public sealed class SystemShellTests
         Assert.Equal(5_000, free);
     }
 
-    [Fact]
+    [LinuxFact]
     public void FreeSpaceOf_FolderBesideTheMountedDisk_CountsTheRoot()
     {
-        if (OperatingSystem.IsWindows())
-            return;
-
         // Arrange: '/homework' only starts with the same letters as '/home'
         var freeSpace = new Dictionary<string, long> { ["/"] = 10, ["/home"] = 5_000 };
 
@@ -34,12 +28,9 @@ public sealed class SystemShellTests
         Assert.Equal(10, free);
     }
 
-    [Fact]
+    [WindowsFact]
     public void FreeSpaceOf_DriveLetter_CountsThatDrive()
     {
-        if (!OperatingSystem.IsWindows())
-            return;
-
         // Arrange
         var freeSpace = new Dictionary<string, long> { [@"C:\"] = 10, [@"D:\"] = 5_000 };
 

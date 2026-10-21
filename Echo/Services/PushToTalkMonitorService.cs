@@ -19,6 +19,9 @@ internal sealed class PushToTalkMonitorService : IPushToTalkMonitorService
     /// <inheritdoc/>
     public event EventHandler? OnRecordingTriggered;
 
+    /// <inheritdoc/>
+    public event EventHandler? OnRecordingCancelled;
+
     /// <summary>
     ///     Initializes a new instance of the <see cref="PushToTalkMonitorService"/>.
     /// </summary>
@@ -41,11 +44,12 @@ internal sealed class PushToTalkMonitorService : IPushToTalkMonitorService
 
         _listener.Pressed += OnKeyPressed;
         _listener.Released += OnKeyReleased;
+        _listener.Lost += OnKeyLost;
     }
 
     /// <inheritdoc/>
-    public Task StartListeningAsync() =>
-        _listener.StartAsync();
+    public Task StartListeningAsync(CancellationToken cancellationToken) =>
+        _listener.StartAsync(cancellationToken);
 
     /// <inheritdoc/>
     public void InitializePushToTalkHotkeysOrThrow()
@@ -99,11 +103,26 @@ internal sealed class PushToTalkMonitorService : IPushToTalkMonitorService
         _isRecording = false;
     }
 
+    /// <summary>
+    ///     The key stopped reaching Echo: a recording under way is dropped rather than ended, since the key
+    ///     that would end it will not come up, and what it holds is not typed anywhere unexpected.
+    /// </summary>
+    internal void OnKeyLost(object? sender, EventArgs e)
+    {
+        if (!_isRecording)
+            return;
+
+        _isRecording = false;
+
+        Task.Run(() => OnRecordingCancelled?.Invoke(this, EventArgs.Empty));
+    }
+
     /// <inheritdoc/>
     public void Dispose()
     {
         // The listener belongs to the services, which close it themselves
         _listener.Pressed -= OnKeyPressed;
         _listener.Released -= OnKeyReleased;
+        _listener.Lost -= OnKeyLost;
     }
 }

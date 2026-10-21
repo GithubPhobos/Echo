@@ -23,11 +23,18 @@ internal sealed class NoHotkeyListener : IHotkeyListener
     }
 
     /// <inheritdoc/>
+    public event EventHandler? Lost
+    {
+        add { }
+        remove { }
+    }
+
+    /// <inheritdoc/>
     public void Bind(HotkeyChoice hotkey) =>
         throw new Exception("The push-to-talk key needs a desktop session (X11 or Wayland); this one has none.");
 
     /// <inheritdoc/>
-    public Task StartAsync() => Task.CompletedTask;
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <inheritdoc/>
     public void Dispose()

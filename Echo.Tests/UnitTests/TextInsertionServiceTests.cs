@@ -92,6 +92,21 @@ public sealed class TextInsertionServiceTests
         _pasteMock.VerifyNoOtherCalls();
     }
 
+    [Theory]
+    [InlineData(true, 1)]
+    [InlineData(false, 0)]
+    public async Task PrepareAsync_GetsThePasteKeysReadyOnlyWhenTheyWillBePressed(bool useAutoInsert, int expected)
+    {
+        // Arrange
+        TextInsertionService service = CreateService(useAutoInsert);
+
+        // Act
+        await service.PrepareAsync(CancellationToken.None);
+
+        // Assert
+        _pasteMock.Verify(paste => paste.PrepareAsync(CancellationToken.None), Times.Exactly(expected));
+    }
+
     private TextInsertionService CreateService(bool useAutoInsert) =>
         new(Options.Create(new TextInsertionSettings { UseAutoInsert = useAutoInsert }),
             _clipboardMock.Object,

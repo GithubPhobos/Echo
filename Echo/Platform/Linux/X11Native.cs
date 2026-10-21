@@ -52,6 +52,13 @@ internal static class X11Native
     public const int ErrorCodeOffset = 32;
 
     /// <summary>
+    ///     The place of the key code in XKeyEvent on 64-bit Linux: after the type (4 and 4 of padding), the serial
+    ///     number (8), send_event (4 and 4), the display (8), the window, the root and the subwindow (8 each),
+    ///     the time (8), x, y, x_root and y_root (4 each) and the state (4).
+    /// </summary>
+    public const int KeycodeOffset = 84;
+
+    /// <summary>
     ///     POLLIN: data to read.
     /// </summary>
     public const short PollIn = 1;

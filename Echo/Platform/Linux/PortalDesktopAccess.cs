@@ -11,9 +11,10 @@ namespace Echo.Platform.Linux;
 internal sealed class PortalDesktopAccess(DesktopPortal portal) : IDesktopAccess
 {
     /// <summary>
-    ///     What the key does, as the desktop shows it in its window and its keyboard settings.
+    ///     What the key does, as the desktop shows it in its window and its keyboard settings: in the language of
+    ///     Echo's screens, since the user reads it there.
     /// </summary>
-    internal const string SpeakDescription = "Echo: hold to speak";
+    internal static string SpeakDescription => Strings.DesktopShortcutDescription;
 
     private readonly DesktopPortal _portal = portal;
 

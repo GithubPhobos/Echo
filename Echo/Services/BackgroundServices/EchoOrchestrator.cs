@@ -89,9 +89,12 @@ internal sealed class EchoOrchestrator(
 
                 _pushToTalkMonitorService.OnRecordingTriggered += HandlePushToTalkTriggered;
                 _pushToTalkMonitorService.OnRecordingReleased += HandlePushToTalkReleased;
+                _pushToTalkMonitorService.OnRecordingCancelled += HandlePushToTalkCancelled;
             }
 
-            await _pushToTalkMonitorService.StartListeningAsync();
+            // Both may wait for the user to answer a window of the desktop; stopping Echo stops the waiting
+            await _pushToTalkMonitorService.StartListeningAsync(stoppingToken);
+            await _textInsertionService.PrepareAsync(stoppingToken);
 
             if (_activity is not null)
             {
@@ -195,6 +198,27 @@ internal sealed class EchoOrchestrator(
     }
 
     /// <summary>
+    ///     The key stopped reaching Echo while it was held: the recording ends, and what it holds is dropped rather
+    ///     than typed into a window nobody expects it in.
+    /// </summary>
+    private void HandlePushToTalkCancelled(object? sender, EventArgs e)
+    {
+        lock (_stateLock)
+        {
+            if (_isStopping || !_isRecording)
+                return;
+
+            _isRecording = false;
+            ShowState();
+        }
+
+        _audioRecordingService.StopRecording();
+
+        _logger.LogWarning("{WarningEmoji} The push-to-talk key was lost while recording; the phrase is dropped.",
+            LoggerConstants.WarningEmoji);
+    }
+
+    /// <summary>
     ///     Recognizes the phrase just said, then tells the screen whether anything is still under way.
     /// </summary>
     private async Task RecognizeAsync(MemoryStream? audioStream)
@@ -246,6 +270,7 @@ internal sealed class EchoOrchestrator(
 
         _pushToTalkMonitorService.OnRecordingTriggered -= HandlePushToTalkTriggered;
         _pushToTalkMonitorService.OnRecordingReleased -= HandlePushToTalkReleased;
+        _pushToTalkMonitorService.OnRecordingCancelled -= HandlePushToTalkCancelled;
 
         Task[] recognitions;
 
@@ -262,6 +287,7 @@ internal sealed class EchoOrchestrator(
     {
         _pushToTalkMonitorService.OnRecordingTriggered -= HandlePushToTalkTriggered;
         _pushToTalkMonitorService.OnRecordingReleased -= HandlePushToTalkReleased;
+        _pushToTalkMonitorService.OnRecordingCancelled -= HandlePushToTalkCancelled;
 
         _phraseTurn.Dispose();
 

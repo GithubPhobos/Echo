@@ -7,8 +7,9 @@ namespace Echo.Platform.Linux;
 ///     and handing one some text.
 /// </summary>
 /// <param name="variable">Reads an environment variable.</param>
+/// <param name="feedTimeout">How long a program may take over the text; tests give a short time.</param>
 [SupportedOSPlatform("linux")]
-internal sealed class LinuxPrograms(Func<string, string?> variable)
+internal sealed class LinuxPrograms(Func<string, string?> variable, TimeSpan? feedTimeout = null)
 {
     private const string Shell = "/bin/sh";
 
@@ -16,9 +17,10 @@ internal sealed class LinuxPrograms(Func<string, string?> variable)
     ///     A clipboard program reads the text and leaves a copy of itself running to hold it; the program
     ///     that was started ends at once.
     /// </summary>
-    private static readonly TimeSpan _feedTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan _defaultFeedTimeout = TimeSpan.FromSeconds(5);
 
     private readonly Func<string, string?> _variable = variable;
+    private readonly TimeSpan _feedTimeout = feedTimeout ?? _defaultFeedTimeout;
 
     /// <summary>
     ///     Whether the program is on the search path.
@@ -63,23 +65,36 @@ internal sealed class LinuxPrograms(Func<string, string?> variable)
 
         using Process process = Process.Start(start) ?? throw new IOException($"Couldn't start {program}.");
 
-        await process.StandardInput.WriteAsync(text);
-        process.StandardInput.Close();
-
-        using var timeout = new CancellationTokenSource(_feedTimeout);
+        // One time limit for writing the text and for the end: a program that stops reading would hold the writing
+        // forever once the pipe is full
+        Task feeding = FeedAndWaitAsync(process, text);
 
         try
         {
-            await process.WaitForExitAsync(timeout.Token);
+            await feeding.WaitAsync(_feedTimeout);
         }
-        catch (OperationCanceledException)
+        catch (TimeoutException)
         {
+            // Ending the program ends the writing too; what the writing says then is of no interest
             process.Kill(entireProcessTree: false);
+            _ = feeding.ContinueWith(task => task.Exception, TaskScheduler.Default);
 
             throw new IOException($"{program} did not finish.");
         }
 
         if (process.ExitCode != 0)
             throw new IOException($"{program} failed with code {process.ExitCode}.");
+    }
+
+    /// <summary>
+    ///     Hands the text over and waits for the program to end. A program that ends without reading it all makes
+    ///     the writing fail with <see cref="IOException"/>.
+    /// </summary>
+    private static async Task FeedAndWaitAsync(Process process, string text)
+    {
+        await process.StandardInput.WriteAsync(text);
+        process.StandardInput.Close();
+
+        await process.WaitForExitAsync();
     }
 }

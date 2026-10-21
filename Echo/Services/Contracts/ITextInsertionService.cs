@@ -7,6 +7,13 @@
 internal interface ITextInsertionService
 {
     /// <summary>
+    ///     Gets ready before the first phrase: a permission to paste that has to be renewed is renewed when Echo
+    ///     starts, not in the middle of dictation.
+    /// </summary>
+    /// <param name="cancellationToken">Stops waiting, as when Echo stops while the desktop still asks the user.</param>
+    Task PrepareAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     ///     Copies the recognized text to the system clipboard and simulates a 'Ctrl+V' 
     ///     keystroke to paste it at the current cursor position.
     /// </summary>

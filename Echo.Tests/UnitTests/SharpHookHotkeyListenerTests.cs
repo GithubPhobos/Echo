@@ -9,12 +9,9 @@ namespace Echo.Tests.UnitTests;
 [SupportedOSPlatform("windows")]
 public sealed class SharpHookHotkeyListenerTests
 {
-    [Fact]
+    [WindowsFact]
     public void Bind_InvalidMainKey_ThrowsException()
     {
-        if (!OperatingSystem.IsWindows())
-            return;
-
         // Arrange
         using var listener = new SharpHookHotkeyListener(Mock.Of<ILogger<SharpHookHotkeyListener>>());
 
@@ -24,12 +21,9 @@ public sealed class SharpHookHotkeyListenerTests
         Assert.Contains("Couldn't parse push to talk key", exception.Message);
     }
 
-    [Fact]
+    [WindowsFact]
     public void Bind_ValidKey_DoesNotThrow()
     {
-        if (!OperatingSystem.IsWindows())
-            return;
-
         // Arrange
         using var listener = new SharpHookHotkeyListener(Mock.Of<ILogger<SharpHookHotkeyListener>>());
 
@@ -37,12 +31,9 @@ public sealed class SharpHookHotkeyListenerTests
         Assert.Null(Record.Exception(() => listener.Bind(new HotkeyChoice("`", "alt"))));
     }
 
-    [Fact]
+    [WindowsFact]
     public void OnKeyPressed_KeyPressed_IsKeptFromOtherProgramsUntilReleased()
     {
-        if (!OperatingSystem.IsWindows())
-            return;
-
         // Arrange
         using SharpHookHotkeyListener listener = CreateListener(modifier: string.Empty);
 
@@ -65,12 +56,9 @@ public sealed class SharpHookHotkeyListenerTests
         Assert.True(released.SuppressEvent);
     }
 
-    [Fact]
+    [WindowsFact]
     public void OnKeyReleased_KeyLetThrough_ThePressAndTheReleaseBothReachOtherPrograms()
     {
-        if (!OperatingSystem.IsWindows())
-            return;
-
         // Arrange
         using SharpHookHotkeyListener listener = CreateListener(modifier: string.Empty);
 
@@ -89,12 +77,9 @@ public sealed class SharpHookHotkeyListenerTests
         Assert.False(released.SuppressEvent);
     }
 
-    [Fact]
+    [WindowsFact]
     public void OnKeyReleased_KeyPressedWithoutItsModifier_IsNotReportedAndReachesOtherPrograms()
     {
-        if (!OperatingSystem.IsWindows())
-            return;
-
         // Arrange
         using SharpHookHotkeyListener listener = CreateListener(modifier: "leftctrl");
 

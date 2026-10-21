@@ -19,6 +19,11 @@ internal interface IHotkeyListener : IDisposable
     event EventHandler<HotkeyEventArgs>? Released;
 
     /// <summary>
+    ///     The key stopped reaching Echo, as when the desktop takes it back: a key held down will not come up.
+    /// </summary>
+    event EventHandler? Lost;
+
+    /// <summary>
     ///     Sets the key to listen to.
     /// </summary>
     /// <param name="hotkey">The key and its modifier, as the settings hold them.</param>
@@ -28,5 +33,6 @@ internal interface IHotkeyListener : IDisposable
     /// <summary>
     ///     Starts listening in the background.
     /// </summary>
-    Task StartAsync();
+    /// <param name="cancellationToken">Stops waiting, as when Echo stops while the desktop still asks the user.</param>
+    Task StartAsync(CancellationToken cancellationToken);
 }

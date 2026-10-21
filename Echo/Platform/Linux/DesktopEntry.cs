@@ -69,7 +69,8 @@ internal sealed class DesktopEntry(string directory, string executable)
     }
 
     /// <summary>
-    ///     The launcher: Echo in a terminal, in the Utilities and Accessibility parts of the menu.
+    ///     The launcher: Echo in a terminal, in the Utilities and Accessibility parts of the menu. Its lines end the
+    ///     Linux way also when Echo is built on Windows, where this text would take the line ends of the source file.
     /// </summary>
     internal static string Content(string executable) =>
         $"""
@@ -77,15 +78,15 @@ internal sealed class DesktopEntry(string directory, string executable)
         Type=Application
         Name=Echo
         Comment=Voice typing: hold a key and speak
-        Exec={Quote(executable)}
+        Exec={EscapeValue(Quote(executable))}
         Terminal=true
         Categories=Utility;Accessibility;
 
-        """;
+        """.ReplaceLineEndings("\n");
 
     /// <summary>
-    ///     A path as the Exec line of a launcher takes it: in double quotes, with the characters that are special
-    ///     inside them escaped by a backslash.
+    ///     A path as the Exec line of a launcher takes it: one argument in double quotes, with the characters that
+    ///     are special inside them escaped by a backslash, and '%' doubled, since a lone one starts a field code.
     /// </summary>
     internal static string Quote(string path)
     {
@@ -95,10 +96,35 @@ internal sealed class DesktopEntry(string directory, string executable)
         {
             if (character is '"' or '`' or '$' or '\\')
                 quoted.Append('\\');
+            else if (character == '%')
+                quoted.Append('%');
 
             quoted.Append(character);
         }
 
         return quoted.Append('"').ToString();
+    }
+
+    /// <summary>
+    ///     A text value of a launcher: a backslash, a line break and a tab are written as "\\", "\n" and "\t". This
+    ///     comes on top of <see cref="Quote"/>, so a backslash of the path takes four in the file.
+    /// </summary>
+    internal static string EscapeValue(string value)
+    {
+        var escaped = new StringBuilder();
+
+        foreach (char character in value)
+        {
+            escaped.Append(character switch
+            {
+                '\\' => @"\\",
+                '\n' => @"\n",
+                '\t' => @"\t",
+                '\r' => @"\r",
+                _ => character.ToString()
+            });
+        }
+
+        return escaped.ToString();
     }
 }

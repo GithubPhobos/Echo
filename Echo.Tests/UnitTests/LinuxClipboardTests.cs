@@ -33,12 +33,9 @@ public sealed class LinuxClipboardTests
         Assert.Equal(("xsel", "--clipboard --input", "--primary --input"), xsel);
     }
 
-    [Fact]
+    [LinuxFact]
     public async Task SetTextAsync_NoClipboardProgram_SaysWhichOneIsMissing()
     {
-        if (!OperatingSystem.IsLinux())
-            return;
-
         // Arrange: a search path with nothing on it
         var clipboard = new LinuxClipboard(DisplayServer.X11, hasX11: true, new LinuxPrograms(_ => "/nonexistent"));
 

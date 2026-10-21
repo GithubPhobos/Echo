@@ -174,12 +174,9 @@ public sealed partial class SetupWizardTests : IDisposable
             Times.Once);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task RunAsync_CudaLibrariesMissing_CopiesTheOnesPickedInFileChooser()
     {
-        if (!OperatingSystem.IsWindows())
-            return;
-
         // Arrange: the user keeps the libraries in a folder of their own, next to a file that is not one of them
         string downloads = Path.Combine(_home, "downloads");
         Directory.CreateDirectory(downloads);
@@ -272,12 +269,9 @@ public sealed partial class SetupWizardTests : IDisposable
             Times.Never);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task RunAsync_CudaLibrariesDownloaded_MarksEachOneAsItArrives()
     {
-        if (!OperatingSystem.IsWindows())
-            return;
-
         // Arrange: the first library arrives well before the other two
         _hardware = new HardwareInfo(_modernGpu, IsVulkanAvailable: true, MemoryGb: 32, ProcessorCores: 16);
         TrackLibrariesInFolder();
@@ -366,12 +360,9 @@ public sealed partial class SetupWizardTests : IDisposable
             ScreensShown().SkipWhile(screen => !screen.Contains("Hardware")).Take(3));
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task RunAsync_EscapeOnAnyScreen_LeadsToTheScreenShownJustBefore()
     {
-        if (!OperatingSystem.IsWindows())
-            return;
-
         // Arrange
         _hardware = new HardwareInfo(_modernGpu, IsVulkanAvailable: true, MemoryGb: 32, ProcessorCores: 16);
         _cuda.Setup(cuda => cuda.FindMissingLibraries()).Returns(["cublasLt64_13.dll"]);
@@ -454,12 +445,9 @@ public sealed partial class SetupWizardTests : IDisposable
         Assert.Equal("Vulkan", CreateStore().Load().HardwareBackend);
     }
 
-    [Fact]
+    [WindowsFact]
     public async Task RunAsync_SeveralGraphicsCards_AsksWhichOneToUse()
     {
-        if (!OperatingSystem.IsWindows())
-            return;
-
         // Arrange
         var second = new NvidiaGpu("NVIDIA GeForce RTX 4060", 8188, new Version(617, 14), new Version(8, 9), Index: 1);
 

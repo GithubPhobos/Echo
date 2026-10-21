@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.Versioning;
+﻿using System.Runtime.Versioning;
 using Echo.Platform.Linux;
 using Echo.Setup.Hotkeys;
 using Tmds.DBus.Protocol;
@@ -50,12 +49,9 @@ public sealed class DesktopPortalTests
         Assert.Null(DesktopPortal.FindTrigger(shortcuts));
     }
 
-    [Fact]
+    [LinuxFact(FakeDesktop.BusProgram)]
     public async Task EnsureShortcutAsync_NothingGivenYet_NamesEchoFirstThenAsksForTheSuggestedKey()
     {
-        if (!OperatingSystem.IsLinux() || !FakeDesktop.CanRun)
-            return;
-
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         using var portal = new DesktopPortal(Mock.Of<IUserSettingsStore>(), desktop.Address);
@@ -71,12 +67,9 @@ public sealed class DesktopPortalTests
         Assert.Contains("org.freedesktop.portal.GlobalShortcuts.BindShortcuts", desktop.Calls);
     }
 
-    [Fact]
+    [LinuxFact(FakeDesktop.BusProgram)]
     public async Task EnsureShortcutAsync_DesktopKnowsProgramsByTheirLaunchers_EchoPutsItsOwnInPlaceFirst()
     {
-        if (!OperatingSystem.IsLinux() || !FakeDesktop.CanRun)
-            return;
-
         // Arrange: a desktop that registers only a name it has a launcher for
         string launchers = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "echooo-tests", Guid.NewGuid().ToString("N"));
 
@@ -101,12 +94,9 @@ public sealed class DesktopPortalTests
         }
     }
 
-    [Fact]
+    [LinuxFact(FakeDesktop.BusProgram)]
     public async Task EnsureShortcutAsync_DesktopRefusesTheName_SaysWhyAndNotJustThatItWantsOne()
     {
-        if (!OperatingSystem.IsLinux() || !FakeDesktop.CanRun)
-            return;
-
         // Arrange: no launcher anywhere
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         desktop.LaunchersDirectory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "echooo-tests", Guid.NewGuid().ToString("N"));
@@ -121,12 +111,9 @@ public sealed class DesktopPortalTests
         Assert.Contains("App info not found", exception.Message);
     }
 
-    [Fact]
+    [LinuxFact(FakeDesktop.BusProgram)]
     public async Task EnsureShortcutAsync_KeyGivenInAnEarlierRun_IsFoundWithoutTheWindow()
     {
-        if (!OperatingSystem.IsLinux() || !FakeDesktop.CanRun)
-            return;
-
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         desktop.IsBound = true;
@@ -141,12 +128,9 @@ public sealed class DesktopPortalTests
         Assert.DoesNotContain("org.freedesktop.portal.GlobalShortcuts.BindShortcuts", desktop.Calls);
     }
 
-    [Fact]
+    [LinuxFact(FakeDesktop.BusProgram)]
     public async Task EnsureShortcutAsync_KeyPressedAndLetGo_IsReportedForTheKeyOfEcho()
     {
-        if (!OperatingSystem.IsLinux() || !FakeDesktop.CanRun)
-            return;
-
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         using var portal = new DesktopPortal(Mock.Of<IUserSettingsStore>(), desktop.Address);
@@ -169,12 +153,9 @@ public sealed class DesktopPortalTests
         Assert.Equal(["down speak", "up speak"], events);
     }
 
-    [Fact]
+    [LinuxFact(FakeDesktop.BusProgram)]
     public async Task EnsureKeyboardAsync_NoPermissionKeptAndNotAllowedToAsk_AsksNothing()
     {
-        if (!OperatingSystem.IsLinux() || !FakeDesktop.CanRun)
-            return;
-
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
@@ -187,12 +168,9 @@ public sealed class DesktopPortalTests
         Assert.Empty(desktop.Calls);
     }
 
-    [Fact]
+    [LinuxFact(FakeDesktop.BusProgram)]
     public async Task EnsureKeyboardAsync_AskedAndThenRenewedInTheNextRun_KeepsTheNewestPermission()
     {
-        if (!OperatingSystem.IsLinux() || !FakeDesktop.CanRun)
-            return;
-
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         var settings = new MemorySettings();
@@ -213,12 +191,9 @@ public sealed class DesktopPortalTests
         Assert.Equal("second", settings.ReadValue(DesktopPortal.SettingsSection, DesktopPortal.TokenKey));
     }
 
-    [Fact]
+    [LinuxFact(FakeDesktop.BusProgram)]
     public async Task PressAsync_ShiftInsert_PressesBothAndLetsThemGoInReverseOrder()
     {
-        if (!OperatingSystem.IsLinux() || !FakeDesktop.CanRun)
-            return;
-
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
@@ -233,12 +208,9 @@ public sealed class DesktopPortalTests
         Assert.Equal([(0xffe1, 1u), (0xff63, 1u), (0xff63, 0u), (0xffe1, 0u)], desktop.Keys);
     }
 
-    [Fact]
+    [LinuxFact(FakeDesktop.BusProgram)]
     public async Task OpenFilesAsync_FilePicked_GivesItsPathAndSendsThePatterns()
     {
-        if (!OperatingSystem.IsLinux() || !FakeDesktop.CanRun)
-            return;
-
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
@@ -251,12 +223,9 @@ public sealed class DesktopPortalTests
         Assert.Equal(["*.bin"], desktop.Patterns);
     }
 
-    [Fact]
+    [LinuxFact(FakeDesktop.BusProgram)]
     public async Task VersionAsync_PortalTheDesktopLacks_IsNull()
     {
-        if (!OperatingSystem.IsLinux() || !FakeDesktop.CanRun)
-            return;
-
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
@@ -266,325 +235,128 @@ public sealed class DesktopPortalTests
         Assert.Null(await portal.VersionAsync("org.freedesktop.portal.Nothing"));
     }
 
-    /// <summary>
-    ///     A settings file kept in memory.
-    /// </summary>
-    private sealed class MemorySettings : IUserSettingsStore
+    [LinuxFact(FakeDesktop.BusProgram)]
+    public async Task EnsureShortcutAsync_StoppedWhileTheWindowIsOpen_StopsWaitingAndClosesTheWindow()
     {
-        private readonly Dictionary<string, string?> _values = [];
+        // Arrange: the user has not dealt with the window that gives the key
+        await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+        desktop.HoldsBind = true;
 
-        public UserSettings Load() => new();
+        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var stopping = new CancellationTokenSource();
 
-        public void Save(UserSettings settings)
-        {
-        }
+        Task<string?> asking = portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, stopping.Token);
+        await desktop.BindShown.Task.WaitAsync(_patience);
 
-        public string? ReadValue(string section, string key) =>
-            _values.GetValueOrDefault($"{section}:{key}");
+        // Act
+        stopping.Cancel();
 
-        public void WriteValue(string section, string key, string? value) =>
-            _values[$"{section}:{key}"] = value;
+        // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => asking.WaitAsync(_patience));
+        Assert.True(SpinWait.SpinUntil(() => desktop.CountOf("org.freedesktop.portal.Request.Close") == 1, _patience));
     }
 
-    /// <summary>
-    ///     A desktop that answers like the XDG portals do, on a message bus started for the test alone.
-    /// </summary>
-    private sealed class FakeDesktop : IPathMethodHandler, IAsyncDisposable
+    [LinuxFact(FakeDesktop.BusProgram)]
+    public async Task EnsureShortcutAsync_AskedAgainInTheSameRun_TakesTheKeyInANewSession()
     {
-        private const string Service = "org.freedesktop.portal.Desktop";
-        private const string ObjectPath = "/org/freedesktop/portal/desktop";
-        private const string BusProgram = "/usr/bin/dbus-daemon";
-
-        private readonly Process _bus;
-        private readonly DBusConnection _connection;
-        private readonly object _lock = new();
-        private string? _shortcutsSession;
-        private string? _client;
-
-        private FakeDesktop(Process bus, string address, DBusConnection connection)
-        {
-            _bus = bus;
-            _connection = connection;
-            Address = address;
-        }
-
-        public static bool CanRun => File.Exists(BusProgram);
-
-        public string Address { get; }
-
-        public string Path => ObjectPath;
-
-        public bool HandlesChildPaths => false;
-
-        public List<string> Calls { get; } = [];
-
-        public string? RegisteredId { get; private set; }
-
-        /// <summary>
-        ///     When set, the desktop registers only a name it has a launcher for in this folder, and opens no
-        ///     session for a program it could not register, the way GNOME 50 on Ubuntu 26.04 does.
-        /// </summary>
-        public string? LaunchersDirectory { get; set; }
-
-        public string? PreferredTrigger { get; private set; }
-
-        public bool IsBound { get; set; }
-
-        public string IssuedToken { get; set; } = "token";
-
-        public string? ReceivedToken { get; private set; }
-
-        public (uint Types, uint Persist) SelectedDevices { get; private set; }
-
-        public List<(int Keysym, uint State)> Keys { get; } = [];
-
-        public List<string> Patterns { get; } = [];
-
-        public static async Task<FakeDesktop> StartAsync()
-        {
-            var bus = Process.Start(new ProcessStartInfo(BusProgram, "--session --nofork --print-address")
-            {
-                RedirectStandardOutput = true,
-                UseShellExecute = false
-            })!;
-
-            string address = (await bus.StandardOutput.ReadLineAsync())!.Trim();
-
-            var connection = new DBusConnection(address);
-            await connection.ConnectAsync();
-            await connection.RequestNameAsync(Service, RequestNameOptions.Default);
-
-            var desktop = new FakeDesktop(bus, address, connection);
-            connection.AddMethodHandler(desktop);
-
-            return desktop;
-        }
-
-        /// <summary>
-        ///     The user presses or lets go of a key the desktop gave.
-        /// </summary>
-        public void Press(string shortcut, bool isDown)
-        {
-            using MessageWriter writer = _connection.GetMessageWriter();
-
-            writer.WriteSignalHeader(_client, ObjectPath, DesktopPortal.ShortcutsInterface, isDown ? "Activated" : "Deactivated", "osta{sv}");
-            writer.WriteObjectPath(_shortcutsSession!);
-            writer.WriteString(shortcut);
-            writer.WriteUInt64(1);
-            writer.WriteDictionary(new Dictionary<string, VariantValue>());
-
-            _connection.TrySendMessage(writer.CreateMessage());
-        }
-
-        public ValueTask HandleMethodAsync(MethodContext context)
-        {
-            Message request = context.Request;
-            string member = request.MemberAsString ?? string.Empty;
-            string portalInterface = request.InterfaceAsString ?? string.Empty;
-
-            lock (_lock)
-            {
-                if (portalInterface != "org.freedesktop.DBus.Properties")
-                    Calls.Add($"{portalInterface}.{member}");
-            }
-
-            _client = request.SenderAsString;
-
-            Reader reader = request.GetBodyReader();
-
-            switch (member)
-            {
-                case "Register":
-                    string id = reader.ReadString();
-
-                    if (LaunchersDirectory is not null && !File.Exists(System.IO.Path.Combine(LaunchersDirectory, id + ".desktop")))
-                    {
-                        context.ReplyError("org.freedesktop.portal.Error.Failed", $"Could not register app ID: App info not found for '{id}'");
-
-                        break;
-                    }
-
-                    RegisteredId = id;
-                    ReplyEmpty(context);
-
-                    break;
-
-                case "Get":
-                    string asked = reader.ReadString();
-
-                    if (asked.StartsWith("org.freedesktop.portal.Nothing", StringComparison.Ordinal))
-                    {
-                        context.ReplyError("org.freedesktop.DBus.Error.InvalidArgs", "No such interface");
-
-                        break;
-                    }
-
-                    using (MessageWriter reply = context.CreateReplyWriter("v"))
-                    {
-                        reply.WriteVariantUInt32(1);
-                        context.Reply(reply.CreateMessage());
-                    }
-
-                    break;
-
-                case "CreateSession":
-                    if (LaunchersDirectory is not null && RegisteredId is null)
-                    {
-                        context.ReplyError("org.freedesktop.portal.Error.NotAllowed", "An app id is required");
-
-                        break;
-                    }
-
-                    Dictionary<string, VariantValue> options = reader.ReadDictionaryOfStringToVariantValue();
-                    string session = $"{ObjectPath}/session/{Sender(request)}/{options["session_handle_token"].GetString()}";
-
-                    if (portalInterface == DesktopPortal.ShortcutsInterface)
-                        _shortcutsSession = session;
-
-                    Respond(context, request, options, new Dictionary<string, VariantValue> { ["session_handle"] = session });
-
-                    break;
-
-                case "ListShortcuts":
-                    reader.ReadObjectPath();
-                    Respond(context, request, reader.ReadDictionaryOfStringToVariantValue(), Shortcuts(IsBound));
-
-                    break;
-
-                case "BindShortcuts":
-                    reader.ReadObjectPath();
-
-                    ArrayEnd end = reader.ReadArrayStart(DBusType.Struct);
-                    while (reader.HasNext(end))
-                    {
-                        reader.AlignStruct();
-                        reader.ReadString();
-                        PreferredTrigger = reader.ReadDictionaryOfStringToVariantValue()["preferred_trigger"].GetString();
-                    }
-
-                    reader.ReadString();
-                    IsBound = true;
-                    Respond(context, request, reader.ReadDictionaryOfStringToVariantValue(), Shortcuts(isBound: true));
-
-                    break;
-
-                case "SelectDevices":
-                    reader.ReadObjectPath();
-                    Dictionary<string, VariantValue> selection = reader.ReadDictionaryOfStringToVariantValue();
-
-                    SelectedDevices = (selection["types"].GetUInt32(), selection["persist_mode"].GetUInt32());
-                    ReceivedToken = selection.TryGetValue("restore_token", out VariantValue token) ? token.GetString() : null;
-                    Respond(context, request, selection, new Dictionary<string, VariantValue>());
-
-                    break;
-
-                case "Start":
-                    reader.ReadObjectPath();
-                    reader.ReadString();
-                    Respond(context, request, reader.ReadDictionaryOfStringToVariantValue(), new Dictionary<string, VariantValue>
-                    {
-                        ["devices"] = 1u,
-                        ["restore_token"] = IssuedToken,
-                    });
-
-                    break;
-
-                case "NotifyKeyboardKeysym":
-                    reader.ReadObjectPath();
-                    reader.ReadDictionaryOfStringToVariantValue();
-
-                    lock (_lock)
-                        Keys.Add((reader.ReadInt32(), reader.ReadUInt32()));
-
-                    ReplyEmpty(context);
-
-                    break;
-
-                case "OpenFile":
-                    reader.ReadString();
-                    reader.ReadString();
-                    Dictionary<string, VariantValue> chooser = reader.ReadDictionaryOfStringToVariantValue();
-
-                    VariantValue globs = chooser["filters"].GetItem(0).GetItem(1);
-                    for (int index = 0; index < globs.Count; index++)
-                        Patterns.Add(globs.GetItem(index).GetItem(1).GetString());
-
-                    Respond(context, request, chooser, new Dictionary<string, VariantValue>
-                    {
-                        ["uris"] = new Tmds.DBus.Protocol.Array<string>(["file:///home/someone/ggml-small.bin"]),
-                    });
-
-                    break;
-
-                default:
-                    context.ReplyUnknownMethodError();
-
-                    break;
-            }
-
-            return ValueTask.CompletedTask;
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            _connection.Dispose();
-
-            _bus.Kill();
-            await _bus.WaitForExitAsync();
-            _bus.Dispose();
-        }
-
-        private static string Sender(Message request) =>
-            (request.SenderAsString ?? string.Empty).TrimStart(':').Replace('.', '_');
-
-        /// <summary>
-        ///     Answers a request the way the portals do: the call returns the path of the request at once, and
-        ///     the result follows as a signal on that path.
-        /// </summary>
-        private void Respond(MethodContext context, Message request, Dictionary<string, VariantValue> options, Dictionary<string, VariantValue> results)
-        {
-            string requestPath = DesktopPortal.RequestPath(request.SenderAsString, options["handle_token"].GetString());
-            string? sender = request.SenderAsString;
-
-            using (MessageWriter reply = context.CreateReplyWriter("o"))
-            {
-                reply.WriteObjectPath(requestPath);
-                context.Reply(reply.CreateMessage());
-            }
-
-            using MessageWriter writer = _connection.GetMessageWriter();
-
-            writer.WriteSignalHeader(sender, requestPath, "org.freedesktop.portal.Request", "Response", "ua{sv}");
-            writer.WriteUInt32(0);
-            writer.WriteDictionary(results);
-
-            _connection.TrySendMessage(writer.CreateMessage());
-        }
-
-        private static void ReplyEmpty(MethodContext context)
-        {
-            using MessageWriter reply = context.CreateReplyWriter(null);
-
-            context.Reply(reply.CreateMessage());
-        }
-
-        /// <summary>
-        ///     The keys the desktop gave, a(sa{sv}): the push-to-talk key under the name the desktop shows.
-        /// </summary>
-        private static Dictionary<string, VariantValue> Shortcuts(bool isBound)
-        {
-            var shortcuts = new Tmds.DBus.Protocol.Array<Struct<string, Dict<string, VariantValue>>>();
-
-            if (isBound)
-            {
-                shortcuts.Add(Struct.Create(DesktopPortal.SpeakShortcut, new Dict<string, VariantValue>
-                {
-                    ["description"] = "Echo: hold to speak",
-                    ["trigger_description"] = "Ctrl+`",
-                }));
-            }
-
-            return new Dictionary<string, VariantValue> { ["shortcuts"] = shortcuts };
-        }
+        // Arrange: the wizard asked once, the working screen ran, and the wizard asks again; a session takes its
+        // keys once
+        await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+
+        await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: true, CancellationToken.None);
+        string? first = desktop.ShortcutsSession;
+
+        // Act
+        string? label = await portal.EnsureShortcutAsync("F8", "Echo: hold to speak", askAgain: true, CancellationToken.None);
+
+        // Assert
+        Assert.Equal("Ctrl + `", label);
+        Assert.Equal("F8", desktop.PreferredTrigger);
+        Assert.NotEqual(first, desktop.ShortcutsSession);
+        Assert.True(SpinWait.SpinUntil(() => desktop.CountOf("org.freedesktop.portal.Session.Close") == 1, _patience));
+    }
+
+    [LinuxFact(FakeDesktop.BusProgram)]
+    public async Task ShortcutsLost_DesktopClosesTheSessionOfTheKey_IsReported()
+    {
+        // Arrange
+        await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+
+        await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
+
+        var lost = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        portal.ShortcutsLost += (_, reason) => lost.TrySetResult(reason);
+
+        // Act: as when the user takes the key back
+        desktop.CloseSession(desktop.ShortcutsSession!);
+
+        // Assert
+        Assert.Contains("closed", await lost.Task.WaitAsync(_patience));
+    }
+
+    [LinuxFact(FakeDesktop.BusProgram)]
+    public async Task RestoreShortcutAsync_PortalServiceRestarted_NamesEchoAgainAndFindsTheKeyWithoutTheWindow()
+    {
+        // Arrange
+        await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+
+        await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
+
+        var lost = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        portal.ShortcutsLost += (_, reason) => lost.TrySetResult(reason);
+
+        // Act
+        await desktop.RestartAsync();
+        string? label = await portal.RestoreShortcutAsync(CancellationToken.None);
+
+        // Assert: the new service knows Echo, the key the desktop kept is found again, and its loss was reported
+        Assert.Equal(DesktopPortal.ApplicationId, desktop.RegisteredId);
+        Assert.Equal("Ctrl + `", label);
+        Assert.Equal(1, desktop.CountOf("org.freedesktop.portal.GlobalShortcuts.BindShortcuts"));
+        Assert.Contains("restarted", await lost.Task.WaitAsync(_patience));
+    }
+
+    [LinuxFact(FakeDesktop.BusProgram)]
+    public async Task VersionAsync_PortalServiceRestarted_NamesEchoToTheNewOne()
+    {
+        // Arrange
+        await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+
+        await portal.VersionAsync(DesktopPortal.ShortcutsInterface);
+
+        // Act
+        await desktop.RestartAsync();
+        await portal.VersionAsync(DesktopPortal.ShortcutsInterface);
+
+        // Assert
+        Assert.Equal(DesktopPortal.ApplicationId, desktop.RegisteredId);
+    }
+
+    [LinuxFact(FakeDesktop.BusProgram)]
+    public async Task EnsureKeyboardAsync_PermissionTakenBackMidWork_IsNotAskedForAgainUntilTheWizardAsks()
+    {
+        // Arrange
+        await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+
+        Assert.True(await portal.EnsureKeyboardAsync(mayAsk: true, CancellationToken.None));
+
+        // Act: the desktop closes the session, as when the user takes the permission back
+        desktop.CloseSession(desktop.KeyboardSession!);
+
+        // Assert: the next phrase only waits for the session to be gone; the desktop is not asked, so no window opens
+        Assert.True(SpinWait.SpinUntil(
+            () => !portal.EnsureKeyboardAsync(mayAsk: false, CancellationToken.None).GetAwaiter().GetResult(),
+            _patience));
+        Assert.Equal(1, desktop.CountOf("org.freedesktop.portal.RemoteDesktop.Start"));
+
+        // The wizard asks again, and from then on Echo may press keys
+        Assert.True(await portal.EnsureKeyboardAsync(mayAsk: true, CancellationToken.None));
+        Assert.True(await portal.EnsureKeyboardAsync(mayAsk: false, CancellationToken.None));
+        Assert.Equal(2, desktop.CountOf("org.freedesktop.portal.RemoteDesktop.Start"));
     }
 }

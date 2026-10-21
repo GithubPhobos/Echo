@@ -13,6 +13,12 @@ internal sealed class CtrlVPasteKeys(IInputSimulator inputSimulator) : IPasteKey
 {
     private readonly IInputSimulator _inputSimulator = inputSimulator;
 
+    /// <summary>
+    ///     Windows lets any program press keys: there is nothing to renew.
+    /// </summary>
+    /// <inheritdoc/>
+    public Task PrepareAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
     /// <inheritdoc/>
     public Task<bool> PasteAsync()
     {

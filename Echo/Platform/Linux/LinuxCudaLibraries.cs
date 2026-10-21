@@ -42,9 +42,21 @@ internal sealed class LinuxCudaLibraries(LinuxPrograms programs) : ICudaLibrarie
     private readonly LinuxPrograms _programs = programs;
 
     /// <summary>
-    ///     Libraries loaded by Echo itself, kept for the whole process.
+    ///     Libraries loaded by Echo itself, by their short names, kept for the whole process.
     /// </summary>
-    private readonly List<IntPtr> _loaded = [];
+    private readonly Dictionary<string, IntPtr> _loaded = [];
+
+    /// <summary>
+    ///     The libraries Echo has loaded from a folder of its own, by their short names.
+    /// </summary>
+    internal IReadOnlyCollection<string> Loaded
+    {
+        get
+        {
+            lock (_loaded)
+                return [.. _loaded.Keys];
+        }
+    }
 
     /// <inheritdoc/>
     public IReadOnlyList<CudaArchive> Archives => _archives;
@@ -94,8 +106,10 @@ internal sealed class LinuxCudaLibraries(LinuxPrograms programs) : ICudaLibrarie
 
         using Process process = Process.Start(start) ?? throw new DownloadException("Couldn't start tar.");
 
-        string errors = process.StandardError.ReadToEnd();
-        process.StandardOutput.ReadToEnd();
+        // Read while tar runs, so the time limit holds even for a tar that never ends: reading to the end first
+        // would wait for it without one
+        Task<string> errors = process.StandardError.ReadToEndAsync();
+        Task output = process.StandardOutput.ReadToEndAsync();
 
         if (!process.WaitForExit(_unpackTimeout))
         {
@@ -104,8 +118,11 @@ internal sealed class LinuxCudaLibraries(LinuxPrograms programs) : ICudaLibrarie
             throw new DownloadException($"Unpacking {Path.GetFileName(archivePath)} took too long.");
         }
 
+        // tar has ended, so what it printed is all there
+        Task.WaitAll(errors, output);
+
         if (process.ExitCode != 0)
-            throw new DownloadException($"Couldn't unpack {Path.GetFileName(archivePath)}: {errors.Trim()}");
+            throw new DownloadException($"Couldn't unpack {Path.GetFileName(archivePath)}: {errors.Result.Trim()}");
 
         foreach (string library in archive.Libraries)
         {
@@ -143,26 +160,24 @@ internal sealed class LinuxCudaLibraries(LinuxPrograms programs) : ICudaLibrarie
 
     /// <summary>
     ///     Linux finds the libraries a library needs by their short names, and takes one that is loaded already.
-    ///     So the libraries in the folder are loaded first, by their full paths, in the order they need each other.
+    ///     So each library in the folder is loaded first, by its full path, in the order they need each other; one
+    ///     that is not in the folder comes from the system, where the loader finds it by its short name. Some can be
+    ///     in the system and the rest in the folder: Echo downloads only what the system lacks.
     /// </summary>
     /// <inheritdoc/>
     public void PrepareForLoading(string directory)
     {
         string[] order = ["libcudart.so.13", "libcublasLt.so.13", "libcublas.so.13"];
 
-        // With any of them missing here, the system's own copies are used, or none
-        if (!order.All(library => File.Exists(Path.Combine(directory, library))))
-            return;
-
         lock (_loaded)
         {
-            if (_loaded.Count > 0)
-                return;
-
             foreach (string library in order)
             {
-                if (NativeLibrary.TryLoad(Path.Combine(directory, library), out IntPtr handle))
-                    _loaded.Add(handle);
+                string path = Path.Combine(directory, library);
+
+                // A library that would not load is tried again the next time, once it may be complete
+                if (!_loaded.ContainsKey(library) && File.Exists(path) && NativeLibrary.TryLoad(path, out IntPtr handle))
+                    _loaded[library] = handle;
             }
         }
     }

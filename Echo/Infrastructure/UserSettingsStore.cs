@@ -23,6 +23,16 @@ internal sealed class UserSettingsStore(IAppPaths paths) : IUserSettingsStore
     /// </summary>
     private const string DamagedSuffix = ".damaged";
 
+    /// <summary>
+    ///     Added to the name of the settings file for the file that only one may hold at a time.
+    /// </summary>
+    private const string LockSuffix = ".lock";
+
+    /// <summary>
+    ///     How long reading or changing the settings waits for another change, in this copy of Echo or another.
+    /// </summary>
+    private static readonly TimeSpan _lockTimeout = TimeSpan.FromSeconds(10);
+
     private static readonly JsonDocumentOptions _readOptions = new()
     {
         CommentHandling = JsonCommentHandling.Skip,
@@ -42,7 +52,7 @@ internal sealed class UserSettingsStore(IAppPaths paths) : IUserSettingsStore
     /// <inheritdoc/>
     public UserSettings Load()
     {
-        JsonObject root = ReadFile();
+        JsonObject root = ReadAlone();
 
         // A value the setting cannot take, such as a word typed by hand where a number belongs, is left out:
         // the shipped value applies, and saving the settings replaces it
@@ -74,6 +84,8 @@ internal sealed class UserSettingsStore(IAppPaths paths) : IUserSettingsStore
     /// <inheritdoc/>
     public void Save(UserSettings settings)
     {
+        using FileStream alone = Lock();
+
         JsonObject root = ReadFile();
 
         Write(root, SetupSection, "Version", settings.SetupVersion);
@@ -99,11 +111,13 @@ internal sealed class UserSettingsStore(IAppPaths paths) : IUserSettingsStore
 
     /// <inheritdoc/>
     public string? ReadValue(string section, string key) =>
-        Read<string>(ReadFile(), section, key);
+        Read<string>(ReadAlone(), section, key);
 
     /// <inheritdoc/>
     public void WriteValue(string section, string key, string? value)
     {
+        using FileStream alone = Lock();
+
         JsonObject root = ReadFile();
 
         Write(root, section, key, value);
@@ -157,6 +171,43 @@ internal sealed class UserSettingsStore(IAppPaths paths) : IUserSettingsStore
     /// </summary>
     private JsonObject ReadFile() =>
         TryRead(_paths.SettingsFile, out JsonObject root) ? root : [];
+
+    /// <summary>
+    ///     The settings in the file, read while no change is under way.
+    /// </summary>
+    private JsonObject ReadAlone()
+    {
+        using FileStream alone = Lock();
+
+        return ReadFile();
+    }
+
+    /// <summary>
+    ///     Takes the settings for one reading or one change: a file next to them that only one may hold open at a
+    ///     time, in this copy of Echo or another. Reading, changing and replacing the settings then happen as one
+    ///     step: two changes at once both stay, and nobody reads the file while it is being replaced (a reading
+    ///     that failed then would be taken for an empty file, and the next change would write only itself).
+    /// </summary>
+    /// <exception cref="IOException">Thrown if another change holds the settings for too long.</exception>
+    private FileStream Lock()
+    {
+        string lockFile = _paths.SettingsFile + LockSuffix;
+        Directory.CreateDirectory(Path.GetDirectoryName(lockFile)!);
+
+        var waited = Stopwatch.StartNew();
+
+        while (true)
+        {
+            try
+            {
+                return new FileStream(lockFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException) when (waited.Elapsed < _lockTimeout)
+            {
+                Thread.Sleep(10);
+            }
+        }
+    }
 
     private static bool TryRead(string settingsFile, out JsonObject root)
     {

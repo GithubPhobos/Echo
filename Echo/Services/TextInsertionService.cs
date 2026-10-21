@@ -16,6 +16,13 @@ internal sealed class TextInsertionService(
     private readonly ILogger<TextInsertionService> _logger = logger;
     private readonly TextInsertionSettings _textInsertionSettings = textInsertionSettingsOptions.Value;
 
+    /// <summary>
+    ///     Without automatic insertion no key is ever pressed, so nothing is renewed.
+    /// </summary>
+    /// <inheritdoc/>
+    public Task PrepareAsync(CancellationToken cancellationToken) =>
+        _textInsertionSettings.UseAutoInsert ? _pasteKeys.PrepareAsync(cancellationToken) : Task.CompletedTask;
+
     /// <inheritdoc/>
     public async Task InsertTextAsync(string? text)
     {

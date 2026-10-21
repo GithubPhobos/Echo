@@ -42,7 +42,7 @@ public sealed class EchoOrchestratorTests
         _whisperMock.Verify(w => w.TryInitializeWhisperModel(), Times.Once);
         _monitorMock.Verify(m => m.InitializePushToTalkHotkeysOrThrow(), Times.Once);
         _soundMock.Verify(s => s.EnsureCanPlaySounds(), Times.Once);
-        _monitorMock.Verify(m => m.StartListeningAsync(), Times.Once);
+        _monitorMock.Verify(m => m.StartListeningAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -288,7 +288,7 @@ public sealed class EchoOrchestratorTests
         // Assert: stopping waited for the start-up, and the start-up never took the key
         Assert.False(isStoppedTooEarly);
         _monitorMock.VerifyAdd(m => m.OnRecordingTriggered += It.IsAny<EventHandler>(), Times.Never);
-        _monitorMock.Verify(m => m.StartListeningAsync(), Times.Never);
+        _monitorMock.Verify(m => m.StartListeningAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -339,6 +339,55 @@ public sealed class EchoOrchestratorTests
 
         // Assert: the second phrase never took the clipboard before the first one was pasted
         Assert.Equal(["first", "second"], pasted);
+    }
+
+    [Fact]
+    public async Task StopAsync_DesktopStillAsksTheUserForTheKey_StopsWithoutWaitingForTheAnswer()
+    {
+        // Arrange: the desktop's window that gives the key stays open
+        _monitorMock
+            .Setup(m => m.StartListeningAsync(It.IsAny<CancellationToken>()))
+            .Returns<CancellationToken>(token => Task.Delay(Timeout.Infinite, token));
+
+        await _orchestrator.StartAsync(CancellationToken.None);
+
+        // Act
+        await _orchestrator.StopAsync(CancellationToken.None).WaitAsync(_patience);
+
+        // Assert: the waiting was given up, and nothing counts as failed
+        Assert.True(_orchestrator.ExecuteTask!.IsCompletedSuccessfully);
+        _textMock.Verify(t => t.PrepareAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_GetsReadyToPasteBeforeItIsReady()
+    {
+        // Act
+        await StartAsync(_orchestrator);
+
+        // Assert: a permission to renew is renewed when Echo starts, not in the middle of dictation
+        _textMock.Verify(t => t.PrepareAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnRecordingCancelled_KeyLostWhileRecording_DropsThePhraseAndListensAgain()
+    {
+        // Arrange
+        var activity = new ListenActivity(new ScreenLog(), () => false);
+        EchoOrchestrator orchestrator = CreateOrchestrator(activity);
+        await StartAsync(orchestrator);
+
+        _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
+
+        // Act: the desktop took the key back while it was held
+        _monitorMock.Raise(m => m.OnRecordingCancelled += null, EventArgs.Empty);
+        await orchestrator.StopAsync(CancellationToken.None);
+
+        // Assert: the recording ended, and nothing was recognized or typed
+        _audioMock.Verify(a => a.StopRecording(), Times.Once);
+        _whisperMock.Verify(w => w.ProcessAudioAsync(It.IsAny<MemoryStream?>()), Times.Never);
+        _textMock.Verify(t => t.InsertTextAsync(It.IsAny<string?>()), Times.Never);
+        Assert.Equal(ListenState.Listening, activity.State);
     }
 
     /// <summary>

@@ -13,18 +13,29 @@ namespace Echo.Platform.Linux;
 [SupportedOSPlatform("linux")]
 internal sealed class PortalHotkeyListener(DesktopPortal portal, ILogger<PortalHotkeyListener> logger, IUserSettingsStore settings) : IHotkeyListener
 {
+    /// <summary>
+    ///     How often, and how far apart, Echo looks for its key again once the desktop has lost it: a restarted
+    ///     portal service takes a moment to come back.
+    /// </summary>
+    private const int RestoreAttempts = 5;
+    private static readonly TimeSpan _restorePause = TimeSpan.FromSeconds(1);
+
     private readonly DesktopPortal _portal = portal;
     private readonly ILogger<PortalHotkeyListener> _logger = logger;
     private readonly IUserSettingsStore _settings = settings;
 
     private string? _trigger;
     private bool _isListening;
+    private CancellationTokenSource? _stopping;
 
     /// <inheritdoc/>
     public event EventHandler<HotkeyEventArgs>? Pressed;
 
     /// <inheritdoc/>
     public event EventHandler<HotkeyEventArgs>? Released;
+
+    /// <inheritdoc/>
+    public event EventHandler? Lost;
 
     /// <summary>
     ///     The key of the settings is only Echo's suggestion: the desktop may have given another one.
@@ -33,9 +44,10 @@ internal sealed class PortalHotkeyListener(DesktopPortal portal, ILogger<PortalH
         _trigger = DesktopPortal.ToTrigger(hotkey) ?? DesktopPortal.ToTrigger(HotkeyChoice.Default);
 
     /// <summary>
-    ///     Finds the key the desktop gave Echo. Without one the desktop asks the user now, in its window.
+    ///     Finds the key the desktop gave Echo. Without one the desktop asks the user now, in its window; stopping
+    ///     Echo meanwhile closes the window.
     /// </summary>
-    public async Task StartAsync()
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         _logger.LogDebug("{KeyboardEmoji} Keyboard (Wayland, through the desktop):", LoggerConstants.KeyboardEmoji);
 
@@ -46,12 +58,14 @@ internal sealed class PortalHotkeyListener(DesktopPortal portal, ILogger<PortalH
                 "is not available here. GNOME 48 or newer and KDE Plasma have it.");
         }
 
-        string label = await _portal.EnsureShortcutAsync(_trigger!, PortalDesktopAccess.SpeakDescription, askAgain: false, CancellationToken.None)
+        string label = await _portal.EnsureShortcutAsync(_trigger!, PortalDesktopAccess.SpeakDescription, askAgain: false, cancellationToken)
             ?? throw new Exception("The desktop gave no push-to-talk key. Run 'echooo setup' to ask for it again.");
 
         _portal.ShortcutActivated += OnActivated;
         _portal.ShortcutDeactivated += OnDeactivated;
         _portal.ShortcutChanged += OnChanged;
+        _portal.ShortcutsLost += OnLost;
+        _stopping = new CancellationTokenSource();
         _isListening = true;
 
         Remember(label);
@@ -70,7 +84,11 @@ internal sealed class PortalHotkeyListener(DesktopPortal portal, ILogger<PortalH
         _portal.ShortcutActivated -= OnActivated;
         _portal.ShortcutDeactivated -= OnDeactivated;
         _portal.ShortcutChanged -= OnChanged;
+        _portal.ShortcutsLost -= OnLost;
         _isListening = false;
+
+        _stopping?.Cancel();
+        _stopping?.Dispose();
     }
 
     private void OnActivated(object? sender, string shortcut)
@@ -83,6 +101,58 @@ internal sealed class PortalHotkeyListener(DesktopPortal portal, ILogger<PortalH
     {
         if (shortcut == DesktopPortal.SpeakShortcut)
             Released?.Invoke(this, new HotkeyEventArgs());
+    }
+
+    /// <summary>
+    ///     The desktop lost the key: a phrase under way ends without its key coming up, and the key is looked for
+    ///     again in the background.
+    /// </summary>
+    private void OnLost(object? sender, string reason)
+    {
+        _logger.LogWarning("{WarningEmoji} The push-to-talk key stopped working: {Reason}.",
+            LoggerConstants.WarningEmoji, reason);
+
+        Lost?.Invoke(this, EventArgs.Empty);
+
+        if (_stopping is { } stopping)
+            _ = RestoreAsync(stopping.Token);
+    }
+
+    /// <summary>
+    ///     Looks for the key again a few times, without the desktop's window: a key the user took back is asked for
+    ///     only in the setup wizard.
+    /// </summary>
+    private async Task RestoreAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            for (int attempt = 1; attempt <= RestoreAttempts; attempt++)
+            {
+                await Task.Delay(_restorePause, cancellationToken);
+
+                if (await _portal.RestoreShortcutAsync(cancellationToken) is { } label)
+                {
+                    _logger.LogInformation("{Tab}{CheckedEmoji} The push-to-talk key works again: [{Key}].",
+                        LoggerConstants.Tab, LoggerConstants.CheckedEmoji, label);
+
+                    Remember(label);
+
+                    return;
+                }
+            }
+
+            _logger.LogWarning("{Tab}{WarningEmoji} The desktop no longer gives Echo the push-to-talk key. Ask for it again with /setup.",
+                LoggerConstants.Tab, LoggerConstants.WarningEmoji);
+        }
+        catch (OperationCanceledException)
+        {
+            // Echo stops
+        }
+        catch (Exception exc)
+        {
+            _logger.LogWarning("{Tab}{WarningEmoji} Couldn't get the push-to-talk key back: {ErrorMessage}",
+                LoggerConstants.Tab, LoggerConstants.WarningEmoji, exc.Message);
+        }
     }
 
     private void OnChanged(object? sender, string label)

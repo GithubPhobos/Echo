@@ -576,4 +576,6 @@ internal static class Strings
     public static string AdditionalSilenceThresholdHint => Get(nameof(AdditionalSilenceThresholdHint));
 
     public static string TagNotRecommended => Get(nameof(TagNotRecommended));
+
+    public static string DesktopShortcutDescription => Get(nameof(DesktopShortcutDescription));
 }
