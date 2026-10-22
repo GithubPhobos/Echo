@@ -1,4 +1,6 @@
-﻿using Echo.Setup.Audio;
+﻿using Echo.Listening;
+using Echo.Resources;
+using Echo.Setup.Audio;
 using NAudio.Wave;
 
 namespace Echo.Tests.UnitTests;
@@ -184,13 +186,107 @@ public sealed class AudioRecordingServiceTests
         _audioInput.Verify(input => input.Open(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
+    [Fact]
+    public void StartRecording_MicrophoneUnplugged_RecordsNothingAndSaysWhatToDo()
+    {
+        // Arrange: the headset went away while Echo ran, another microphone stands where it was,
+        // and the going away was noticed
+        Devices("Headset");
+        var activity = new ListenActivity(new ScreenLog(), () => false);
+        using AudioRecordingService service = Service(index: 0, name: "Headset", activity);
+        service.InititalizeAudioRecordingCapabilities();
+        Devices("Built-in microphone");
+        service.ReopenMicrophone();
+
+        // Act
+        bool isRecording = service.StartRecording();
+
+        // Assert: the other microphone is not taken in its place, and the screen says what to do each time
+        Assert.False(isRecording);
+        Assert.Null(service.StopRecording());
+        _audioInput.Verify(input => input.Open(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
+
+        string notConnected = Strings.Format(nameof(Strings.MicrophoneNotConnected), "Headset");
+        Assert.Equal([notConnected, notConnected], Said(activity, EntryKind.Warning));
+    }
+
+    [Fact]
+    public void StartRecording_MicrophoneThereButDoesNotOpen_SaysToPlugItInAgain()
+    {
+        // Arrange: after the first opening the headset stays in the list but fails to open
+        Devices("Headset");
+        int openings = 0;
+
+        _audioInput
+            .Setup(input => input.Open(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()))
+            .Returns(() => ++openings == 1 ? Mock.Of<IAudioInputStream>() : throw new InvalidOperationException("The device is busy."));
+
+        var activity = new ListenActivity(new ScreenLog(), () => false);
+        using AudioRecordingService service = Service(index: 0, name: "Headset", activity);
+        service.InititalizeAudioRecordingCapabilities();
+        service.ReopenMicrophone();
+
+        // Act
+        bool isRecording = service.StartRecording();
+
+        // Assert
+        Assert.False(isRecording);
+
+        string notOpening = Strings.Format(nameof(Strings.MicrophoneNotOpening), "Headset");
+        Assert.Equal([notOpening, notOpening], Said(activity, EntryKind.Warning));
+    }
+
+    [Fact]
+    public void ReopenMicrophone_MicrophonePluggedInAgain_SaysOnceThatItIsBack()
+    {
+        // Arrange
+        Devices("Headset");
+        var activity = new ListenActivity(new ScreenLog(), () => false);
+        using AudioRecordingService service = Service(index: 0, name: "Headset", activity);
+        service.InititalizeAudioRecordingCapabilities();
+        Devices();
+        service.ReopenMicrophone();
+        Devices("Headset");
+
+        // Act
+        service.ReopenMicrophone();
+        service.ReopenMicrophone();
+
+        // Assert
+        Assert.Equal([Strings.Format(nameof(Strings.MicrophoneBack), "Headset")], Said(activity, EntryKind.Message));
+        Assert.True(service.StartRecording());
+    }
+
+    [Fact]
+    public void ReopenMicrophone_MicrophoneNeverWentAway_SaysNothing()
+    {
+        // Arrange: after sleep the headset was back before Echo looked for it
+        Devices("Headset");
+        var activity = new ListenActivity(new ScreenLog(), () => false);
+        using AudioRecordingService service = Service(index: 0, name: "Headset", activity);
+        service.InititalizeAudioRecordingCapabilities();
+
+        // Act
+        service.ReopenMicrophone();
+
+        // Assert
+        Assert.Empty(activity.Log.Snapshot());
+    }
+
     private void Devices(params string[] names) =>
         _audioInput.Setup(input => input.GetDevices()).Returns([.. names.Select((name, index) => new MicrophoneDevice(index, name))]);
 
-    private AudioRecordingService Service(int index, string? name) =>
+    private AudioRecordingService Service(int index, string? name, IListenActivity? activity = null) =>
         new(_audioInput.Object,
             Mock.Of<ILogger<AudioRecordingService>>(),
-            Options.Create(new RecordingDeviceSettings { DeviceIndex = index, DeviceName = name, BufferMs = 50, NumberOfBuffers = 3 }));
+            Options.Create(new RecordingDeviceSettings { DeviceIndex = index, DeviceName = name, BufferMs = 50, NumberOfBuffers = 3 }),
+            activity);
+
+    /// <summary>
+    ///     The lines of one kind the service put on the screen, in order.
+    /// </summary>
+    private static string[] Said(ListenActivity activity, EntryKind kind) =>
+        [.. activity.Log.Snapshot().Where(entry => entry.Kind == kind).Select(entry => entry.Text)];
 
     /// <summary>
     ///     The microphones the system gives, one per opening, in this order.

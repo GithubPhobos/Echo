@@ -19,6 +19,7 @@ namespace Echo.Services.BackgroundServices;
 /// <param name="errorWindow">Shows an error that stops Echo when there is no working screen to show it on.</param>
 /// <param name="activity">The working screen, when Echo runs with one.</param>
 /// <param name="sessionEvents">Says when the user comes back to this session, where the system tells about that.</param>
+/// <param name="deviceEvents">Says when the sound devices change, where the system tells about that.</param>
 internal sealed class EchoOrchestrator(
     ILogger<EchoOrchestrator> logger,
     ISoundPlayService soundPlayService,
@@ -28,10 +29,12 @@ internal sealed class EchoOrchestrator(
     IPushToTalkMonitorService pushToTalkMonitorService,
     IErrorWindow errorWindow,
     IListenActivity? activity = null,
-    ISessionEvents? sessionEvents = null) : BackgroundService
+    ISessionEvents? sessionEvents = null,
+    IAudioDeviceEvents? deviceEvents = null) : BackgroundService
 {
     private readonly IListenActivity? _activity = activity;
     private readonly ISessionEvents? _sessionEvents = sessionEvents;
+    private readonly IAudioDeviceEvents? _deviceEvents = deviceEvents;
 
     private readonly ILogger<EchoOrchestrator> _logger = logger;
     private readonly ISoundPlayService _soundPlayService = soundPlayService;
@@ -66,10 +69,17 @@ internal sealed class EchoOrchestrator(
     private readonly TaskCompletionSource<bool> _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>
-    ///     The opening of the microphone and the loudspeakers again after a return to the session, the latest one
-    ///     queued after those before it. Stopping waits for it, so that nothing is opened after the services closed it.
+    ///     The opening of the microphone and the loudspeakers again after a return to the session or a change of the
+    ///     devices, the latest one queued after those before it. Stopping waits for it, so that nothing is opened after
+    ///     the services closed it.
     /// </summary>
     private Task _reopening = Task.CompletedTask;
+
+    /// <summary>
+    ///     Whether the microphone is to be opened again once the key held now comes up: opened again in the middle of
+    ///     a phrase, it would cut it.
+    /// </summary>
+    private bool _reopensMicrophoneAfterRecording;
 
     private bool _isStopping;
     private bool _isRecording;
@@ -109,6 +119,12 @@ internal sealed class EchoOrchestrator(
 
                 if (_sessionEvents is not null)
                     _sessionEvents.Returned += HandleSessionReturned;
+
+                if (_deviceEvents is not null)
+                {
+                    _deviceEvents.MicrophonesChanged += HandleMicrophonesChanged;
+                    _deviceEvents.LoudspeakersChanged += HandleLoudspeakersChanged;
+                }
             }
 
             // Both may wait for the user to answer a window of the desktop; stopping Echo stops the waiting
@@ -182,23 +198,32 @@ internal sealed class EchoOrchestrator(
     {
         _pressedAt = Stopwatch.GetTimestamp();
 
-        _logger.LogInformation("{BlackSquareButtonEmoji} Recording...",
-            LoggerConstants.BlackSquareButtonEmoji);
-
         lock (_stateLock)
         {
             if (_isStopping)
                 return;
 
+            // Without its microphone the key records nothing: the screen has said why
+            if (!_audioRecordingService.StartRecording())
+                return;
+
             _isRecording = true;
             ShowState();
-
-            _audioRecordingService.StartRecording();
         }
+
+        _logger.LogInformation("{BlackSquareButtonEmoji} Recording...",
+            LoggerConstants.BlackSquareButtonEmoji);
     }
 
     private void HandlePushToTalkReleased(object? sender, EventArgs e)
     {
+        lock (_stateLock)
+        {
+            // The press recorded nothing: Echo was stopping, or the microphone did not open
+            if (!_isRecording)
+                return;
+        }
+
         string seconds = Stopwatch.GetElapsedTime(_pressedAt).TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture);
 
         MemoryStream? audioStream = _audioRecordingService.StopRecording();
@@ -224,6 +249,9 @@ internal sealed class EchoOrchestrator(
             _isRecording = false;
             _waitingPhrases++;
             ShowState();
+
+            if (_reopensMicrophoneAfterRecording)
+                ReopenMicrophone();
 
             Task recognition = Task.Run(() => RecognizeAsync(audioStream));
             _recognitions.Add(recognition);
@@ -257,6 +285,12 @@ internal sealed class EchoOrchestrator(
 
         _logger.LogWarning("{WarningEmoji} The push-to-talk key stopped reaching Echo while recording; the phrase is dropped.",
             LoggerConstants.WarningEmoji);
+
+        lock (_stateLock)
+        {
+            if (_reopensMicrophoneAfterRecording)
+                ReopenMicrophone();
+        }
     }
 
     /// <summary>
@@ -265,24 +299,77 @@ internal sealed class EchoOrchestrator(
     /// </summary>
     private void HandleSessionReturned(object? sender, EventArgs e)
     {
-        lock (_stateLock)
-        {
-            if (_isStopping)
-                return;
-
-            // The notice comes on the thread of the system, which is not kept waiting for the devices
-            _reopening = _reopening.ContinueWith(_ => ReopenDevices(), TaskScheduler.Default);
-        }
-    }
-
-    private void ReopenDevices()
-    {
         _logger.LogInformation("{StudioMicrophoneEmoji} Back in this session: opening the microphone and the sounds again.",
             LoggerConstants.StudioMicrophoneEmoji);
 
-        _audioRecordingService.ReopenMicrophone();
-        _soundPlayService.ReopenSounds();
+        lock (_stateLock)
+        {
+            ReopenSounds();
+            ReopenMicrophone();
+        }
     }
+
+    /// <summary>
+    ///     A microphone was plugged in or out, or came back after the computer slept. The system closed the sound of
+    ///     the one that went away, and Echo would go on hearing nothing from it even once it is back.
+    /// </summary>
+    private void HandleMicrophonesChanged(object? sender, EventArgs e)
+    {
+        _logger.LogDebug("{StudioMicrophoneEmoji} The microphones of the system changed: opening the microphone again.",
+            LoggerConstants.StudioMicrophoneEmoji);
+
+        lock (_stateLock)
+            ReopenMicrophone();
+    }
+
+    /// <summary>
+    ///     Loudspeakers went away or came back, or the system plays to other ones by default: the sounds go where the
+    ///     system plays now.
+    /// </summary>
+    private void HandleLoudspeakersChanged(object? sender, EventArgs e)
+    {
+        _logger.LogDebug("{NoteEmoji} The loudspeakers of the system changed: opening the sounds again.",
+            LoggerConstants.NoteEmoji);
+
+        lock (_stateLock)
+            ReopenSounds();
+    }
+
+    /// <summary>
+    ///     Opens the microphone again, or, while a recording is under way, once the key comes up.
+    ///     Called under <see cref="_stateLock"/>.
+    /// </summary>
+    private void ReopenMicrophone()
+    {
+        if (_isStopping)
+            return;
+
+        if (_isRecording)
+        {
+            _reopensMicrophoneAfterRecording = true;
+
+            return;
+        }
+
+        _reopensMicrophoneAfterRecording = false;
+        Reopen(_audioRecordingService.ReopenMicrophone);
+    }
+
+    /// <summary>
+    ///     Opens the loudspeakers again. Called under <see cref="_stateLock"/>.
+    /// </summary>
+    private void ReopenSounds()
+    {
+        if (!_isStopping)
+            Reopen(_soundPlayService.ReopenSounds);
+    }
+
+    /// <summary>
+    ///     Queues an opening after those before it. The notices come on threads of the system, which are not kept
+    ///     waiting for the devices. Called under <see cref="_stateLock"/>.
+    /// </summary>
+    private void Reopen(Action opening) =>
+        _reopening = _reopening.ContinueWith(_ => opening(), TaskScheduler.Default);
 
     /// <summary>
     ///     Recognizes the phrase just said, then tells the screen whether anything is still under way.
@@ -353,6 +440,12 @@ internal sealed class EchoOrchestrator(
         if (_sessionEvents is not null)
             _sessionEvents.Returned -= HandleSessionReturned;
 
+        if (_deviceEvents is not null)
+        {
+            _deviceEvents.MicrophonesChanged -= HandleMicrophonesChanged;
+            _deviceEvents.LoudspeakersChanged -= HandleLoudspeakersChanged;
+        }
+
         Task[] recognitions;
         Task reopening;
 
@@ -379,6 +472,12 @@ internal sealed class EchoOrchestrator(
 
         if (_sessionEvents is not null)
             _sessionEvents.Returned -= HandleSessionReturned;
+
+        if (_deviceEvents is not null)
+        {
+            _deviceEvents.MicrophonesChanged -= HandleMicrophonesChanged;
+            _deviceEvents.LoudspeakersChanged -= HandleLoudspeakersChanged;
+        }
 
         _phraseTurn.Dispose();
 

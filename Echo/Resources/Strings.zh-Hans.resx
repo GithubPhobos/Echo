@@ -876,4 +876,13 @@
   <data name="MicrophoneUnavailable" xml:space="preserve">
     <value>不可用</value>
   </data>
+  <data name="MicrophoneNotConnected" xml:space="preserve">
+    <value>麦克风“{0}”未连接。请接入它，或用 /setup 选择其他麦克风。</value>
+  </data>
+  <data name="MicrophoneNotOpening" xml:space="preserve">
+    <value>无法打开麦克风“{0}”。请重新接入它，或用 /setup 选择其他麦克风。</value>
+  </data>
+  <data name="MicrophoneBack" xml:space="preserve">
+    <value>麦克风“{0}”已恢复，可以继续听写。</value>
+  </data>
 </root>

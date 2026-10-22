@@ -876,4 +876,13 @@
   <data name="MicrophoneUnavailable" xml:space="preserve">
     <value>no disponible</value>
   </data>
+  <data name="MicrophoneNotConnected" xml:space="preserve">
+    <value>El micrófono «{0}» no está conectado. Conéctalo o elige otro con /setup.</value>
+  </data>
+  <data name="MicrophoneNotOpening" xml:space="preserve">
+    <value>El micrófono «{0}» no se abre. Vuelve a conectarlo o elige otro con /setup.</value>
+  </data>
+  <data name="MicrophoneBack" xml:space="preserve">
+    <value>El micrófono «{0}» ha vuelto: ya puedes dictar.</value>
+  </data>
 </root>

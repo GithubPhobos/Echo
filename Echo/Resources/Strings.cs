@@ -602,4 +602,10 @@ internal static class Strings
     public static string CalibrationSkipHint => Get(nameof(CalibrationSkipHint));
 
     public static string MicrophoneUnavailable => Get(nameof(MicrophoneUnavailable));
+
+    public static string MicrophoneNotConnected => Get(nameof(MicrophoneNotConnected));
+
+    public static string MicrophoneNotOpening => Get(nameof(MicrophoneNotOpening));
+
+    public static string MicrophoneBack => Get(nameof(MicrophoneBack));
 }

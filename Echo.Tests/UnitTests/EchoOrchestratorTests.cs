@@ -1,4 +1,5 @@
-﻿using Echo.Listening;
+﻿using System.Collections.Concurrent;
+using Echo.Listening;
 using Echo.Services.BackgroundServices;
 
 namespace Echo.Tests.UnitTests;
@@ -17,11 +18,15 @@ public sealed class EchoOrchestratorTests
     private readonly Mock<IPushToTalkMonitorService> _monitorMock = new();
     private readonly Mock<ILogger<EchoOrchestrator>> _loggerMock = new();
     private readonly Mock<ISessionEvents> _sessionMock = new();
+    private readonly Mock<IAudioDeviceEvents> _devicesMock = new();
 
     private readonly EchoOrchestrator _orchestrator;
 
     public EchoOrchestratorTests()
     {
+        // The microphone is there unless a test unplugs it
+        _audioMock.Setup(a => a.StartRecording()).Returns(true);
+
         _orchestrator = new EchoOrchestrator(
             _loggerMock.Object,
             _soundMock.Object,
@@ -30,7 +35,8 @@ public sealed class EchoOrchestratorTests
             _whisperMock.Object,
             _monitorMock.Object,
             Mock.Of<IErrorWindow>(),
-            sessionEvents: _sessionMock.Object);
+            sessionEvents: _sessionMock.Object,
+            deviceEvents: _devicesMock.Object);
     }
 
     [Fact]
@@ -96,6 +102,7 @@ public sealed class EchoOrchestratorTests
         await StartAsync(_orchestrator);
 
         // Act
+        _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
         _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty);
 
         // Stopping waits for the phrase that is still being recognized
@@ -135,6 +142,7 @@ public sealed class EchoOrchestratorTests
         await StartAsync(_orchestrator);
 
         // Act
+        _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
         _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty);
         await _orchestrator.StopAsync(CancellationToken.None);
 
@@ -215,6 +223,7 @@ public sealed class EchoOrchestratorTests
         _whisperMock.Setup(w => w.ProcessAudioAsync(It.IsAny<MemoryStream?>())).Returns(phrase.Task);
 
         await StartAsync(_orchestrator);
+        _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
         _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty);
 
         // Act
@@ -250,6 +259,7 @@ public sealed class EchoOrchestratorTests
             }));
 
         await StartAsync(_orchestrator);
+        _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
 
         Task releasing = Task.Run(() => _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty));
         Assert.True(handlerEntered.Wait(_patience));
@@ -334,7 +344,9 @@ public sealed class EchoOrchestratorTests
         await StartAsync(orchestrator);
 
         // Act
+        _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
         _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty);
+        _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
         _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty);
 
         await orchestrator.StopAsync(CancellationToken.None);
@@ -497,7 +509,7 @@ public sealed class EchoOrchestratorTests
             throw new IOException("The model file is damaged.");
         });
 
-        _audioMock.Setup(a => a.StartRecording()).Callback(() => recording.Release());
+        _audioMock.Setup(a => a.StartRecording()).Callback(() => recording.Release()).Returns(true);
         _audioMock.Setup(a => a.StopRecording()).Callback(() => stopped.Release()).Returns((MemoryStream?)null);
 
         var activity = new ListenActivity(new ScreenLog(), () => false);
@@ -603,6 +615,95 @@ public sealed class EchoOrchestratorTests
         // Assert
         _audioMock.Verify(a => a.ReopenMicrophone(), Times.Never);
         _soundMock.Verify(s => s.ReopenSounds(), Times.Never);
+    }
+
+    [Fact]
+    public async Task MicrophonesChanged_NothingRecorded_OpensOnlyTheMicrophoneAgain()
+    {
+        // Arrange
+        await StartAsync(_orchestrator);
+
+        // Act: stopping waits for the opening, which runs in the background
+        _devicesMock.Raise(d => d.MicrophonesChanged += null, EventArgs.Empty);
+        await _orchestrator.StopAsync(CancellationToken.None);
+
+        // Assert
+        _audioMock.Verify(a => a.ReopenMicrophone(), Times.Once);
+        _soundMock.Verify(s => s.ReopenSounds(), Times.Never);
+    }
+
+    [Fact]
+    public async Task LoudspeakersChanged_OpensOnlyTheSoundsAgain()
+    {
+        // Arrange
+        await StartAsync(_orchestrator);
+
+        // Act
+        _devicesMock.Raise(d => d.LoudspeakersChanged += null, EventArgs.Empty);
+        await _orchestrator.StopAsync(CancellationToken.None);
+
+        // Assert
+        _soundMock.Verify(s => s.ReopenSounds(), Times.Once);
+        _audioMock.Verify(a => a.ReopenMicrophone(), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task MicrophonesChanged_WhileAPhraseIsRecorded_OpensTheMicrophoneOnlyOnceTheRecordingEnds(bool isKeyLost)
+    {
+        // Arrange: the openings run one after another, so the sounds, opened after the microphones changed,
+        // show when everything queued before them has run
+        using var soundsOpened = new SemaphoreSlim(0);
+        _soundMock.Setup(s => s.ReopenSounds()).Callback(() => soundsOpened.Release());
+
+        var calls = new ConcurrentQueue<string>();
+        _audioMock.Setup(a => a.StopRecording()).Callback(() => calls.Enqueue("stop")).Returns((MemoryStream?)null);
+        _audioMock.Setup(a => a.ReopenMicrophone()).Callback(() => calls.Enqueue("reopen"));
+
+        await StartAsync(_orchestrator);
+        _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
+
+        // Act
+        _devicesMock.Raise(d => d.MicrophonesChanged += null, EventArgs.Empty);
+        _devicesMock.Raise(d => d.LoudspeakersChanged += null, EventArgs.Empty);
+        Assert.True(await soundsOpened.WaitAsync(_patience));
+        bool isOpenedWhileRecording = !calls.IsEmpty;
+
+        if (isKeyLost)
+            _monitorMock.Raise(m => m.OnRecordingCancelled += null, EventArgs.Empty);
+        else
+            _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty);
+
+        await _orchestrator.StopAsync(CancellationToken.None);
+
+        // Assert: the phrase was not cut, and the microphone was opened again as soon as it ended
+        Assert.False(isOpenedWhileRecording);
+        Assert.Equal(["stop", "reopen"], calls.ToArray());
+    }
+
+    [Fact]
+    public async Task OnRecordingTriggered_MicrophoneDoesNotOpen_RecordsNothingAndStaysReady()
+    {
+        // Arrange: the microphone was unplugged
+        _audioMock.Setup(a => a.StartRecording()).Returns(false);
+
+        var activity = new ListenActivity(new ScreenLog(), () => false);
+        EchoOrchestrator orchestrator = CreateOrchestrator(activity);
+        await StartAsync(orchestrator);
+
+        // Act
+        _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
+        bool isRecording = activity.State == ListenState.Recording;
+
+        _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty);
+        await orchestrator.StopAsync(CancellationToken.None);
+
+        // Assert: the screen never said it records, and there was nothing to recognize
+        Assert.False(isRecording);
+        _audioMock.Verify(a => a.StopRecording(), Times.Never);
+        _whisperMock.Verify(w => w.ProcessAudioAsync(It.IsAny<MemoryStream?>()), Times.Never);
+        Assert.Equal(ListenState.Listening, activity.State);
     }
 
     /// <summary>

@@ -1,6 +1,8 @@
-﻿using Echo.Setup.Audio;
+﻿using Echo.Listening;
+using Echo.Setup.Audio;
 using NAudio.Utils;
 using NAudio.Wave;
+using Serilog.Context;
 
 namespace Echo.Services;
 
@@ -8,7 +10,10 @@ namespace Echo.Services;
 /// <param name="audioInput">The microphones of the system.</param>
 /// <param name="logger">The logger instance.</param>
 /// <param name="recordingDeviceSettingsOptions">The audio device configuration settings.</param>
-/// <param name="activity">The working screen, when Echo runs with one: it shows the level of the microphone.</param>
+/// <param name="activity">
+///     The working screen, when Echo runs with one: it shows the level of the microphone, and says when the microphone
+///     does not open.
+/// </param>
 internal sealed class AudioRecordingService(
     IAudioInput audioInput,
     ILogger<AudioRecordingService> logger,
@@ -46,6 +51,11 @@ internal sealed class AudioRecordingService(
     ///     Only then is a microphone that the system closed opened again.
     /// </summary>
     private bool _keepsMicrophoneOpen;
+
+    /// <summary>
+    ///     Whether the screen said that the microphone does not open: once it opens again, the screen says it is back.
+    /// </summary>
+    private bool _isMissing;
 
     /// <summary>
     ///     Indicates whether the logical recording session (Push-To-Talk) is currently active.
@@ -140,15 +150,20 @@ internal sealed class AudioRecordingService(
     }
 
     /// <inheritdoc/>
-    public void StartRecording()
+    public bool StartRecording()
     {
-        if (_isPttActive) return;
+        if (_isPttActive) return true;
 
-        // The microphone the system closed may not have opened again right away: each recording tries once more
         lock (_deviceLock)
         {
+            // The microphone the system closed may not have opened again right away: each recording tries once more
             if (_keepsMicrophoneOpen && _microphone is null)
                 TryOpen();
+
+            // Without it nothing is recorded, rather than a recording found empty once the key comes up: the screen
+            // has said why
+            if (_microphone is null)
+                return false;
         }
 
         try
@@ -185,6 +200,8 @@ internal sealed class AudioRecordingService(
 
             throw;
         }
+
+        return true;
     }
 
     /// <inheritdoc/>
@@ -319,17 +336,33 @@ internal sealed class AudioRecordingService(
 
     /// <summary>
     ///     Opens the microphone chosen in setup once more. It is looked for again, since the devices may have
-    ///     changed while it was closed. One that does not open is left closed for the next recording to try.
+    ///     changed while it was closed. One that does not open is left closed for the next recording to try, and the
+    ///     screen says what the user can do; one that opens after that is said to be back.
     /// </summary>
     private void TryOpen()
     {
         string problem;
+        bool isConnected = false;
 
         try
         {
             if (FindChosenDevice(_audioInput.GetDevices()) is int deviceIndex)
             {
+                isConnected = true;
                 _microphone = Open(deviceIndex);
+
+                if (_isMissing)
+                {
+                    _isMissing = false;
+
+                    using (LogContext.PushProperty(ScreenLogSink.HiddenProperty, true))
+                    {
+                        _logger.LogInformation("{StudioMicrophoneEmoji} The microphone is back: {Name}.",
+                            LoggerConstants.StudioMicrophoneEmoji, MicrophoneName);
+                    }
+
+                    _activity?.Log.Add(EntryKind.Message, Strings.Format(nameof(Strings.MicrophoneBack), MicrophoneName));
+                }
 
                 return;
             }
@@ -343,9 +376,25 @@ internal sealed class AudioRecordingService(
             problem = exc.Message;
         }
 
-        _logger.LogWarning("{WarningEmoji} Could not open the microphone again, the next recording tries once more: {Problem}",
-            LoggerConstants.WarningEmoji, problem);
+        _isMissing = true;
+
+        // The screen says it in the language of the user, with what to do about it
+        using (LogContext.PushProperty(ScreenLogSink.HiddenProperty, true))
+        {
+            _logger.LogWarning("{WarningEmoji} Could not open the microphone again, the next recording tries once more: {Problem}",
+                LoggerConstants.WarningEmoji, problem);
+        }
+
+        _activity?.Log.Add(EntryKind.Warning, Strings.Format(
+            isConnected ? nameof(Strings.MicrophoneNotOpening) : nameof(Strings.MicrophoneNotConnected), MicrophoneName));
     }
+
+    /// <summary>
+    ///     The microphone chosen in setup as the user knows it: by its name, or by its place in the list in settings
+    ///     saved without one.
+    /// </summary>
+    private string MicrophoneName =>
+        _recordingDeviceSettings.DeviceName is { Length: > 0 } name ? name : $"[{_recordingDeviceSettings.DeviceIndex}]";
 
     /// <summary>
     ///     Closes the microphone. One that the system has already closed may fail to close again: it is let go all

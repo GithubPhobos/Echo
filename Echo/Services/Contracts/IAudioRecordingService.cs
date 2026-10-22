@@ -18,7 +18,8 @@ internal interface IAudioRecordingService : IDisposable
     ///     Closes the microphone and opens it again, found by its name, as the system may have closed it.
     /// </summary>
     /// <remarks>
-    ///     Never throws: a microphone that does not open is reported in the log and tried again at the next recording.
+    ///     Never throws: a microphone that does not open is reported on the screen and in the log, and tried again at
+    ///     the next recording.
     ///     Does nothing before the microphone was first opened and after the service is closed.
     /// </remarks>
     void ReopenMicrophone();
@@ -28,8 +29,12 @@ internal interface IAudioRecordingService : IDisposable
     /// </summary>
     /// <remarks>
     ///     Instantly opens a new memory stream to capture incoming bytes from the already-running hardware.
+    ///     A microphone that is not open is tried once more first.
     /// </remarks>
-    void StartRecording();
+    /// <returns>
+    ///     Whether the recording began: without its microphone nothing is recorded, and the screen is told why.
+    /// </returns>
+    bool StartRecording();
 
     /// <summary>
     ///     Ends the current logical recording session and flushes captured data.
