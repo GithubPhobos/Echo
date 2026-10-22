@@ -35,4 +35,10 @@ internal interface IHotkeyListener : IDisposable
     /// </summary>
     /// <param name="cancellationToken">Stops waiting, as when Echo stops while the desktop still asks the user.</param>
     Task StartAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    ///     Gives the key back to the other programs for good, as when Echo could not start after the key was already its
+    ///     own. A key held down then may never be reported as coming up. Does nothing when the key was never taken.
+    /// </summary>
+    Task ReleaseAsync();
 }

@@ -169,16 +169,19 @@ internal sealed class ListenCommand(
 
         using IHost host = builder.Build();
 
+        // The same service pastes the phrases: a copying waits for a phrase being pasted, and the other way round
+        var commands = new ListenCommands(
+            activity,
+            levelSwitch,
+            new UserSettingsStore(_paths),
+            () => host.Services.GetRequiredService<ITextInsertionService>(),
+            () => SummarizeSettings(configuration, activity, levelSwitch));
+
         var screen = new ListenScreen(
             _console,
             Theme.Detect(_console),
             activity,
-            new ListenCommands(
-                activity,
-                levelSwitch,
-                new UserSettingsStore(_paths),
-                host.Services.GetRequiredService<ITextClipboard>(),
-                () => SummarizeSettings(configuration, activity, levelSwitch)),
+            commands,
             DescribeSettings(configuration),
             ScreenTick,
             _focusReports);
@@ -193,6 +196,8 @@ internal sealed class ListenCommand(
         {
             try
             {
+                // A copying still under way ends on this screen, before the services it uses are stopped
+                await commands.Copying;
                 await starting;
                 await host.StopAsync(CancellationToken.None);
             }

@@ -11,12 +11,25 @@ internal sealed class PushToTalkMonitorService : IPushToTalkMonitorService
     private readonly ILogger<PushToTalkMonitorService> _logger;
     private readonly IListenActivity? _activity;
 
+    /// <summary>
+    ///     Guards everything below: the key comes on the thread of the listener, and a loss or the giving back of
+    ///     the key may come on another.
+    /// </summary>
+    private readonly object _lock = new();
+
+    /// <summary>
+    ///     The notices of a recording, told one after another in the order the key gave them. They are told off the
+    ///     thread of the listener, which is not to be kept waiting, and none may overtake the one before it: a loss
+    ///     told before its press would leave that press recording for good.
+    /// </summary>
+    private Task _notices = Task.CompletedTask;
+
     private bool _isRecording;
 
     /// <summary>
-    ///     Whether the key has been given back for good: see <see cref="Release"/>.
+    ///     Whether the key has been given back for good: see <see cref="ReleaseAsync"/>.
     /// </summary>
-    private volatile bool _isReleased;
+    private bool _isReleased;
 
     /// <inheritdoc/>
     public event EventHandler? OnRecordingReleased;
@@ -64,32 +77,48 @@ internal sealed class PushToTalkMonitorService : IPushToTalkMonitorService
         _listener.Bind(new HotkeyChoice(_pushToTalkSettings.Key, _pushToTalkSettings.Modifier ?? string.Empty));
     }
 
+    /// <summary>
+    ///     The system stops giving Echo the key, which may then never come up for Echo: a recording under way is
+    ///     dropped as if the key were lost.
+    /// </summary>
     /// <inheritdoc/>
-    public void Release() =>
-        _isReleased = true;
+    public Task ReleaseAsync()
+    {
+        lock (_lock)
+        {
+            _isReleased = true;
+            Drop();
+        }
+
+        // Outside the lock: the listener may wait for its own thread, which may be waiting for the lock
+        return _listener.ReleaseAsync();
+    }
 
     /// <summary>
     ///     Holding the key records: the press starts a recording.
     /// </summary>
     internal void OnKeyPressed(object? sender, HotkeyEventArgs e)
     {
-        // Paused or given back, the key does what it does without Echo, and a recording already under way still ends normally
-        if ((_activity?.IsPaused == true || _isReleased) && !_isRecording)
+        lock (_lock)
         {
-            e.IsTaken = false;
+            // Paused or given back, the key does what it does without Echo; a recording under way when Echo paused still ends normally
+            if ((_activity?.IsPaused == true || _isReleased) && !_isRecording)
+            {
+                e.IsTaken = false;
 
-            return;
+                return;
+            }
+
+            if (_isRecording)
+                return;
+
+            _isRecording = true;
+
+            if (_pushToTalkSettings.PlaySound)
+                Task.Run(_soundPlayService.PlayMicrophoneOnSoundAsync);
+
+            Tell(() => OnRecordingTriggered?.Invoke(this, EventArgs.Empty));
         }
-
-        if (_isRecording)
-            return;
-
-        _isRecording = true;
-
-        if (_pushToTalkSettings.PlaySound)
-            Task.Run(_soundPlayService.PlayMicrophoneOnSoundAsync);
-
-        Task.Run(() => OnRecordingTriggered?.Invoke(this, EventArgs.Empty));
     }
 
     /// <summary>
@@ -97,34 +126,52 @@ internal sealed class PushToTalkMonitorService : IPushToTalkMonitorService
     /// </summary>
     internal void OnKeyReleased(object? sender, HotkeyEventArgs e)
     {
-        if (!_isRecording)
+        lock (_lock)
         {
-            e.IsTaken = false;
+            if (!_isRecording)
+            {
+                e.IsTaken = false;
 
-            return;
+                return;
+            }
+
+            if (_pushToTalkSettings.PlaySound)
+                Task.Run(_soundPlayService.PlayMicrophoneOffSoundAsync);
+
+            Tell(() => OnRecordingReleased?.Invoke(this, EventArgs.Empty));
+
+            _isRecording = false;
         }
-
-        if (_pushToTalkSettings.PlaySound)
-            Task.Run(_soundPlayService.PlayMicrophoneOffSoundAsync);
-
-        Task.Run(() => OnRecordingReleased?.Invoke(this, EventArgs.Empty));
-
-        _isRecording = false;
     }
 
     /// <summary>
-    ///     The key stopped reaching Echo: a recording under way is dropped rather than ended, since the key
-    ///     that would end it will not come up, and what it holds is not typed anywhere unexpected.
+    ///     The key stopped reaching Echo: see <see cref="Drop"/>.
     /// </summary>
     internal void OnKeyLost(object? sender, EventArgs e)
+    {
+        lock (_lock)
+            Drop();
+    }
+
+    /// <summary>
+    ///     A recording under way is dropped rather than ended, since the key that would end it will not come up,
+    ///     and what it holds is not typed anywhere unexpected.
+    /// </summary>
+    private void Drop()
     {
         if (!_isRecording)
             return;
 
         _isRecording = false;
 
-        Task.Run(() => OnRecordingCancelled?.Invoke(this, EventArgs.Empty));
+        Tell(() => OnRecordingCancelled?.Invoke(this, EventArgs.Empty));
     }
+
+    /// <summary>
+    ///     Tells a notice after those told before it.
+    /// </summary>
+    private void Tell(Action notice) =>
+        _notices = _notices.ContinueWith(_ => notice(), TaskScheduler.Default);
 
     /// <inheritdoc/>
     public void Dispose()

@@ -122,7 +122,7 @@ public sealed class ListenScreenTests : IDisposable
         for (int line = 1; line <= 40; line++)
             log.Add(EntryKind.Message, $"line {line}");
 
-        var commands = new ListenCommands(activity, new LoggingLevelSwitch(LogEventLevel.Debug), Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), Mock.Of<ITextClipboard>(), () => []);
+        var commands = new ListenCommands(activity, new LoggingLevelSwitch(LogEventLevel.Debug), Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), () => Mock.Of<ITextInsertionService>(), () => []);
         (ListenScreen screen, TestConsole console) = Screen(activity, commands);
 
         screen.Draw();
@@ -173,7 +173,7 @@ public sealed class ListenScreenTests : IDisposable
         activity = new ListenActivity(new ScreenLog(), () => false);
         levelSwitch = new LoggingLevelSwitch(LogEventLevel.Debug);
 
-        return new ListenCommands(activity, levelSwitch, Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), Mock.Of<ITextClipboard>(), () => [("Model", "ggml-tiny.bin"), ("Microphone", "Desk microphone")]);
+        return new ListenCommands(activity, levelSwitch, Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), () => Mock.Of<ITextInsertionService>(), () => [("Model", "ggml-tiny.bin"), ("Microphone", "Desk microphone")]);
     }
 
     private static (ListenScreen Screen, TestConsole Console) Screen(ListenActivity activity, ListenCommands commands)

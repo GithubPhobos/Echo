@@ -19,4 +19,11 @@ internal interface ITextInsertionService
     /// </summary>
     /// <param name="text">The transcribed text to insert.</param>
     Task InsertTextAsync(string? text);
+
+    /// <summary>
+    ///     Puts a text into the clipboard without pasting it, as when the user asks for a phrase recognized earlier.
+    ///     A phrase being pasted meanwhile is pasted first: the clipboard holds it until its keys are pressed.
+    /// </summary>
+    /// <param name="text">The text to leave in the clipboard.</param>
+    Task CopyAsync(string text);
 }

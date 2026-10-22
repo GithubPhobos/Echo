@@ -2,6 +2,11 @@
 
 public sealed class TextInsertionServiceTests
 {
+    /// <summary>
+    ///     How long a test waits for what it holds up.
+    /// </summary>
+    private static readonly TimeSpan _patience = TimeSpan.FromSeconds(10);
+
     private readonly Mock<ITextClipboard> _clipboardMock = new();
     private readonly Mock<IPasteKeys> _pasteMock = new();
     private readonly Mock<ILogger<TextInsertionService>> _loggerMock = new();
@@ -105,6 +110,93 @@ public sealed class TextInsertionServiceTests
 
         // Assert
         _pasteMock.Verify(paste => paste.PrepareAsync(CancellationToken.None), Times.Exactly(expected));
+    }
+
+    [Fact]
+    public async Task CopyAsync_WhileAPhraseIsBeingPasted_WaitsUntilItIsPasted()
+    {
+        // Arrange: the phrase is in the clipboard, and its keys are not pressed yet
+        var phraseIn = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var phraseDone = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        string? inClipboard = null;
+        string? pasted = null;
+
+        _clipboardMock.Setup(clipboard => clipboard.SetTextAsync(It.IsAny<string>())).Returns(async (string text) =>
+        {
+            inClipboard = text;
+
+            if (text == "current phrase")
+            {
+                phraseIn.TrySetResult();
+                await phraseDone.Task;
+            }
+        });
+
+        _pasteMock.Setup(paste => paste.PasteAsync()).Returns(() =>
+        {
+            pasted = inClipboard;
+
+            return Task.FromResult(true);
+        });
+
+        TextInsertionService service = CreateService(useAutoInsert: true);
+
+        Task inserting = service.InsertTextAsync("current phrase");
+        await phraseIn.Task.WaitAsync(_patience);
+
+        // Act: the user copies an earlier phrase just then
+        Task copying = service.CopyAsync("previous phrase");
+        phraseDone.SetResult();
+
+        await inserting.WaitAsync(_patience);
+        await copying.WaitAsync(_patience);
+
+        // Assert: the phrase is pasted whole, and the clipboard holds what the user copied
+        Assert.Equal("current phrase", pasted);
+        Assert.Equal("previous phrase", inClipboard);
+    }
+
+    [Fact]
+    public async Task InsertTextAsync_WhileACopyIsUnderWay_PastesItsOwnPhrase()
+    {
+        // Arrange: copying an earlier phrase takes its time
+        var copyIn = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var copyDone = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        string? inClipboard = null;
+        string? pasted = null;
+
+        _clipboardMock.Setup(clipboard => clipboard.SetTextAsync(It.IsAny<string>())).Returns(async (string text) =>
+        {
+            if (text == "previous phrase")
+            {
+                copyIn.TrySetResult();
+                await copyDone.Task;
+            }
+
+            inClipboard = text;
+        });
+
+        _pasteMock.Setup(paste => paste.PasteAsync()).Returns(() =>
+        {
+            pasted = inClipboard;
+
+            return Task.FromResult(true);
+        });
+
+        TextInsertionService service = CreateService(useAutoInsert: true);
+
+        Task copying = service.CopyAsync("previous phrase");
+        await copyIn.Task.WaitAsync(_patience);
+
+        // Act: a phrase is recognized just then
+        Task inserting = service.InsertTextAsync("current phrase");
+        copyDone.SetResult();
+
+        await copying.WaitAsync(_patience);
+        await inserting.WaitAsync(_patience);
+
+        // Assert: the late copy does not take the place of the phrase between its copying and its pasting
+        Assert.Equal("current phrase", pasted);
     }
 
     private TextInsertionService CreateService(bool useAutoInsert) =>

@@ -84,6 +84,71 @@ public sealed class PortalHotkeyListenerTests
         Assert.Equal(0, desktop.CountOf("org.freedesktop.portal.GlobalShortcuts.BindShortcuts"));
     }
 
+    [LinuxFact(FakeDesktop.BusProgram)]
+    public async Task Lost_PortalServiceStopsWhileTheKeyIsHeld_IsReportedWithoutWaitingForANewOne()
+    {
+        // Arrange: a key given in an earlier run
+        await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+        desktop.IsBound = true;
+
+        var settings = new MemorySettings();
+        using var portal = new DesktopPortal(settings, desktop.Address);
+        using PortalHotkeyListener listener = Listener(portal, settings);
+
+        using var pressed = new SemaphoreSlim(0);
+        using var lost = new SemaphoreSlim(0);
+        listener.Pressed += (_, _) => pressed.Release();
+        listener.Lost += (_, _) => lost.Release();
+
+        await listener.StartAsync(CancellationToken.None);
+
+        desktop.Press(DesktopPortal.SpeakShortcut, isDown: true);
+        Assert.True(await pressed.WaitAsync(_patience));
+
+        // Act: the service ends while the key is down, so its "up" never comes, and no new service runs yet
+        desktop.StopService();
+
+        // Assert: the loss is reported at once; a service that comes later gives the key in a new session, and is
+        // not a second loss
+        Assert.True(await lost.WaitAsync(_patience));
+
+        await desktop.StartServiceAsync();
+        Assert.True(SpinWait.SpinUntil(() => desktop.CountOf("org.freedesktop.portal.GlobalShortcuts.ListShortcuts") == 2, _patience));
+
+        desktop.Press(DesktopPortal.SpeakShortcut, isDown: true);
+
+        Assert.True(await pressed.WaitAsync(_patience));
+        Assert.Equal(0, lost.CurrentCount);
+    }
+
+    [LinuxFact(FakeDesktop.BusProgram)]
+    public async Task ReleaseAsync_EchoCouldNotStart_ClosesTheSessionOfTheKeyAndHearsItNoMore()
+    {
+        // Arrange: a key given in an earlier run
+        await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+        desktop.IsBound = true;
+
+        var settings = new MemorySettings();
+        using var portal = new DesktopPortal(settings, desktop.Address);
+        using PortalHotkeyListener listener = Listener(portal, settings);
+
+        int presses = 0;
+        listener.Pressed += (_, _) => Interlocked.Increment(ref presses);
+
+        await listener.StartAsync(CancellationToken.None);
+
+        // Act
+        await listener.ReleaseAsync();
+
+        // Assert: the desktop is told to close the session, so it gives the key to other programs again
+        Assert.True(SpinWait.SpinUntil(() => desktop.CountOf("org.freedesktop.portal.Session.Close") == 1, _patience));
+
+        desktop.Press(DesktopPortal.SpeakShortcut, isDown: true);
+        await portal.VersionAsync(DesktopPortal.ShortcutsInterface);
+
+        Assert.Equal(0, Volatile.Read(ref presses));
+    }
+
     private static PortalHotkeyListener Listener(DesktopPortal portal, IUserSettingsStore settings)
     {
         var listener = new PortalHotkeyListener(portal, Mock.Of<ILogger<PortalHotkeyListener>>(), settings);

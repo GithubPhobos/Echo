@@ -39,7 +39,7 @@ internal interface IPushToTalkMonitorService : IDisposable
 
     /// <summary>
     ///     Stops taking the key: from now on it does what it does without Echo, as when Echo could not start
-    ///     after the key was already its own. A recording under way still ends when the key comes up.
+    ///     after the key was already its own. A recording under way is dropped through <see cref="OnRecordingCancelled"/>.
     /// </summary>
-    void Release();
+    Task ReleaseAsync();
 }

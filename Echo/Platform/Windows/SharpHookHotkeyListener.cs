@@ -100,6 +100,13 @@ internal sealed class SharpHookHotkeyListener : IHotkeyListener
             Task.CompletedTask;
     }
 
+    /// <summary>
+    ///     The hook keeps from the other programs only what its listeners take, and a key given back is taken by
+    ///     nobody: it reaches them already.
+    /// </summary>
+    /// <inheritdoc/>
+    public Task ReleaseAsync() => Task.CompletedTask;
+
     internal void OnKeyPressed(object? sender, KeyboardHookEventArgs e)
     {
         if (e.Data.KeyCode != _key)

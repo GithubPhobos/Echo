@@ -1,4 +1,5 @@
-﻿using Echo.Setup.Audio;
+﻿using System.Collections.Concurrent;
+using Echo.Setup.Audio;
 using Echo.Setup.Check;
 using Echo.Setup.Hardware;
 using Echo.Setup.Hotkeys;
@@ -70,6 +71,12 @@ internal sealed class CheckStep : ISetupStep
     private readonly SetupTimings _timings;
     private readonly TimeProvider _time;
 
+    /// <summary>
+    ///     When each device is closed, by its index. A device left on one page may still be opening, and the next page
+    ///     opens it again only once that opening is through and closed: two openings of one device at once may find it busy.
+    /// </summary>
+    private readonly ConcurrentDictionary<int, Task> _closings = new();
+
     /// <param name="ui"><see cref="SetupUi"/></param>
     /// <param name="microphoneProbe"><see cref="IMicrophoneProbe"/></param>
     /// <param name="dictationTester"><see cref="IDictationTester"/></param>
@@ -138,7 +145,7 @@ internal sealed class CheckStep : ISetupStep
                 return SetupStepResult.Back;
         }
 
-        List<MicrophoneListener> listeners = [.. devices.Select(_ => new MicrophoneListener(_microphoneProbe, _timings.DeviceTimeout, _time))];
+        List<MicrophoneListener> listeners = [.. devices.Select(_ => new MicrophoneListener(_microphoneProbe, _timings.DeviceTimeout, _time, _closings))];
         List<Queue<float>> recent = [.. devices.Select(_ => new Queue<float>(Enumerable.Repeat(0f, DeviceMeterWidth)))];
 
         for (int index = 0; index < devices.Count; index++)
@@ -292,7 +299,7 @@ internal sealed class CheckStep : ISetupStep
 
         TimeSpan Measured() => _time.GetElapsedTime(measuringSince);
 
-        using var listener = new MicrophoneListener(_microphoneProbe, _timings.DeviceTimeout, _time);
+        using var listener = new MicrophoneListener(_microphoneProbe, _timings.DeviceTimeout, _time, _closings);
         listener.Switch(context.MicrophoneIndex);
 
         UiResult<bool> outcome = await _ui.PollAsync<bool>(
@@ -445,7 +452,7 @@ internal sealed class CheckStep : ISetupStep
                 session = await _ui.WaitAsync(
                     screen,
                     Markup.Escape(Strings.TestLoading),
-                    () => _dictationTester.StartAsync(context, cancellationToken),
+                    () => StartDictationAsync(context, cancellationToken),
                     cancellationToken);
             }
             catch (DictationTestException exc)
@@ -478,6 +485,18 @@ internal sealed class CheckStep : ISetupStep
                 return finished.IsBack ? SetupStepResult.Back : SetupStepResult.Next;
             }
         }
+    }
+
+    /// <summary>
+    ///     Starts the test dictation once the device is closed on the pages before, or once it has had the time a device
+    ///     may take to open: the dictation opens the device on its own, and two openings at once may find it busy.
+    /// </summary>
+    private async Task<IDictationTestSession> StartDictationAsync(SetupContext context, CancellationToken cancellationToken)
+    {
+        if (_closings.TryGetValue(context.MicrophoneIndex, out Task? closing))
+            await closing.WaitAsync(_timings.DeviceTimeout, _time, cancellationToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+
+        return await _dictationTester.StartAsync(context, cancellationToken);
     }
 
     private Task<UiResult<bool>> ListenAsync(SetupContext context,
@@ -552,12 +571,18 @@ internal sealed class CheckStep : ISetupStep
     /// <param name="probe"><see cref="IMicrophoneProbe"/></param>
     /// <param name="timeout">How long a device may take to open.</param>
     /// <param name="time">The clock the waiting goes by.</param>
-    private sealed class MicrophoneListener(IMicrophoneProbe probe, TimeSpan timeout, TimeProvider time) : IDisposable
+    /// <param name="closings">When each device is closed, shared by the pages of the step.</param>
+    private sealed class MicrophoneListener(IMicrophoneProbe probe,
+                                            TimeSpan timeout,
+                                            TimeProvider time,
+                                            ConcurrentDictionary<int, Task> closings) : IDisposable
     {
         private readonly IMicrophoneProbe _probe = probe;
         private readonly TimeSpan _timeout = timeout;
         private readonly TimeProvider _time = time;
+        private readonly ConcurrentDictionary<int, Task> _closings = closings;
 
+        private int _deviceIndex;
         private long _waitingSince;
 
         private Task<IMicrophoneSession>? _opening;
@@ -577,8 +602,13 @@ internal sealed class CheckStep : ISetupStep
             Close();
 
             Error = null;
+            _deviceIndex = deviceIndex;
             _waitingSince = _time.GetTimestamp();
-            _opening = Task.Run(() => _probe.Open(deviceIndex));
+
+            // The device opens once an opening of it left on the page before is closed; the waiting counts towards the
+            // time it may take
+            Task closed = _closings.TryGetValue(deviceIndex, out Task? closing) ? closing : Task.CompletedTask;
+            _opening = closed.ContinueWith(_ => _probe.Open(deviceIndex), TaskScheduler.Default);
         }
 
         /// <summary>
@@ -603,6 +633,9 @@ internal sealed class CheckStep : ISetupStep
             {
                 Error = Strings.MicrophoneNoResponse;
                 Abandon();
+
+                // A device that does not answer is not waited for any more: trying again opens it anew
+                _closings.TryRemove(_deviceIndex, out _);
             }
 
             return Session;
@@ -619,14 +652,19 @@ internal sealed class CheckStep : ISetupStep
         }
 
         /// <summary>
-        ///     Stops waiting for a device. If it does open later, it is closed right away.
+        ///     Stops waiting for a device. If it does open later, it is closed right away, and counts as closed only then.
         /// </summary>
         private void Abandon()
         {
-            _opening?.ContinueWith(
-                opened => opened.Result.Dispose(),
-                CancellationToken.None,
-                TaskContinuationOptions.OnlyOnRanToCompletion,
+            if (_opening is null)
+                return;
+
+            _closings[_deviceIndex] = _opening.ContinueWith(
+                opened =>
+                {
+                    if (opened.IsCompletedSuccessfully)
+                        opened.Result.Dispose();
+                },
                 TaskScheduler.Default);
 
             _opening = null;

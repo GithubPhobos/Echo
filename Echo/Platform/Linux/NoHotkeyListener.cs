@@ -37,6 +37,9 @@ internal sealed class NoHotkeyListener : IHotkeyListener
     public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <inheritdoc/>
+    public Task ReleaseAsync() => Task.CompletedTask;
+
+    /// <inheritdoc/>
     public void Dispose()
     {
     }

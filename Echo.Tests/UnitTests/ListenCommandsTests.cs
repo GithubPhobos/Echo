@@ -88,7 +88,7 @@ public sealed class ListenCommandsTests : IDisposable
             store.Save(new UserSettings { SetupVersion = 1, ModelName = "ggml-small.bin" });
 
             var activity = new ListenActivity(new ScreenLog(), () => false);
-            var commands = new ListenCommands(activity, new LoggingLevelSwitch(LogEventLevel.Debug), store, Mock.Of<ITextClipboard>(), () => []);
+            var commands = new ListenCommands(activity, new LoggingLevelSwitch(LogEventLevel.Debug), store, () => Mock.Of<ITextInsertionService>(), () => []);
 
             // Act
             commands.Run("/log information");
@@ -141,10 +141,10 @@ public sealed class ListenCommandsTests : IDisposable
     public void Run_Copy_PutsTheLastRecognizedPhraseIntoTheClipboard()
     {
         // Arrange: two phrases said, and a line of the log after them
-        var clipboard = new Mock<ITextClipboard>();
-        clipboard.Setup(c => c.SetTextAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+        var insertion = new Mock<ITextInsertionService>();
+        insertion.Setup(i => i.CopyAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
 
-        ListenCommands commands = Commands(clipboard.Object, out ListenActivity activity);
+        ListenCommands commands = Commands(insertion.Object, out ListenActivity activity);
 
         activity.Log.Add(EntryKind.Dictated, "first phrase", "0.40 s");
         activity.Log.Add(EntryKind.Dictated, "second phrase", "0.38 s");
@@ -154,7 +154,7 @@ public sealed class ListenCommandsTests : IDisposable
         commands.Run("/copy");
 
         // Assert
-        clipboard.Verify(c => c.SetTextAsync("second phrase"), Times.Once);
+        insertion.Verify(i => i.CopyAsync("second phrase"), Times.Once);
         Assert.Equal((EntryKind.Answer, "The last recognized text is in the clipboard."), (activity.Log.Snapshot()[^1].Kind, activity.Log.Snapshot()[^1].Text));
     }
 
@@ -162,14 +162,14 @@ public sealed class ListenCommandsTests : IDisposable
     public void Run_CopyBeforeAnyPhrase_SaysThereIsNothingToCopy()
     {
         // Arrange
-        var clipboard = new Mock<ITextClipboard>();
-        ListenCommands commands = Commands(clipboard.Object, out ListenActivity activity);
+        var insertion = new Mock<ITextInsertionService>();
+        ListenCommands commands = Commands(insertion.Object, out ListenActivity activity);
 
         // Act
         commands.Run("/copy");
 
         // Assert
-        clipboard.Verify(c => c.SetTextAsync(It.IsAny<string>()), Times.Never);
+        insertion.Verify(i => i.CopyAsync(It.IsAny<string>()), Times.Never);
         Assert.Equal("Nothing to copy yet: no phrase has been recognized.", activity.Log.Snapshot()[^1].Text);
     }
 
@@ -177,10 +177,10 @@ public sealed class ListenCommandsTests : IDisposable
     public void Run_CopyClipboardFails_SaysWhyAsAWarning()
     {
         // Arrange
-        var clipboard = new Mock<ITextClipboard>();
-        clipboard.Setup(c => c.SetTextAsync(It.IsAny<string>())).ThrowsAsync(new InvalidOperationException("xsel is missing"));
+        var insertion = new Mock<ITextInsertionService>();
+        insertion.Setup(i => i.CopyAsync(It.IsAny<string>())).ThrowsAsync(new InvalidOperationException("xsel is missing"));
 
-        ListenCommands commands = Commands(clipboard.Object, out ListenActivity activity);
+        ListenCommands commands = Commands(insertion.Object, out ListenActivity activity);
         activity.Log.Add(EntryKind.Dictated, "hello", "0.40 s");
 
         // Act
@@ -192,18 +192,46 @@ public sealed class ListenCommandsTests : IDisposable
         Assert.Equal((EntryKind.Warning, "The text could not be copied: xsel is missing"), (answer.Kind, answer.Text));
     }
 
+    [Fact]
+    public async Task Run_CopiesStillUnderWayWhenTheScreenIsLeft_AreWaitedForEveryOne()
+    {
+        // Arrange: the clipboard takes its time with both copies
+        var first = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var second = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var insertion = new Mock<ITextInsertionService>();
+        insertion.SetupSequence(i => i.CopyAsync(It.IsAny<string>())).Returns(first.Task).Returns(second.Task);
+
+        ListenCommands commands = Commands(insertion.Object, out ListenActivity activity);
+        activity.Log.Add(EntryKind.Dictated, "hello", "0.40 s");
+
+        // Act
+        commands.Run("/copy");
+        commands.Run("/copy");
+        ListenOutcome outcome = commands.Run("/quit");
+
+        second.SetResult();
+        bool isDoneBeforeTheFirst = commands.Copying.IsCompleted;
+        first.SetResult();
+
+        // Assert: leaving the screen waits for every copy, so none changes the clipboard behind the next screen
+        Assert.Equal(ListenOutcome.Quit, outcome);
+        Assert.False(isDoneBeforeTheFirst);
+        await commands.Copying.WaitAsync(TimeSpan.FromSeconds(10));
+    }
+
     private static ListenCommands Commands(out ListenActivity activity, out LoggingLevelSwitch levelSwitch)
     {
         activity = new ListenActivity(new ScreenLog(), () => false);
         levelSwitch = new LoggingLevelSwitch(LogEventLevel.Debug);
 
-        return new ListenCommands(activity, levelSwitch, Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), Mock.Of<ITextClipboard>(), () => [("Model", "ggml-tiny.bin"), ("Microphone", "Desk microphone")]);
+        return new ListenCommands(activity, levelSwitch, Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), () => Mock.Of<ITextInsertionService>(), () => [("Model", "ggml-tiny.bin"), ("Microphone", "Desk microphone")]);
     }
 
-    private static ListenCommands Commands(ITextClipboard clipboard, out ListenActivity activity)
+    private static ListenCommands Commands(ITextInsertionService insertion, out ListenActivity activity)
     {
         activity = new ListenActivity(new ScreenLog(), () => false);
 
-        return new ListenCommands(activity, new LoggingLevelSwitch(LogEventLevel.Debug), Mock.Of<IUserSettingsStore>(), clipboard, () => []);
+        return new ListenCommands(activity, new LoggingLevelSwitch(LogEventLevel.Debug), Mock.Of<IUserSettingsStore>(), () => insertion, () => []);
     }
 }

@@ -347,11 +347,20 @@ public sealed class EchoOrchestratorTests
     public async Task StopAsync_DesktopStillAsksTheUserForTheKey_StopsWithoutWaitingForTheAnswer()
     {
         // Arrange: the desktop's window that gives the key stays open
+        var asking = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
         _monitorMock
             .Setup(m => m.StartListeningAsync(It.IsAny<CancellationToken>()))
-            .Returns<CancellationToken>(token => Task.Delay(Timeout.Infinite, token));
+            .Returns<CancellationToken>(token =>
+            {
+                asking.TrySetResult();
 
+                return Task.Delay(Timeout.Infinite, token);
+            });
+
+        // The start-up runs in the background: stopped before it began, it would have nothing to wait for
         await _orchestrator.StartAsync(CancellationToken.None);
+        await asking.Task.WaitAsync(_patience);
 
         // Act
         await _orchestrator.StopAsync(CancellationToken.None).WaitAsync(_patience);
@@ -462,10 +471,108 @@ public sealed class EchoOrchestratorTests
         await orchestrator.StopAsync(CancellationToken.None);
 
         // Assert: the key does what it does without Echo again, nothing is recognized, and the screen says Echo failed
-        _monitorMock.Verify(m => m.Release(), Times.Once);
+        _monitorMock.Verify(m => m.ReleaseAsync(), Times.Once);
         _whisperMock.Verify(w => w.ProcessAudioAsync(It.IsAny<MemoryStream?>()), Times.Never);
         _textMock.Verify(t => t.InsertTextAsync(It.IsAny<string?>()), Times.Never);
         Assert.Equal(ListenState.Failed, activity.State);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ModelFailsWhileTheKeyIsHeld_GivesTheKeyBackToTheSystemAndEndsTheRecording()
+    {
+        // Arrange: the real monitor between the key and Echo; the key is held while the model fails to load
+        var listener = new Mock<IHotkeyListener>();
+        using PushToTalkMonitorService monitor = CreateMonitor(listener);
+
+        using var loading = new ManualResetEventSlim();
+        using var failing = new ManualResetEventSlim();
+        using var recording = new SemaphoreSlim(0);
+        using var stopped = new SemaphoreSlim(0);
+
+        _whisperMock.Setup(w => w.TryInitializeWhisperModel()).Callback(() =>
+        {
+            loading.Set();
+            failing.Wait(_patience);
+
+            throw new IOException("The model file is damaged.");
+        });
+
+        _audioMock.Setup(a => a.StartRecording()).Callback(() => recording.Release());
+        _audioMock.Setup(a => a.StopRecording()).Callback(() => stopped.Release()).Returns((MemoryStream?)null);
+
+        var activity = new ListenActivity(new ScreenLog(), () => false);
+        EchoOrchestrator orchestrator = CreateOrchestrator(activity, monitor);
+
+        await orchestrator.StartAsync(CancellationToken.None);
+        Assert.True(loading.Wait(_patience));
+
+        listener.Raise(l => l.Pressed += null, new HotkeyEventArgs());
+        Assert.True(await recording.WaitAsync(_patience));
+
+        // Act
+        failing.Set();
+        await orchestrator.ExecuteTask!.WaitAsync(_patience);
+
+        // Assert: the system holds the key for Echo no more, the recording its coming up would have ended is ended,
+        // and the screen says Echo failed
+        listener.Verify(l => l.ReleaseAsync(), Times.Once);
+        Assert.True(await stopped.WaitAsync(_patience));
+
+        await orchestrator.StopAsync(CancellationToken.None);
+
+        Assert.Equal(ListenState.Failed, activity.State);
+    }
+
+    [Fact]
+    public async Task OnRecordingCancelled_KeyLostBeforeThePressIsHandled_EndsTheRecordingThePressStarts()
+    {
+        // Arrange: the real monitor between the key and Echo; Echo is held up with the press before it records
+        var listener = new Mock<IHotkeyListener>();
+        using PushToTalkMonitorService monitor = CreateMonitor(listener);
+
+        using var handling = new ManualResetEventSlim();
+        using var handled = new ManualResetEventSlim();
+        using var stopped = new SemaphoreSlim(0);
+
+        _loggerMock
+            .Setup(logger => logger.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((value, _) => value.ToString()!.Contains("Recording...")),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()))
+            .Callback(new InvocationAction(_ =>
+            {
+                handling.Set();
+                handled.Wait(_patience);
+            }));
+
+        _audioMock.Setup(a => a.StopRecording()).Callback(() => stopped.Release()).Returns((MemoryStream?)null);
+
+        var activity = new ListenActivity(new ScreenLog(), () => false);
+        EchoOrchestrator orchestrator = CreateOrchestrator(activity, monitor);
+        await StartAsync(orchestrator);
+
+        using var cancelled = new SemaphoreSlim(0);
+        monitor.OnRecordingCancelled += (_, _) => cancelled.Release();
+
+        listener.Raise(l => l.Pressed += null, new HotkeyEventArgs());
+        Assert.True(handling.Wait(_patience));
+
+        // Act: the desktop takes the key back before Echo has even started to record
+        listener.Raise(l => l.Lost += null, EventArgs.Empty);
+        bool isLossHandledFirst = await cancelled.WaitAsync(TimeSpan.FromMilliseconds(100));
+        handled.Set();
+
+        // Assert: the loss waits for the press, so it ends the recording the press starts, and the screen does not
+        // stay at "recording" with a key that will never come up
+        Assert.False(isLossHandledFirst);
+        Assert.True(await stopped.WaitAsync(_patience));
+
+        await orchestrator.StopAsync(CancellationToken.None);
+
+        _audioMock.Verify(a => a.StartRecording(), Times.Once);
+        Assert.Equal(ListenState.Listening, activity.State);
     }
 
     [Fact]
@@ -508,14 +615,23 @@ public sealed class EchoOrchestratorTests
         await orchestrator.ExecuteTask!;
     }
 
-    private EchoOrchestrator CreateOrchestrator(IListenActivity activity) =>
+    private EchoOrchestrator CreateOrchestrator(IListenActivity activity, IPushToTalkMonitorService? monitor = null) =>
         new(
             _loggerMock.Object,
             _soundMock.Object,
             _textMock.Object,
             _audioMock.Object,
             _whisperMock.Object,
-            _monitorMock.Object,
+            monitor ?? _monitorMock.Object,
             Mock.Of<IErrorWindow>(),
             activity);
+
+    /// <summary>
+    ///     The monitor itself, for the tests of how the notices of the key and Echo meet.
+    /// </summary>
+    private PushToTalkMonitorService CreateMonitor(Mock<IHotkeyListener> listener) =>
+        new(listener.Object,
+            _soundMock.Object,
+            Mock.Of<ILogger<PushToTalkMonitorService>>(),
+            Options.Create(new PushToTalkSettings { PlaySound = false }));
 }

@@ -1,4 +1,5 @@
-﻿using Echo.Listening;
+﻿using System.Collections.Concurrent;
+using Echo.Listening;
 using Echo.Setup.Hotkeys;
 
 namespace Echo.Tests.UnitTests;
@@ -109,7 +110,7 @@ public sealed class PushToTalkMonitorServiceTests
     }
 
     [Fact]
-    public void OnKeyPressed_Released_TheKeyReachesOtherProgramsAndRecordsNothing()
+    public async Task OnKeyPressed_Released_TheKeyReachesOtherProgramsAndRecordsNothing()
     {
         // Arrange: Echo could not start after the key had become its own
         using PushToTalkMonitorService service = CreateService(modifier: null);
@@ -121,7 +122,7 @@ public sealed class PushToTalkMonitorServiceTests
         var released = new HotkeyEventArgs();
 
         // Act
-        service.Release();
+        await service.ReleaseAsync();
 
         _listenerMock.Raise(listener => listener.Pressed += null, pressed);
         _listenerMock.Raise(listener => listener.Released += null, released);
@@ -130,6 +131,87 @@ public sealed class PushToTalkMonitorServiceTests
         Assert.False(pressed.IsTaken);
         Assert.False(released.IsTaken);
         Assert.Equal(0, Volatile.Read(ref starts));
+    }
+
+    [Fact]
+    public async Task ReleaseAsync_WhileRecording_GivesTheKeyBackToTheSystemAndDropsThePhrase()
+    {
+        // Arrange: Echo could not start while the key was held
+        using PushToTalkMonitorService service = CreateService(modifier: null);
+
+        int ends = 0;
+        using var started = new SemaphoreSlim(0);
+        using var cancelled = new SemaphoreSlim(0);
+
+        service.OnRecordingTriggered += (_, _) => started.Release();
+        service.OnRecordingReleased += (_, _) => Interlocked.Increment(ref ends);
+        service.OnRecordingCancelled += (_, _) => cancelled.Release();
+
+        _listenerMock.Raise(listener => listener.Pressed += null, new HotkeyEventArgs());
+        Assert.True(await started.WaitAsync(_patience));
+
+        // Act
+        await service.ReleaseAsync();
+
+        var released = new HotkeyEventArgs();
+        _listenerMock.Raise(listener => listener.Released += null, released);
+
+        // Assert: the system holds the key for Echo no more, a key coming up may never reach Echo, so the phrase is
+        // dropped at once, and where it does come up it reaches other programs
+        _listenerMock.Verify(listener => listener.ReleaseAsync(), Times.Once);
+        Assert.True(await cancelled.WaitAsync(_patience));
+        Assert.False(released.IsTaken);
+        Assert.Equal(0, Volatile.Read(ref ends));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task OnKeyPressed_KeyLostOrLetGoWhileThePressIsHandled_IsToldOnlyAfterThePress(bool isLost)
+    {
+        // Arrange: whoever listens is still handling the press
+        using PushToTalkMonitorService service = CreateService(modifier: null);
+
+        using var handling = new SemaphoreSlim(0);
+        using var handled = new ManualResetEventSlim();
+        using var ended = new SemaphoreSlim(0);
+        var told = new ConcurrentQueue<string>();
+
+        service.OnRecordingTriggered += (_, _) =>
+        {
+            handling.Release();
+            handled.Wait(_patience);
+            told.Enqueue("pressed");
+        };
+
+        service.OnRecordingReleased += (_, _) =>
+        {
+            told.Enqueue("ended");
+            ended.Release();
+        };
+
+        service.OnRecordingCancelled += (_, _) =>
+        {
+            told.Enqueue("ended");
+            ended.Release();
+        };
+
+        _listenerMock.Raise(listener => listener.Pressed += null, new HotkeyEventArgs());
+        Assert.True(await handling.WaitAsync(_patience));
+
+        // Act
+        if (isLost)
+            _listenerMock.Raise(listener => listener.Lost += null, EventArgs.Empty);
+        else
+            _listenerMock.Raise(listener => listener.Released += null, new HotkeyEventArgs());
+
+        bool isToldTooEarly = await ended.WaitAsync(TimeSpan.FromMilliseconds(100));
+        handled.Set();
+
+        // Assert: the end never overtakes the press, so it always ends the recording the press started
+        Assert.False(isToldTooEarly);
+        Assert.True(await ended.WaitAsync(_patience));
+        Assert.Equal(["pressed", "ended"], told);
     }
 
     [Fact]

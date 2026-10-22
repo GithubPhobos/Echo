@@ -11,12 +11,15 @@ namespace Echo.Listening;
 /// <param name="activity"><see cref="IListenActivity"/></param>
 /// <param name="levelSwitch">The log detail of the running program.</param>
 /// <param name="settingsStore">Where a setting changed here is saved, so it stays until the user changes it again.</param>
-/// <param name="clipboard">Where <see cref="Copy"/> puts the last recognized text.</param>
+/// <param name="insertion">
+///     Puts the last recognized text into the clipboard for <see cref="Copy"/>, in turn with the phrases being pasted.
+///     Asked for only then: a service that cannot be created, for a setting it cannot take, fails the copying, not the screen.
+/// </param>
 /// <param name="describeSettings">The main settings Echo runs with, as label and value, for <see cref="Info"/>.</param>
 internal sealed partial class ListenCommands(IListenActivity activity,
                                              LoggingLevelSwitch levelSwitch,
                                              IUserSettingsStore settingsStore,
-                                             ITextClipboard clipboard,
+                                             Func<ITextInsertionService> insertion,
                                              Func<IReadOnlyList<(string Label, string Value)>> describeSettings)
 {
     public const string Setup = "/setup";
@@ -36,8 +39,14 @@ internal sealed partial class ListenCommands(IListenActivity activity,
     private readonly IListenActivity _activity = activity;
     private readonly LoggingLevelSwitch _levelSwitch = levelSwitch;
     private readonly IUserSettingsStore _settingsStore = settingsStore;
-    private readonly ITextClipboard _clipboard = clipboard;
+    private readonly Func<ITextInsertionService> _insertion = insertion;
     private readonly Func<IReadOnlyList<(string Label, string Value)>> _describeSettings = describeSettings;
+
+    /// <summary>
+    ///     Done once every <see cref="Copy"/> typed on the screen is through: the screen is left only then, so the
+    ///     clipboard does not change behind the next screen, and the services it uses are still there.
+    /// </summary>
+    public Task Copying { get; private set; } = Task.CompletedTask;
 
     public IReadOnlyList<ListenCommandInfo> All { get; } =
     [
@@ -112,7 +121,7 @@ internal sealed partial class ListenCommands(IListenActivity activity,
                 break;
 
             case Copy:
-                _ = CopyLastPhraseAsync();
+                Copying = Task.WhenAll(Copying, CopyLastPhraseAsync());
 
                 break;
 
@@ -231,7 +240,7 @@ internal sealed partial class ListenCommands(IListenActivity activity,
 
         try
         {
-            await _clipboard.SetTextAsync(phrase.Text);
+            await _insertion().CopyAsync(phrase.Text);
 
             log.Add(EntryKind.Answer, Strings.ResponseCopied);
         }

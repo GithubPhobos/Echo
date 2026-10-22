@@ -131,8 +131,8 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
 
     /// <summary>
     ///     The key Echo got from the desktop no longer reaches Echo: the desktop closed its session (as when the user
-    ///     takes the key back), or its portal service was restarted. A key held down then never comes up. Why comes
-    ///     along.
+    ///     takes the key back), or its portal service stopped or was restarted. A key held down then never comes up.
+    ///     Why comes along.
     /// </summary>
     public event EventHandler<string>? ShortcutsLost;
 
@@ -238,6 +238,35 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
         catch (Exception exc) when (IsUnavailable(exc))
         {
             return null;
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    /// <summary>
+    ///     Closes the session of the keys, so the desktop no longer sends them to Echo and they reach other programs
+    ///     again. The desktop keeps the keys it gave Echo: <see cref="EnsureShortcutAsync"/> finds them again in a new
+    ///     session. Waits for a session being opened meanwhile, so that one is closed too.
+    /// </summary>
+    public async Task CloseShortcutsAsync()
+    {
+        await _lock.WaitAsync();
+
+        try
+        {
+            string? session;
+
+            lock (_sessionsLock)
+            {
+                session = _shortcutsSession;
+                _shortcutsSession = null;
+                _isShortcutsBound = false;
+            }
+
+            if (session is not null && _connection is { } connection)
+                Close(connection, session, SessionInterface);
         }
         finally
         {
@@ -737,13 +766,16 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
     }
 
     /// <summary>
-    ///     Another portal service holds the name now: it knows neither Echo nor its sessions. Only a new holder counts;
-    ///     the old one leaving says nothing yet, and the bus starts a new one with the next call.
+    ///     The portal service Echo named itself to is gone, or another one holds the name now: the sessions went with
+    ///     it, and a key held down will not come up. Its leaving counts at once, before any new service comes: the bus
+    ///     starts one only with the next call, and nothing may call while the key silently does nothing. Only the
+    ///     service Echo knows counts, so a new one coming afterwards is not a second loss, and a late word about an
+    ///     old one does not forget the service Echo has named itself to since.
     /// </summary>
     private void OnNameOwnerChanged((string Name, string OldOwner, string NewOwner) value)
     {
-        if (value.Name == Service && value.NewOwner.Length > 0 && _isRegistered && value.NewOwner != _portalOwner)
-            Forget("the desktop's portal service was restarted");
+        if (value.Name == Service && _isRegistered && value.OldOwner == _portalOwner)
+            Forget(value.NewOwner.Length > 0 ? "the desktop's portal service was restarted" : "the desktop's portal service stopped");
     }
 
     /// <summary>

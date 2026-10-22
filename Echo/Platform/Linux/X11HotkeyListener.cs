@@ -99,6 +99,18 @@ internal sealed class X11HotkeyListener(ILogger<X11HotkeyListener> logger) : IHo
             LoggerConstants.Tab, LoggerConstants.CheckedEmoji);
     }
 
+    /// <summary>
+    ///     Stops listening: the thread lets the key go and closes its connection to X11, which also ends the hold on
+    ///     the whole keyboard that a key held down gives Echo.
+    /// </summary>
+    /// <inheritdoc/>
+    public Task ReleaseAsync()
+    {
+        Dispose();
+
+        return Task.CompletedTask;
+    }
+
     /// <inheritdoc/>
     public void Dispose()
     {

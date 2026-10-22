@@ -316,7 +316,64 @@ public sealed class DesktopPortalTests
         Assert.Equal(DesktopPortal.ApplicationId, desktop.RegisteredId);
         Assert.Equal("Ctrl + `", label);
         Assert.Equal(1, desktop.CountOf("org.freedesktop.portal.GlobalShortcuts.BindShortcuts"));
-        Assert.Contains("restarted", await lost.Task.WaitAsync(_patience));
+        Assert.Contains("portal service", await lost.Task.WaitAsync(_patience));
+    }
+
+    [LinuxFact(FakeDesktop.BusProgram)]
+    public async Task ShortcutsLost_PortalServiceStopsAndNoneTakesItsPlace_IsReportedOnceWithoutAnyCall()
+    {
+        // Arrange
+        await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+
+        await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
+
+        int losses = 0;
+        var lost = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        portal.ShortcutsLost += (_, reason) =>
+        {
+            Interlocked.Increment(ref losses);
+            lost.TrySetResult(reason);
+        };
+
+        // Act: Echo calls nothing meanwhile, so nothing would start a new service
+        desktop.StopService();
+
+        // Assert: the loss is reported while no service runs at all
+        Assert.Contains("stopped", await lost.Task.WaitAsync(_patience));
+
+        // A service that comes later is not a second loss, and the key is found there again
+        await desktop.StartServiceAsync();
+        string? label = await portal.RestoreShortcutAsync(CancellationToken.None);
+
+        Assert.Equal("Ctrl + `", label);
+        Assert.Equal(1, Volatile.Read(ref losses));
+    }
+
+    [LinuxFact(FakeDesktop.BusProgram)]
+    public async Task CloseShortcutsAsync_KeyGivenBack_ClosesItsSessionAndTheKeyIsFoundAgainWithoutTheWindow()
+    {
+        // Arrange
+        await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+        desktop.IsBound = true;
+
+        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+
+        await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
+        string first = desktop.ShortcutsSession!;
+
+        // Act
+        await portal.CloseShortcutsAsync();
+
+        // Assert: the desktop is told to close the session; asking again, as the setup wizard does, takes the key in a new one
+        Assert.True(SpinWait.SpinUntil(() => desktop.CountOf("org.freedesktop.portal.Session.Close") == 1, _patience));
+
+        string? label = await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
+
+        Assert.Equal("Ctrl + `", label);
+        Assert.NotEqual(first, desktop.ShortcutsSession);
+        Assert.Equal(0, desktop.CountOf("org.freedesktop.portal.GlobalShortcuts.BindShortcuts"));
     }
 
     [LinuxFact(FakeDesktop.BusProgram)]

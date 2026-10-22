@@ -144,8 +144,9 @@ internal sealed class EchoOrchestrator(
         {
             _logger.LogError("{ErrorMessage}", exc.Message);
 
-            // The key may already be Echo's: it goes back to doing what it does without Echo
-            _pushToTalkMonitorService.Release();
+            // The key may already be Echo's: it goes back to doing what it does without Echo, and a phrase it is
+            // recording is dropped
+            await _pushToTalkMonitorService.ReleaseAsync();
 
             lock (_stateLock)
             {
@@ -238,8 +239,8 @@ internal sealed class EchoOrchestrator(
     }
 
     /// <summary>
-    ///     The key stopped reaching Echo while it was held: the recording ends, and what it holds is dropped rather
-    ///     than typed into a window nobody expects it in.
+    ///     The key stopped reaching Echo while it was held, lost or given back: the recording ends, and what it holds
+    ///     is dropped rather than typed into a window nobody expects it in.
     /// </summary>
     private void HandlePushToTalkCancelled(object? sender, EventArgs e)
     {
@@ -254,7 +255,7 @@ internal sealed class EchoOrchestrator(
 
         _audioRecordingService.StopRecording();
 
-        _logger.LogWarning("{WarningEmoji} The push-to-talk key was lost while recording; the phrase is dropped.",
+        _logger.LogWarning("{WarningEmoji} The push-to-talk key stopped reaching Echo while recording; the phrase is dropped.",
             LoggerConstants.WarningEmoji);
     }
 

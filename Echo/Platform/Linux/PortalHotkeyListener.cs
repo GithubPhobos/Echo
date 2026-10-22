@@ -74,6 +74,18 @@ internal sealed class PortalHotkeyListener(DesktopPortal portal, ILogger<PortalH
             LoggerConstants.Tab, LoggerConstants.CheckedEmoji, label);
     }
 
+    /// <summary>
+    ///     Stops listening and closes the session of the key, so the desktop gives the key to other programs again.
+    ///     The desktop keeps the key it gave Echo: the next start or the setup wizard finds it again without the window.
+    /// </summary>
+    /// <inheritdoc/>
+    public Task ReleaseAsync()
+    {
+        Dispose();
+
+        return _portal.CloseShortcutsAsync();
+    }
+
     /// <inheritdoc/>
     public void Dispose()
     {

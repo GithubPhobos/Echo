@@ -161,6 +161,17 @@ internal sealed class FakeDesktop : IPathMethodHandler, IAsyncDisposable
     /// </summary>
     public async Task RestartAsync()
     {
+        StopService();
+
+        await StartServiceAsync();
+    }
+
+    /// <summary>
+    ///     The portal service ends, and none takes its name: the bus of a real desktop starts a new one only with the
+    ///     next call to it, and this bus never does.
+    /// </summary>
+    public void StopService()
+    {
         _connection.Dispose();
 
         lock (_lock)
@@ -170,7 +181,13 @@ internal sealed class FakeDesktop : IPathMethodHandler, IAsyncDisposable
             KeyboardSession = null;
             _boundSessions.Clear();
         }
+    }
 
+    /// <summary>
+    ///     A new portal service takes the name of one that ended.
+    /// </summary>
+    public async Task StartServiceAsync()
+    {
         _connection = await ConnectAsync(Address);
         _connection.AddMethodHandler(this);
     }
