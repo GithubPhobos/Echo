@@ -16,6 +16,7 @@ public sealed class EchoOrchestratorTests
     private readonly Mock<IWhisperInferenceService> _whisperMock = new();
     private readonly Mock<IPushToTalkMonitorService> _monitorMock = new();
     private readonly Mock<ILogger<EchoOrchestrator>> _loggerMock = new();
+    private readonly Mock<ISessionEvents> _sessionMock = new();
 
     private readonly EchoOrchestrator _orchestrator;
 
@@ -28,7 +29,8 @@ public sealed class EchoOrchestratorTests
             _audioMock.Object,
             _whisperMock.Object,
             _monitorMock.Object,
-            Mock.Of<IErrorWindow>());
+            Mock.Of<IErrorWindow>(),
+            sessionEvents: _sessionMock.Object);
     }
 
     [Fact]
@@ -464,6 +466,36 @@ public sealed class EchoOrchestratorTests
         _whisperMock.Verify(w => w.ProcessAudioAsync(It.IsAny<MemoryStream?>()), Times.Never);
         _textMock.Verify(t => t.InsertTextAsync(It.IsAny<string?>()), Times.Never);
         Assert.Equal(ListenState.Failed, activity.State);
+    }
+
+    [Fact]
+    public async Task SessionReturned_UserBackFromAnotherAccount_OpensTheMicrophoneAndTheSoundsAgain()
+    {
+        // Arrange
+        await StartAsync(_orchestrator);
+
+        // Act: stopping waits for the opening, which runs in the background
+        _sessionMock.Raise(s => s.Returned += null, EventArgs.Empty);
+        await _orchestrator.StopAsync(CancellationToken.None);
+
+        // Assert
+        _audioMock.Verify(a => a.ReopenMicrophone(), Times.Once);
+        _soundMock.Verify(s => s.ReopenSounds(), Times.Once);
+    }
+
+    [Fact]
+    public async Task SessionReturned_EchoAlreadyStopped_OpensNothing()
+    {
+        // Arrange
+        await StartAsync(_orchestrator);
+        await _orchestrator.StopAsync(CancellationToken.None);
+
+        // Act
+        _sessionMock.Raise(s => s.Returned += null, EventArgs.Empty);
+
+        // Assert
+        _audioMock.Verify(a => a.ReopenMicrophone(), Times.Never);
+        _soundMock.Verify(s => s.ReopenSounds(), Times.Never);
     }
 
     /// <summary>

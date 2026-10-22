@@ -15,6 +15,15 @@ internal interface IAudioRecordingService : IDisposable
     void InititalizeAudioRecordingCapabilities();
 
     /// <summary>
+    ///     Closes the microphone and opens it again, found by its name, as the system may have closed it.
+    /// </summary>
+    /// <remarks>
+    ///     Never throws: a microphone that does not open is reported in the log and tried again at the next recording.
+    ///     Does nothing before the microphone was first opened and after the service is closed.
+    /// </remarks>
+    void ReopenMicrophone();
+
+    /// <summary>
     ///     Begins a new logical recording session.
     /// </summary>
     /// <remarks>

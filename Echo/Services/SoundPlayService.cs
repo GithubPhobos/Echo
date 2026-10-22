@@ -19,8 +19,14 @@ internal sealed class SoundPlayService(
     private readonly ILogger<SoundPlayService> _logger = logger;
     private readonly PushToTalkSettings _pushToTalkSettings = pushToTalkSettingsOptions.Value;
 
+    /// <summary>
+    ///     Guards opening and closing the loudspeakers.
+    /// </summary>
+    private readonly object _outputLock = new();
+
     private float? _volume;
     private bool _canPlaySounds;
+    private bool _isClosed;
     private CachedSound? _onSound;
     private CachedSound? _offSound;
     private IDisposable? _outputDevice;
@@ -90,6 +96,45 @@ internal sealed class SoundPlayService(
     }
 
     /// <inheritdoc/>
+    public void ReopenSounds()
+    {
+        lock (_outputLock)
+        {
+            // Without the sounds, or closed with Echo, there is nothing to open
+            if (_isClosed || _mixer is null)
+                return;
+
+            _canPlaySounds = false;
+
+            try
+            {
+                _outputDevice?.Dispose();
+            }
+            catch (Exception exc)
+            {
+                _logger.LogDebug("{NoteEmoji} Sounds: closing the loudspeakers failed: {ErrorMessage}",
+                    LoggerConstants.NoteEmoji, exc.Message);
+            }
+
+            _outputDevice = null;
+
+            // The sounds of the presses made while the loudspeakers were closed would all play at once
+            _mixer.RemoveAllMixerInputs();
+
+            try
+            {
+                _outputDevice = _soundOutput.Play(_mixer);
+                _canPlaySounds = true;
+            }
+            catch (Exception exc)
+            {
+                _logger.LogWarning("{WarningEmoji} Sounds: cannot open the loudspeakers again: {ErrorMessage}",
+                    LoggerConstants.WarningEmoji, exc.Message);
+            }
+        }
+    }
+
+    /// <inheritdoc/>
     public Task PlayMicrophoneOnSoundAsync()
     {
         PlayCachedSound(_onSound);
@@ -108,7 +153,11 @@ internal sealed class SoundPlayService(
     /// <inheritdoc/>
     public void Dispose()
     {
-        _outputDevice?.Dispose();
+        lock (_outputLock)
+        {
+            _isClosed = true;
+            _outputDevice?.Dispose();
+        }
     }
 
     /// <summary>

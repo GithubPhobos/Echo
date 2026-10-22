@@ -42,7 +42,8 @@ internal static class PlatformServiceCollectionExtensions
     }
 
     /// <summary>
-    ///     Windows: NAudio for recording and sounds, a keyboard hook for the key, SendInput for pasting.
+    ///     Windows: NAudio for recording and sounds, a keyboard hook for the key, SendInput for pasting,
+    ///     the session notices of the system for coming back from another account.
     /// </summary>
     [SupportedOSPlatform("windows")]
     private static IServiceCollection AddWindowsPlatform(this IServiceCollection services)
@@ -62,6 +63,7 @@ internal static class PlatformServiceCollectionExtensions
         services.TryAddSingleton<IDesktopAccess, NoDesktopAccess>();
         services.TryAddSingleton<ISystemRequirements, NoSystemRequirements>();
         services.TryAddSingleton<ISystemLibraries, WindowsSystemLibraries>();
+        services.TryAddSingleton<ISessionEvents, WindowsSessionEvents>();
 
         return services;
     }

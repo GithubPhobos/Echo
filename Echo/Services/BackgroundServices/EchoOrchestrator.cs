@@ -18,6 +18,7 @@ namespace Echo.Services.BackgroundServices;
 /// <param name="whisperInferenceService"><see cref="PushToTalkMonitorService"/></param>
 /// <param name="errorWindow">Shows an error that stops Echo when there is no working screen to show it on.</param>
 /// <param name="activity">The working screen, when Echo runs with one.</param>
+/// <param name="sessionEvents">Says when the user comes back to this session, where the system tells about that.</param>
 internal sealed class EchoOrchestrator(
     ILogger<EchoOrchestrator> logger,
     ISoundPlayService soundPlayService,
@@ -26,9 +27,11 @@ internal sealed class EchoOrchestrator(
     IWhisperInferenceService whisperInferenceService,
     IPushToTalkMonitorService pushToTalkMonitorService,
     IErrorWindow errorWindow,
-    IListenActivity? activity = null) : BackgroundService
+    IListenActivity? activity = null,
+    ISessionEvents? sessionEvents = null) : BackgroundService
 {
     private readonly IListenActivity? _activity = activity;
+    private readonly ISessionEvents? _sessionEvents = sessionEvents;
 
     private readonly ILogger<EchoOrchestrator> _logger = logger;
     private readonly ISoundPlayService _soundPlayService = soundPlayService;
@@ -61,6 +64,12 @@ internal sealed class EchoOrchestrator(
     ///     start-up is through, false when it failed or Echo stopped before it was through.
     /// </summary>
     private readonly TaskCompletionSource<bool> _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>
+    ///     The opening of the microphone and the loudspeakers again after a return to the session, the latest one
+    ///     queued after those before it. Stopping waits for it, so that nothing is opened after the services closed it.
+    /// </summary>
+    private Task _reopening = Task.CompletedTask;
 
     private bool _isStopping;
     private bool _isRecording;
@@ -97,6 +106,9 @@ internal sealed class EchoOrchestrator(
                 _pushToTalkMonitorService.OnRecordingTriggered += HandlePushToTalkTriggered;
                 _pushToTalkMonitorService.OnRecordingReleased += HandlePushToTalkReleased;
                 _pushToTalkMonitorService.OnRecordingCancelled += HandlePushToTalkCancelled;
+
+                if (_sessionEvents is not null)
+                    _sessionEvents.Returned += HandleSessionReturned;
             }
 
             // Both may wait for the user to answer a window of the desktop; stopping Echo stops the waiting
@@ -247,6 +259,31 @@ internal sealed class EchoOrchestrator(
     }
 
     /// <summary>
+    ///     The user is back after another account or a remote connection had the computer. The system closed the
+    ///     microphone and the loudspeakers of this session meanwhile, and Echo would go on hearing nothing.
+    /// </summary>
+    private void HandleSessionReturned(object? sender, EventArgs e)
+    {
+        lock (_stateLock)
+        {
+            if (_isStopping)
+                return;
+
+            // The notice comes on the thread of the system, which is not kept waiting for the devices
+            _reopening = _reopening.ContinueWith(_ => ReopenDevices(), TaskScheduler.Default);
+        }
+    }
+
+    private void ReopenDevices()
+    {
+        _logger.LogInformation("{StudioMicrophoneEmoji} Back in this session: opening the microphone and the sounds again.",
+            LoggerConstants.StudioMicrophoneEmoji);
+
+        _audioRecordingService.ReopenMicrophone();
+        _soundPlayService.ReopenSounds();
+    }
+
+    /// <summary>
     ///     Recognizes the phrase just said, then tells the screen whether anything is still under way.
     /// </summary>
     private async Task RecognizeAsync(MemoryStream? audioStream)
@@ -312,10 +349,20 @@ internal sealed class EchoOrchestrator(
         _pushToTalkMonitorService.OnRecordingReleased -= HandlePushToTalkReleased;
         _pushToTalkMonitorService.OnRecordingCancelled -= HandlePushToTalkCancelled;
 
+        if (_sessionEvents is not null)
+            _sessionEvents.Returned -= HandleSessionReturned;
+
         Task[] recognitions;
+        Task reopening;
 
         lock (_stateLock)
+        {
             recognitions = [.. _recognitions];
+            reopening = _reopening;
+        }
+
+        // The services close the devices once Echo has stopped: an opening under way ends before that
+        await reopening.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 
         // The phrases already said are finished, however long that takes: the model cannot be unloaded
         // in the middle of one, and what the user said is not lost
@@ -328,6 +375,9 @@ internal sealed class EchoOrchestrator(
         _pushToTalkMonitorService.OnRecordingTriggered -= HandlePushToTalkTriggered;
         _pushToTalkMonitorService.OnRecordingReleased -= HandlePushToTalkReleased;
         _pushToTalkMonitorService.OnRecordingCancelled -= HandlePushToTalkCancelled;
+
+        if (_sessionEvents is not null)
+            _sessionEvents.Returned -= HandleSessionReturned;
 
         _phraseTurn.Dispose();
 

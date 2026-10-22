@@ -33,7 +33,19 @@ internal sealed class AudioRecordingService(
     /// </summary>
     private readonly object _lockObj = new();
 
+    /// <summary>
+    ///     Guards opening and closing the microphone. Apart from <see cref="_lockObj"/>, since closing waits for
+    ///     the audio thread, which may itself be waiting for that one.
+    /// </summary>
+    private readonly object _deviceLock = new();
+
     private IAudioInputStream? _microphone;
+
+    /// <summary>
+    ///     Whether the microphone is meant to be open: from the start-up until the service is closed.
+    ///     Only then is a microphone that the system closed opened again.
+    /// </summary>
+    private bool _keepsMicrophoneOpen;
 
     /// <summary>
     ///     Indicates whether the logical recording session (Push-To-Talk) is currently active.
@@ -98,24 +110,14 @@ internal sealed class AudioRecordingService(
         _logger.LogDebug("{Tab}{CheckedEmoji} Audio devices checked.",
             LoggerConstants.Tab, LoggerConstants.CheckedEmoji);
 
-        InitializeMic();
-
-        // Local function to handle actual hardware initialization
-        void InitializeMic()
+        lock (_deviceLock)
         {
             if (_microphone is not null) return;
 
             try
             {
-                _microphone = _audioInput.Open(
-                    deviceIndex,
-                    _recordingDeviceSettings.BufferMs,
-                    _recordingDeviceSettings.NumberOfBuffers);
-
-                _microphone.DataAvailable += OnRecording;
-
-                // Hardware is started once and kept running (Hot Mic pattern)
-                _microphone.Start();
+                _microphone = Open(deviceIndex);
+                _keepsMicrophoneOpen = true;
             }
             catch (Exception exc)
             {
@@ -126,9 +128,28 @@ internal sealed class AudioRecordingService(
     }
 
     /// <inheritdoc/>
+    public void ReopenMicrophone()
+    {
+        lock (_deviceLock)
+        {
+            if (!_keepsMicrophoneOpen) return;
+
+            Close();
+            TryOpen();
+        }
+    }
+
+    /// <inheritdoc/>
     public void StartRecording()
     {
         if (_isPttActive) return;
+
+        // The microphone the system closed may not have opened again right away: each recording tries once more
+        lock (_deviceLock)
+        {
+            if (_keepsMicrophoneOpen && _microphone is null)
+                TryOpen();
+        }
 
         try
         {
@@ -269,6 +290,88 @@ internal sealed class AudioRecordingService(
     }
 
     /// <summary>
+    ///     Opens the microphone and starts it. It keeps running from then on, so that a recording starts at once.
+    /// </summary>
+    /// <param name="deviceIndex">The device, as <see cref="IAudioInput.GetDevices"/> counts them.</param>
+    private IAudioInputStream Open(int deviceIndex)
+    {
+        IAudioInputStream microphone = _audioInput.Open(
+            deviceIndex,
+            _recordingDeviceSettings.BufferMs,
+            _recordingDeviceSettings.NumberOfBuffers);
+
+        microphone.DataAvailable += OnRecording;
+
+        try
+        {
+            microphone.Start();
+        }
+        catch
+        {
+            microphone.DataAvailable -= OnRecording;
+            microphone.Dispose();
+
+            throw;
+        }
+
+        return microphone;
+    }
+
+    /// <summary>
+    ///     Opens the microphone chosen in setup once more. It is looked for again, since the devices may have
+    ///     changed while it was closed. One that does not open is left closed for the next recording to try.
+    /// </summary>
+    private void TryOpen()
+    {
+        string problem;
+
+        try
+        {
+            if (FindChosenDevice(_audioInput.GetDevices()) is int deviceIndex)
+            {
+                _microphone = Open(deviceIndex);
+
+                return;
+            }
+
+            problem = _recordingDeviceSettings.DeviceName is { Length: > 0 } name
+                ? $"{name} is not connected."
+                : $"[{_recordingDeviceSettings.DeviceIndex}] is not in the list of devices.";
+        }
+        catch (Exception exc)
+        {
+            problem = exc.Message;
+        }
+
+        _logger.LogWarning("{WarningEmoji} Could not open the microphone again, the next recording tries once more: {Problem}",
+            LoggerConstants.WarningEmoji, problem);
+    }
+
+    /// <summary>
+    ///     Closes the microphone. One that the system has already closed may fail to close again: it is let go all
+    ///     the same, since a new one is what the caller is after.
+    /// </summary>
+    private void Close()
+    {
+        if (_microphone is null) return;
+
+        _microphone.DataAvailable -= OnRecording;
+
+        try
+        {
+            // Waits until the device has really stopped: the setup wizard opens it again right after this
+            _microphone.Dispose();
+        }
+        catch (Exception exc)
+        {
+            _logger.LogDebug("{Tab}Closing the microphone failed: {ErrorMessage}",
+                LoggerConstants.Tab, exc.Message);
+        }
+
+        _microphone = null;
+    }
+
+    /// <summary>
     ///     The loudest sample of a piece of 16-bit sound, between 0 and 1.
     /// </summary>
     private static float PeakOf(byte[] buffer, int length)
@@ -289,13 +392,10 @@ internal sealed class AudioRecordingService(
     {
         _isPttActive = false;
 
-        if (_microphone is not null)
+        lock (_deviceLock)
         {
-            _microphone.DataAvailable -= OnRecording;
-
-            // Waits until the device has really stopped: the setup wizard opens it again right after this
-            _microphone.Dispose();
-            _microphone = null;
+            _keepsMicrophoneOpen = false;
+            Close();
         }
 
         _writer?.Dispose();
