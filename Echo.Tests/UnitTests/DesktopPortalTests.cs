@@ -286,14 +286,16 @@ public sealed class DesktopPortalTests
 
         await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
 
-        var lost = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-        portal.ShortcutsLost += (_, reason) => lost.TrySetResult(reason);
+        var lost = new TaskCompletionSource<ShortcutsLostEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+        portal.ShortcutsLost += (_, e) => lost.TrySetResult(e);
 
         // Act: as when the user takes the key back
         desktop.CloseSession(desktop.ShortcutsSession!);
 
-        // Assert
-        Assert.Contains("closed", await lost.Task.WaitAsync(_patience));
+        // Assert: the session went, not the portal service
+        ShortcutsLostEventArgs loss = await lost.Task.WaitAsync(_patience);
+        Assert.Contains("closed", loss.Reason);
+        Assert.False(loss.IsServiceGone);
     }
 
     [LinuxFact(FakeDesktop.BusProgram)]
@@ -305,8 +307,8 @@ public sealed class DesktopPortalTests
 
         await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
 
-        var lost = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-        portal.ShortcutsLost += (_, reason) => lost.TrySetResult(reason);
+        var lost = new TaskCompletionSource<ShortcutsLostEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+        portal.ShortcutsLost += (_, e) => lost.TrySetResult(e);
 
         // Act
         await desktop.RestartAsync();
@@ -316,7 +318,9 @@ public sealed class DesktopPortalTests
         Assert.Equal(DesktopPortal.ApplicationId, desktop.RegisteredId);
         Assert.Equal("Ctrl + `", label);
         Assert.Equal(1, desktop.CountOf("org.freedesktop.portal.GlobalShortcuts.BindShortcuts"));
-        Assert.Contains("portal service", await lost.Task.WaitAsync(_patience));
+        ShortcutsLostEventArgs loss = await lost.Task.WaitAsync(_patience);
+        Assert.Contains("portal service", loss.Reason);
+        Assert.True(loss.IsServiceGone);
     }
 
     [LinuxFact(FakeDesktop.BusProgram)]
@@ -329,19 +333,21 @@ public sealed class DesktopPortalTests
         await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
 
         int losses = 0;
-        var lost = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var lost = new TaskCompletionSource<ShortcutsLostEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        portal.ShortcutsLost += (_, reason) =>
+        portal.ShortcutsLost += (_, e) =>
         {
             Interlocked.Increment(ref losses);
-            lost.TrySetResult(reason);
+            lost.TrySetResult(e);
         };
 
         // Act: Echo calls nothing meanwhile, so nothing would start a new service
         desktop.StopService();
 
         // Assert: the loss is reported while no service runs at all
-        Assert.Contains("stopped", await lost.Task.WaitAsync(_patience));
+        ShortcutsLostEventArgs loss = await lost.Task.WaitAsync(_patience);
+        Assert.Contains("stopped", loss.Reason);
+        Assert.True(loss.IsServiceGone);
 
         // A service that comes later is not a second loss, and the key is found there again
         await desktop.StartServiceAsync();

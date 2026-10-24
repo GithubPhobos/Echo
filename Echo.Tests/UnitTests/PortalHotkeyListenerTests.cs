@@ -149,11 +149,82 @@ public sealed class PortalHotkeyListenerTests
         Assert.Equal(0, Volatile.Read(ref presses));
     }
 
-    private static PortalHotkeyListener Listener(DesktopPortal portal, IUserSettingsStore settings)
+    [LinuxFact(FakeDesktop.BusProgram)]
+    public async Task Lost_PortalServiceStopsAndTheKeyDoesNotComeBack_SaysToLogInAgain()
     {
-        var listener = new PortalHotkeyListener(portal, Mock.Of<ILogger<PortalHotkeyListener>>(), settings);
+        // Arrange: a key given in an earlier run, which the next service does not give again, as on GNOME
+        await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+        desktop.IsBound = true;
+
+        var settings = new MemorySettings();
+        using var portal = new DesktopPortal(settings, desktop.Address);
+        var warnings = new Warnings();
+        using PortalHotkeyListener listener = Listener(portal, settings, warnings.Logger);
+
+        await listener.StartAsync(CancellationToken.None);
+
+        // Act
+        desktop.IsBound = false;
+        desktop.StopService();
+        await desktop.StartServiceAsync();
+
+        // Assert: after looking for it a few times, Echo says what brings the key back, which /setup would not
+        string advice = await warnings.GivenUp.Task.WaitAsync(_patience * 2);
+        Assert.Contains("Log out and log in again", advice);
+    }
+
+    [LinuxFact(FakeDesktop.BusProgram)]
+    public async Task Lost_DesktopClosesTheSessionAndTheKeyDoesNotComeBack_SaysToAskWithSetup()
+    {
+        // Arrange: the user takes the key back in the settings of the desktop
+        await using FakeDesktop desktop = await FakeDesktop.StartAsync();
+        desktop.IsBound = true;
+
+        var settings = new MemorySettings();
+        using var portal = new DesktopPortal(settings, desktop.Address);
+        var warnings = new Warnings();
+        using PortalHotkeyListener listener = Listener(portal, settings, warnings.Logger);
+
+        await listener.StartAsync(CancellationToken.None);
+
+        // Act
+        desktop.IsBound = false;
+        desktop.CloseSession(desktop.ShortcutsSession!);
+
+        // Assert
+        string advice = await warnings.GivenUp.Task.WaitAsync(_patience * 2);
+        Assert.Contains("/setup", advice);
+    }
+
+    private static PortalHotkeyListener Listener(DesktopPortal portal, IUserSettingsStore settings, ILogger<PortalHotkeyListener>? logger = null)
+    {
+        var listener = new PortalHotkeyListener(portal, logger ?? Mock.Of<ILogger<PortalHotkeyListener>>(), settings);
         listener.Bind(HotkeyChoice.Default);
 
         return listener;
+    }
+
+    /// <summary>
+    ///     The warning the listener gives up with once the key does not come back.
+    /// </summary>
+    private sealed class Warnings
+    {
+        private readonly Mock<ILogger<PortalHotkeyListener>> _logger = new();
+
+        public Warnings()
+        {
+            _logger
+                .Setup(logger => logger.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((value, _) => value.ToString()!.Contains("no longer")),
+                    It.IsAny<Exception?>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()))
+                .Callback(new InvocationAction(call => GivenUp.TrySetResult(call.Arguments[2].ToString()!)));
+        }
+
+        public ILogger<PortalHotkeyListener> Logger => _logger.Object;
+
+        public TaskCompletionSource<string> GivenUp { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 }

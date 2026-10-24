@@ -119,22 +119,25 @@ internal sealed class PortalHotkeyListener(DesktopPortal portal, ILogger<PortalH
     ///     The desktop lost the key: a phrase under way ends without its key coming up, and the key is looked for
     ///     again in the background.
     /// </summary>
-    private void OnLost(object? sender, string reason)
+    private void OnLost(object? sender, ShortcutsLostEventArgs e)
     {
         _logger.LogWarning("{WarningEmoji} The push-to-talk key stopped working: {Reason}.",
-            LoggerConstants.WarningEmoji, reason);
+            LoggerConstants.WarningEmoji, e.Reason);
 
         Lost?.Invoke(this, EventArgs.Empty);
 
         if (_stopping is { } stopping)
-            _ = RestoreAsync(stopping.Token);
+            _ = RestoreAsync(e.IsServiceGone, stopping.Token);
     }
 
     /// <summary>
     ///     Looks for the key again a few times, without the desktop's window: a key the user took back is asked for
-    ///     only in the setup wizard.
+    ///     only in the setup wizard. One the desktop keeps for a portal service that went away is not given again
+    ///     on GNOME, by /setup or a new start of Echo alike: logging in again is what brings it back.
     /// </summary>
-    private async Task RestoreAsync(CancellationToken cancellationToken)
+    /// <param name="isServiceGone">Whether the key went with the portal service, rather than with its session.</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    private async Task RestoreAsync(bool isServiceGone, CancellationToken cancellationToken)
     {
         try
         {
@@ -153,8 +156,16 @@ internal sealed class PortalHotkeyListener(DesktopPortal portal, ILogger<PortalH
                 }
             }
 
-            _logger.LogWarning("{Tab}{WarningEmoji} The desktop no longer gives Echo the push-to-talk key. Ask for it again with /setup.",
-                LoggerConstants.Tab, LoggerConstants.WarningEmoji);
+            if (isServiceGone)
+            {
+                _logger.LogWarning("{Tab}{WarningEmoji} The desktop no longer passes the push-to-talk key to Echo since its portal service stopped. Log out and log in again to get it back.",
+                    LoggerConstants.Tab, LoggerConstants.WarningEmoji);
+            }
+            else
+            {
+                _logger.LogWarning("{Tab}{WarningEmoji} The desktop no longer gives Echo the push-to-talk key. Ask for it again with /setup.",
+                    LoggerConstants.Tab, LoggerConstants.WarningEmoji);
+            }
         }
         catch (OperationCanceledException)
         {

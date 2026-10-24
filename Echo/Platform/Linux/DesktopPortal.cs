@@ -132,9 +132,9 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
     /// <summary>
     ///     The key Echo got from the desktop no longer reaches Echo: the desktop closed its session (as when the user
     ///     takes the key back), or its portal service stopped or was restarted. A key held down then never comes up.
-    ///     Why comes along.
+    ///     Why comes along, and which of the two it was.
     /// </summary>
-    public event EventHandler<string>? ShortcutsLost;
+    public event EventHandler<ShortcutsLostEventArgs>? ShortcutsLost;
 
     /// <summary>
     ///     Whether the user gave Echo the permission to paste in an earlier run, so it can be renewed without asking.
@@ -762,7 +762,7 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
         }
 
         if (isShortcutsLost)
-            ShortcutsLost?.Invoke(this, "the desktop closed the session of the key");
+            ShortcutsLost?.Invoke(this, new ShortcutsLostEventArgs("the desktop closed the session of the key", isServiceGone: false));
     }
 
     /// <summary>
@@ -799,7 +799,7 @@ internal sealed class DesktopPortal(IUserSettingsStore settings, string? address
         }
 
         if (isShortcutsLost)
-            ShortcutsLost?.Invoke(this, reason);
+            ShortcutsLost?.Invoke(this, new ShortcutsLostEventArgs(reason, isServiceGone: true));
     }
 
     /// <summary>
