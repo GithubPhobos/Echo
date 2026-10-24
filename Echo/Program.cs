@@ -2,8 +2,16 @@
 using Echo.Commands;
 using Echo.Extensions;
 using Echo.Setup.Steps;
+using Echo.Updates;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
+
+IRelaunch relaunch = PlatformServiceCollectionExtensions.CreateRelaunch();
+
+// The installed Echo on Windows is started through the link to the version in use, and runs that version from
+// its own folder instead, so that the link can be switched to a newer version under it
+if (relaunch.RunFromVersionFolder(args) is int launched)
+    return launched;
 
 Console.OutputEncoding = Encoding.UTF8;
 
@@ -35,4 +43,16 @@ app.Configure(config =>
         .WithDescription(SetupCommand.Description);
 });
 
-return await app.RunAsync(args);
+int exitCode = await app.RunAsync(args);
+
+// After /restart an Echo that waits above this one starts it anew; without one, this one does it.
+// The installed Echo starts through the link to the version in use, which a downloaded update has switched
+if (exitCode != Relaunching.ExitCode || Relaunching.HasLauncher(Environment.GetEnvironmentVariable))
+    return exitCode;
+
+string program = Environment.ProcessPath!;
+
+if (InstallLayout.Of(AppContext.BaseDirectory) is { } layout)
+    program = Path.Combine(layout.Current, Path.GetFileName(program));
+
+return relaunch.Restart(program, Relaunching.Arguments(args, ApplicationInfo.Version));

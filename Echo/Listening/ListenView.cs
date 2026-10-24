@@ -1,4 +1,6 @@
-﻿namespace Echo.Listening;
+﻿using Echo.Updates;
+
+namespace Echo.Listening;
 
 /// <summary>
 ///     Everything the working screen shows at one moment.
@@ -31,4 +33,9 @@ internal sealed record ListenView(
     ///     The level below which the microphone hears nothing worth recording: the silence level of the settings.
     /// </summary>
     public float SilenceLevel { get; init; } = 0.01f;
+
+    /// <summary>
+    ///     The version in use and what there is about a newer one; null leaves the version out.
+    /// </summary>
+    public UpdateStatus? Update { get; init; }
 }

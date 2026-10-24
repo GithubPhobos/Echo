@@ -42,6 +42,21 @@ internal static class PlatformServiceCollectionExtensions
     }
 
     /// <summary>
+    ///     How the system Echo runs on starts it anew. Made here with the rest of the system's ways, but before any
+    ///     services: on Windows the installed Echo hands its start over to its version folder right away.
+    /// </summary>
+    internal static IRelaunch CreateRelaunch()
+    {
+        if (OperatingSystem.IsWindows())
+            return new WindowsRelaunch();
+
+        if (OperatingSystem.IsLinux())
+            return new LinuxRelaunch();
+
+        throw new PlatformNotSupportedException($"{ApplicationInfo.CommandName} runs on Windows and Linux.");
+    }
+
+    /// <summary>
     ///     Windows: NAudio for recording and sounds, a keyboard hook for the key, SendInput for pasting,
     ///     the session notices of the system for coming back from another account, and the notices of its audio
     ///     engine for sound devices that go away and come back.
@@ -66,6 +81,7 @@ internal static class PlatformServiceCollectionExtensions
         services.TryAddSingleton<ISystemLibraries, WindowsSystemLibraries>();
         services.TryAddSingleton<ISessionEvents, WindowsSessionEvents>();
         services.TryAddSingleton<IAudioDeviceEvents, WindowsAudioDeviceEvents>();
+        services.TryAddSingleton<IVersionFolders, WindowsVersionFolders>();
 
         return services;
     }
@@ -100,6 +116,7 @@ internal static class PlatformServiceCollectionExtensions
         services.TryAddSingleton<ICudaLibraries, LinuxCudaLibraries>();
         services.TryAddSingleton<IVulkanSupport, LinuxVulkanSupport>();
         services.TryAddSingleton<ISystemLibraries, LinuxSystemLibraries>();
+        services.TryAddSingleton<IVersionFolders, LinuxVersionFolders>();
 
         services.TryAddSingleton<IFileChooser>(provider => new LinuxFileChooser(
             display == DisplayServer.None ? null : portal, programs, provider.GetRequiredService<IProcessRunner>()));

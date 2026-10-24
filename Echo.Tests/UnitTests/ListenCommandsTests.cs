@@ -3,6 +3,7 @@ using Echo.Extensions;
 using Echo.Listening;
 using Echo.Setup;
 using Echo.UI;
+using Echo.Updates;
 using Serilog.Core;
 using Serilog.Events;
 using Spectre.Console;
@@ -220,6 +221,77 @@ public sealed class ListenCommandsTests : IDisposable
         await commands.Copying.WaitAsync(TimeSpan.FromSeconds(10));
     }
 
+    [Theory]
+    [InlineData(nameof(UpdateStart.Started), nameof(UpdateStage.Downloading), "Downloading Echo 2.0.2: the top line shows how far it has got")]
+    [InlineData(nameof(UpdateStart.Checking), nameof(UpdateStage.Unknown), "Checking for a new version…")]
+    [InlineData(nameof(UpdateStart.AlreadyDownloading), nameof(UpdateStage.Downloading), "Already downloading: 38%")]
+    [InlineData(nameof(UpdateStart.AlreadyDownloaded), nameof(UpdateStage.Downloaded), "2.0.2 is already downloaded: /restart switches to it")]
+    [InlineData(nameof(UpdateStart.UpToDate), nameof(UpdateStage.Latest), "You have the latest version: 2.0.1")]
+    [InlineData(nameof(UpdateStart.NotInstalledByScript), nameof(UpdateStage.Available), "This Echo was not installed by the install script, so it cannot update itself. The new version is installed with: curl … | sh")]
+    public void Run_Update_SaysWhatHappened(string start, string stage, string expected)
+    {
+        // Arrange
+        var updater = new Mock<IUpdater>();
+        updater.SetupGet(candidate => candidate.Status).Returns(new UpdateStatus(Enum.Parse<UpdateStage>(stage), "2.0.1", "2.0.2", 0.385));
+        updater.Setup(candidate => candidate.Download()).Returns(Enum.Parse<UpdateStart>(start));
+
+        ListenCommands commands = Commands(updater.Object, out ListenActivity activity);
+
+        // Act
+        ListenOutcome outcome = commands.Run("/update");
+
+        // Assert
+        Assert.Equal(ListenOutcome.Continue, outcome);
+        Assert.Equal(["/update", expected], activity.Log.Snapshot().Select(entry => entry.Text));
+        updater.Verify(candidate => candidate.Download(), Times.Once);
+    }
+
+    [Fact]
+    public void Run_Restart_LeavesTheScreenToStartAnew()
+    {
+        // Arrange
+        ListenCommands commands = Commands(Mock.Of<IUpdater>(), out _);
+
+        // Act & Assert
+        Assert.Equal(ListenOutcome.Restart, commands.Run("/restart"));
+    }
+
+    [Theory]
+    [InlineData(nameof(UpdateNoticeKind.DownloadStarted), nameof(EntryKind.Answer), "Downloading Echo 2.0.2: the top line shows how far it has got")]
+    [InlineData(nameof(UpdateNoticeKind.Downloaded), nameof(EntryKind.Answer), "Echo 2.0.2 is downloaded. /restart switches to it now; otherwise it starts next time")]
+    [InlineData(nameof(UpdateNoticeKind.DownloadFailed), nameof(EntryKind.Warning), "Could not download Echo 2.0.2: no route to host. /update tries again")]
+    [InlineData(nameof(UpdateNoticeKind.UpToDate), nameof(EntryKind.Answer), "You have the latest version: 2.0.2")]
+    [InlineData(nameof(UpdateNoticeKind.CheckFailed), nameof(EntryKind.Warning), "Could not find out whether a new version is out: no route to host")]
+    public void Tell_WritesTheNoticeInTheInterfaceLanguage(string kind, string entryKind, string expected)
+    {
+        // Arrange
+        var log = new ScreenLog();
+
+        // Act
+        ListenCommands.Tell(log, new UpdateNotice(Enum.Parse<UpdateNoticeKind>(kind), "2.0.2", "no route to host"));
+
+        // Assert
+        ScreenEntry entry = Assert.Single(log.Snapshot());
+
+        Assert.Equal(Enum.Parse<EntryKind>(entryKind), entry.Kind);
+        Assert.Equal(expected, entry.Text);
+    }
+
+    [Theory]
+    [InlineData(nameof(UpdateStage.Unknown), "2.0.1")]
+    [InlineData(nameof(UpdateStage.Latest), "2.0.1, the latest")]
+    [InlineData(nameof(UpdateStage.Available), "2.0.1, 2.0.2 is out")]
+    [InlineData(nameof(UpdateStage.Downloading), "2.0.1, downloading 2.0.2: 38%")]
+    [InlineData(nameof(UpdateStage.Downloaded), "2.0.1, 2.0.2 is downloaded")]
+    public void DescribeVersion_SaysWhatThereIsAboutANewerOne(string stage, string expected)
+    {
+        // Act
+        string described = ListenCommands.DescribeVersion(new UpdateStatus(Enum.Parse<UpdateStage>(stage), "2.0.1", "2.0.2", 0.385));
+
+        // Assert
+        Assert.Equal(expected, described);
+    }
+
     private static ListenCommands Commands(out ListenActivity activity, out LoggingLevelSwitch levelSwitch)
     {
         activity = new ListenActivity(new ScreenLog(), () => false);
@@ -233,5 +305,19 @@ public sealed class ListenCommandsTests : IDisposable
         activity = new ListenActivity(new ScreenLog(), () => false);
 
         return new ListenCommands(activity, new LoggingLevelSwitch(LogEventLevel.Debug), Mock.Of<IUserSettingsStore>(), () => insertion, () => []);
+    }
+
+    private static ListenCommands Commands(IUpdater updater, out ListenActivity activity)
+    {
+        activity = new ListenActivity(new ScreenLog(), () => false);
+
+        return new ListenCommands(
+            activity,
+            new LoggingLevelSwitch(LogEventLevel.Debug),
+            Mock.Of<IUserSettingsStore>(),
+            () => Mock.Of<ITextInsertionService>(),
+            () => [],
+            updater,
+            "curl … | sh");
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using Echo.Listening;
 using Echo.UI;
+using Echo.Updates;
 using Serilog.Core;
 using Serilog.Events;
 using Spectre.Console;
@@ -47,7 +48,7 @@ public sealed class ListenFrameTests : IDisposable
 
         // The state says Echo is ready, not that it is listening: nothing is heard until the key is held.
         // Only the key and the model follow it, the key first and with nothing in front of it; the rest is in /info
-        Assert.Matches("^  ○ ready +--:--  ┊  ············  ┊  `  ┊  tiny$", lines[0].TrimEnd());
+        Assert.Matches("^  ○ ready +--:--  ┊  ··········  ┊  `  ┊  tiny$", lines[0].TrimEnd());
 
         // The rule lies right under the state, and the log right under the rule
         Assert.StartsWith("──────", lines[1]);
@@ -73,17 +74,17 @@ public sealed class ListenFrameTests : IDisposable
         string[] moments = [.. new[] { 0.0, 0.6, 1.2 }.Select(seconds => Render(View(ListenState.Listening) with { Clock = TimeSpan.FromSeconds(seconds) }, width: 100, height: 30)[0])];
 
         // Assert: nothing moves while nothing is recorded
-        Assert.All(moments, line => Assert.Matches("○ ready +--:--  ┊  ············  ┊  `  ┊  tiny", line));
+        Assert.All(moments, line => Assert.Matches("○ ready +--:--  ┊  ··········  ┊  `  ┊  tiny", line));
         Assert.Single(moments.Distinct());
-        Assert.Contains("············", Render(View(ListenState.Paused), width: 100, height: 30)[0]);
+        Assert.Contains("··········", Render(View(ListenState.Paused), width: 100, height: 30)[0]);
     }
 
     [Theory]
-    [InlineData(0f, "·····👂·····")]
-    [InlineData(0.01f, "·····👂·····")]
-    [InlineData(0.012f, "····(👂)····")]
-    [InlineData(0.1f, "··(((👂)))··")]
-    [InlineData(0.5f, "(((((👂)))))")]
+    [InlineData(0f, "····👂····")]
+    [InlineData(0.01f, "····👂····")]
+    [InlineData(0.012f, "···(👂)···")]
+    [InlineData(0.1f, "··((👂))··")]
+    [InlineData(0.5f, "((((👂))))")]
     public void Build_Recording_ArcsSpreadFromThePointWithTheVoice(float level, string expected)
     {
         // Arrange: the voice at this level for the latest pieces of sound
@@ -96,7 +97,7 @@ public sealed class ListenFrameTests : IDisposable
         // Act
         string state = Render(view, width: 100, height: 30)[0];
 
-        // Assert: twelve columns, so everything after them stays where it is while ready
+        // Assert: ten columns, so everything after them stays where it is while ready
         Assert.Contains($"00:02  ┊  {expected}  ┊  `  ┊  tiny", state);
         Assert.Matches("● recording +00:02", state);
 
@@ -112,7 +113,7 @@ public sealed class ListenFrameTests : IDisposable
         string state = Render(View(ListenState.Transcribing), width: 100, height: 30)[0];
 
         // Assert
-        Assert.Matches("⠋ recognizing +--:--  ┊  ·····👂·····  ┊  `  ┊  tiny", state);
+        Assert.Matches("⠋ recognizing +--:--  ┊  ····👂····  ┊  `  ┊  tiny", state);
     }
 
     [Fact]
@@ -157,14 +158,14 @@ public sealed class ListenFrameTests : IDisposable
         // Act
         string[] lines = Render(view, width: 100, height: 30);
 
-        // Assert: all commands, the names in one column, the highlighted one second
+        // Assert: as many commands as the panel shows, the names in one column, the highlighted one second
         int box = Array.FindIndex(lines, row => row.Contains("│ > /█"));
 
         Assert.Equal(
-            ["/setup", "/info", "/copy", "/pause", "/resume", "/log", "/help", "/quit"],
+            ["/setup", "/info", "/copy", "/pause", "/resume", "/log", "/update", "/restart"],
             lines[(box + 2)..(box + 10)].Select(row => row.Trim().Split(' ')[0]));
 
-        Assert.Equal("   /info     summary of the main settings", lines[box + 3].TrimEnd());
+        Assert.Equal("   /info      summary of the main settings", lines[box + 3].TrimEnd());
         Assert.Equal(string.Empty, lines[^2].Trim());
         Assert.Equal("  Enter choose  ┊  ↑↓ select  ┊  Esc close", lines[^1].TrimEnd());
     }
@@ -366,6 +367,137 @@ public sealed class ListenFrameTests : IDisposable
         // Assert
         Assert.All(rows, row => Assert.DoesNotContain('\n', row));
         Assert.Contains("first second", Markup.Remove(rows[0]));
+    }
+
+    [Theory]
+    [InlineData(nameof(UpdateStage.Unknown), null, 0, "┊  tiny  ┊  2.0.1")]
+    [InlineData(nameof(UpdateStage.Latest), null, 0, "┊  tiny  ┊  √ 2.0.1")]
+    [InlineData(nameof(UpdateStage.Available), "2.0.2", 0, "┊  tiny  ┊  2.0.1 (↑)")]
+    [InlineData(nameof(UpdateStage.Downloading), "2.0.2", 0.05, "┊  tiny  ┊  2.0.1 (⠋  5%)")]
+    [InlineData(nameof(UpdateStage.Downloading), "2.0.2", 0.387, "┊  tiny  ┊  2.0.1 (⠋ 38%)")]
+    [InlineData(nameof(UpdateStage.Downloaded), "2.0.2", 0, "┊  tiny  ┊  2.0.1 → 2.0.2 (/restart)")]
+    public void Build_Version_ShowsTheOneInUseAndWhatThereIsAboutANewerOne(string stage, string? newer, double progress, string expected)
+    {
+        // Arrange
+        ListenView view = View(ListenState.Listening) with { Update = new UpdateStatus(Enum.Parse<UpdateStage>(stage), "2.0.1", newer, progress) };
+
+        // Act
+        string state = Render(view, width: 100, height: 30)[0];
+
+        // Assert: the version always comes last, after the model
+        Assert.EndsWith(expected, state.TrimEnd());
+    }
+
+    [Fact]
+    public void Build_NewerVersionOut_TheArrowBlinks()
+    {
+        // Arrange
+        ListenView view = View(ListenState.Listening) with { Update = new UpdateStatus(UpdateStage.Available, "2.0.1", "2.0.2") };
+        var frame = new ListenFrame(Theme.Full);
+
+        // Act
+        string[] moments = [.. new[] { 0, 650, 700, 1400 }.Select(milliseconds => frame.Build(view with { Clock = TimeSpan.FromMilliseconds(milliseconds) }, 100, 30).Lines[0])];
+
+        // Assert: purple for 0.7 s, then as dark as the still dots, then purple again
+        Assert.Contains($"[bold {Theme.Accent}]↑[/]", moments[0]);
+        Assert.Contains($"[bold {Theme.Accent}]↑[/]", moments[1]);
+        Assert.Contains("[bold #3d4450]↑[/]", moments[2]);
+        Assert.Contains($"[bold {Theme.Accent}]↑[/]", moments[3]);
+    }
+
+    [Fact]
+    public void Build_Downloading_TheMarkGoesRoundLikeTheOneOfRecognizing()
+    {
+        // Arrange
+        ListenView view = View(ListenState.Listening) with { Update = new UpdateStatus(UpdateStage.Downloading, "2.0.1", "2.0.2", 0.5) };
+
+        // Act
+        string[] marks =
+        [
+            .. new[] { 0, 100, 250 }.Select(milliseconds =>
+                Render(view with { Clock = TimeSpan.FromMilliseconds(milliseconds) }, width: 100, height: 30)[0].TrimEnd()[^6..^5]),
+        ];
+
+        // Assert
+        Assert.Equal(["⠋", "⠙", "⠹"], marks);
+    }
+
+    [Fact]
+    public void Build_NewerVersionOut_OffersUpdateAmongTheKeys()
+    {
+        // Arrange
+        ListenView view = View(ListenState.Listening) with { Update = new UpdateStatus(UpdateStage.Available, "2.0.1", "2.0.2") };
+
+        // Act
+        string wide = Render(view, width: 100, height: 30)[^1].TrimEnd();
+        string narrow = Render(view, width: 50, height: 30)[^1].TrimEnd();
+        string narrower = Render(view, width: 45, height: 30)[^1].TrimEnd();
+        string downloading = Render(view with { Update = view.Update! with { Stage = UpdateStage.Downloading } }, width: 100, height: 30)[^1].TrimEnd();
+
+        // Assert: before quitting; on a narrow terminal the log keys and Enter go first, /update stays
+        Assert.Equal("  Enter run  ┊  ↑↓ PgUp PgDn log  ┊  /update download  ┊  Ctrl+C quit", wide);
+        Assert.Equal("  Enter run  ┊  /update download  ┊  Ctrl+C quit", narrow);
+        Assert.Equal("  /update download  ┊  Ctrl+C quit", narrower);
+        Assert.Equal("  Enter run  ┊  ↑↓ PgUp PgDn log  ┊  Ctrl+C quit", downloading);
+        Assert.Contains($"[bold {Theme.Highlight}]/update download[/]", new ListenFrame(Theme.Full).Build(view, 100, 30).Lines[^1]);
+    }
+
+    [Fact]
+    public void Build_NarrowTerminal_KeepsTheVersionLongest()
+    {
+        // Arrange
+        ListenView view = View(ListenState.Listening) with { Update = new UpdateStatus(UpdateStage.Latest, "2.0.1") };
+
+        // Act
+        string narrow = Render(view, width: 50, height: 20)[0].TrimEnd();
+        string narrower = Render(view, width: 40, height: 20)[0].TrimEnd();
+
+        // Assert: the model goes first, then the key, then the equalizer
+        Assert.DoesNotContain("tiny", narrow);
+        Assert.DoesNotContain("`", narrow);
+        Assert.EndsWith("··········  ┊  √ 2.0.1", narrow);
+        Assert.Matches("^  ○ ready +--:--  ┊  √ 2.0.1$", narrower);
+    }
+
+    [Fact]
+    public void Build_TerminalOfDefaultWidth_FitsEverythingInEveryLanguage()
+    {
+        // Arrange: the longest version text, a long model name and a long key
+        ListenView view = View(ListenState.Transcribing) with
+        {
+            Model = "large-v3-turbo",
+            Key = "Right Ctrl+Space",
+            Update = new UpdateStatus(UpdateStage.Downloaded, "2.0.10", "2.0.11"),
+        };
+
+        foreach (string language in new[] { "en", "ru", "zh-Hans", "es", "de" })
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(language);
+
+            // Act: 120 columns is what Windows Terminal opens with
+            string state = Render(view, width: 120, height: 30)[0];
+
+            // Assert
+            Assert.Contains("large-v3-turbo", state);
+            Assert.EndsWith("2.0.10 → 2.0.11 (/restart)", state.TrimEnd());
+        }
+    }
+
+    [Fact]
+    public void Build_TerminalWithoutUnicode_DrawsTheVersionInPlainLetters()
+    {
+        // Arrange
+        ListenView available = View(ListenState.Listening) with { Update = new UpdateStatus(UpdateStage.Available, "2.0.1", "2.0.2") };
+        ListenView downloaded = available with { Update = available.Update! with { Stage = UpdateStage.Downloaded } };
+        ListenView latest = available with { Update = new UpdateStatus(UpdateStage.Latest, "2.0.1") };
+
+        // Act
+        string Line(ListenView view) => Markup.Remove(new ListenFrame(Theme.Ascii).Build(view, 100, 30).Lines[0]).TrimEnd();
+
+        // Assert
+        Assert.EndsWith("|  2.0.1 (^)", Line(available));
+        Assert.EndsWith("|  2.0.1 -> 2.0.2 (/restart)", Line(downloaded));
+        Assert.EndsWith("|  + 2.0.1", Line(latest));
     }
 
     private static ListenView View(ListenState state) => new(

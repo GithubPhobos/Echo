@@ -54,6 +54,19 @@
 		<PackageReference Include="Whisper.net.Runtime.Vulkan" Version="1.9.0" />
 	</ItemGroup>
 
+	<!--
+		The recognition packages copy their libraries for every system they support, such as macOS, ARM and the other
+		of the two systems Echo runs on; only the libraries of the system the build is for are kept. They are added by
+		the packages after this file is read, so they are taken away just before they are copied.
+	-->
+	<Target Name="KeepOnlyOwnRecognitionLibraries" BeforeTargets="AssignTargetPaths">
+		<ItemGroup>
+			<_ForeignRecognitionLibrary Include="@(None)"
+										Condition="$([System.String]::Copy('%(None.TargetPath)').Replace('\','/').StartsWith('runtimes/')) and !$([System.String]::Copy('%(None.TargetPath)').Replace('\','/').Contains('/$(TargetSystem)/'))" />
+			<None Remove="@(_ForeignRecognitionLibrary)" />
+		</ItemGroup>
+	</Target>
+
 	<ItemGroup>
 		<Content Include="Assets\start-recording.wav">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

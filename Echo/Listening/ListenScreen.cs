@@ -1,4 +1,5 @@
 ﻿using Echo.UI;
+using Echo.Updates;
 using Spectre.Console;
 
 namespace Echo.Listening;
@@ -17,13 +18,15 @@ namespace Echo.Listening;
 ///     Where the terminal is asked to say when its window becomes active and stops being active; null where
 ///     the system itself tells (Windows).
 /// </param>
+/// <param name="update">What there is about the version at the moment; the version is left out when not given.</param>
 internal sealed class ListenScreen(IAnsiConsole console,
                                   Theme theme,
                                   IListenActivity activity,
                                   ListenCommands commands,
                                   ListenInfo info,
                                   TimeSpan tick,
-                                  TerminalFocusReports? focusReports = null)
+                                  TerminalFocusReports? focusReports = null,
+                                  Func<UpdateStatus>? update = null)
 {
     private const string EnterAlternateScreen = "\u001b[?1049h";
     private const string LeaveAlternateScreen = "\u001b[?1049l";
@@ -45,6 +48,7 @@ internal sealed class ListenScreen(IAnsiConsole console,
     private readonly ListenInfo _info = info;
     private readonly TimeSpan _tick = tick;
     private readonly TerminalFocusReports? _focusReports = focusReports;
+    private readonly Func<UpdateStatus>? _update = update;
     private readonly ListenFrame _frame = new(theme);
     private readonly CommandLine _line = new(commands.All);
     private readonly Stopwatch _clock = Stopwatch.StartNew();
@@ -197,6 +201,7 @@ internal sealed class ListenScreen(IAnsiConsole console,
             _selected)
         {
             SilenceLevel = _info.SilenceLevel,
+            Update = _update?.Invoke(),
         };
 
         (int Width, int Height) size = (_console.Profile.Width, _console.Profile.Height);

@@ -8,6 +8,7 @@ using Echo.Setup.Hardware;
 using Echo.Setup.Hotkeys;
 using Echo.Setup.Steps;
 using Echo.UI;
+using Echo.Updates;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Core;
@@ -115,6 +116,21 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<ISetupStep, AdditionalSettingsStep>();
 
         services.AddSingleton<SetupRunner>();
+
+        services.AddSingleton<IReleaseSource>(provider => new GitHubReleaseSource(
+            CreateReleaseClient(),
+            GitHubReleaseSource.Address(Environment.GetEnvironmentVariable),
+            provider.GetRequiredService<IVersionFolders>().ArchiveName));
+
+        services.AddSingleton<IUpdater>(provider => new Updater(
+            provider.GetRequiredService<IReleaseSource>(),
+            provider.GetRequiredService<IFileDownloader>(),
+            provider.GetRequiredService<IVersionFolders>(),
+            provider.GetRequiredService<IUserSettingsStore>(),
+            provider.GetRequiredService<TimeProvider>(),
+            InstallLayout.Of(AppContext.BaseDirectory),
+            ApplicationInfo.Version,
+            AppContext.BaseDirectory));
     }
 
     /// <summary>
@@ -183,6 +199,20 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<IAudioRecordingService, AudioRecordingService>();
         services.AddSingleton<IWhisperInferenceService, WhisperInferenceService>();
         services.AddSingleton<IPushToTalkMonitorService, PushToTalkMonitorService>();
+    }
+
+    /// <summary>
+    ///     The client that asks for the latest release. An answer that takes longer than a few seconds is not waited
+    ///     for: the next check asks again.
+    /// </summary>
+    private static HttpClient CreateReleaseClient()
+    {
+        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+
+        // GitHub turns away requests that do not say who sends them
+        client.DefaultRequestHeaders.UserAgent.ParseAdd($"{ApplicationInfo.CommandName}/{ApplicationInfo.Version}");
+
+        return client;
     }
 
     private static HttpClient CreateDownloadClient()

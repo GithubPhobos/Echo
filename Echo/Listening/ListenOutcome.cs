@@ -12,5 +12,8 @@ internal enum ListenOutcome
     Setup,
 
     /// <summary>Leaves Echo.</summary>
-    Quit
+    Quit,
+
+    /// <summary>Leaves Echo and starts it anew in the same terminal, in the newer version when one is downloaded.</summary>
+    Restart
 }

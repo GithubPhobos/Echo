@@ -19,3 +19,4 @@ global using Echo.Setup.Hardware.Contracts;
 global using Echo.Setup.Hotkeys.Contracts;
 global using Echo.Platform;
 global using Echo.Platform.Contracts;
+global using Echo.Updates.Contracts;

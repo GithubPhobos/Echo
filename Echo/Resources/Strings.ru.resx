@@ -885,4 +885,67 @@
   <data name="MicrophoneBack" xml:space="preserve">
     <value>Микрофон «{0}» снова на месте: можно диктовать.</value>
   </data>
+  <data name="CommandUpdate" xml:space="preserve">
+    <value>Скачать новую версию Echo</value>
+  </data>
+  <data name="CommandRestart" xml:space="preserve">
+    <value>Перезапустить Echo, а если новая версия скачана — в ней</value>
+  </data>
+  <data name="ListenHintUpdate" xml:space="preserve">
+    <value>скачать</value>
+  </data>
+  <data name="ResponseUpdateStarted" xml:space="preserve">
+    <value>Скачиваю Echo {0}: ход виден в верхней строке</value>
+  </data>
+  <data name="ResponseUpdateChecking" xml:space="preserve">
+    <value>Проверяю, есть ли новая версия…</value>
+  </data>
+  <data name="ResponseUpdateDownloading" xml:space="preserve">
+    <value>Уже скачивается: {0} %</value>
+  </data>
+  <data name="ResponseUpdateReady" xml:space="preserve">
+    <value>{0} уже скачана: /restart — перейти на неё</value>
+  </data>
+  <data name="ResponseUpdateLatest" xml:space="preserve">
+    <value>У вас последняя версия: {0}</value>
+  </data>
+  <data name="ResponseUpdateNotInstalled" xml:space="preserve">
+    <value>Этот Echo поставлен не скриптом установки, поэтому обновить себя не может. Новую версию поставит команда: {0}</value>
+  </data>
+  <data name="UpdateDownloaded" xml:space="preserve">
+    <value>Echo {0} скачан. /restart — перейти сейчас, иначе он включится при следующем запуске</value>
+  </data>
+  <data name="UpdateDownloadFailed" xml:space="preserve">
+    <value>Не удалось скачать Echo {0}: {1}. /update — попробовать снова</value>
+  </data>
+  <data name="UpdateCheckFailed" xml:space="preserve">
+    <value>Не удалось узнать, вышла ли новая версия: {0}</value>
+  </data>
+  <data name="UpdateApplied" xml:space="preserve">
+    <value>Echo обновлён: {0} → {1}</value>
+  </data>
+  <data name="SummaryVersion" xml:space="preserve">
+    <value>Версия</value>
+  </data>
+  <data name="InfoVersionLatest" xml:space="preserve">
+    <value>{0}, последняя</value>
+  </data>
+  <data name="InfoVersionAvailable" xml:space="preserve">
+    <value>{0}, вышла {1}</value>
+  </data>
+  <data name="InfoVersionDownloading" xml:space="preserve">
+    <value>{0}, скачивается {1}: {2} %</value>
+  </data>
+  <data name="InfoVersionDownloaded" xml:space="preserve">
+    <value>{0}, скачана {1}</value>
+  </data>
+  <data name="AdditionalAutoUpdate" xml:space="preserve">
+    <value>Скачивать обновления автоматически</value>
+  </data>
+  <data name="AdditionalAutoUpdateHint" xml:space="preserve">
+    <value>Echo проверяет, вышла ли новая версия, при каждом запуске и раз в сутки. Если включить, новая версия скачивается сама; если выключить, она ждёт команды /update. Скачанная версия включается командой /restart или при следующем запуске.</value>
+  </data>
+  <data name="RestartFailed" xml:space="preserve">
+    <value>Не удалось запустить Echo заново: {0}. Запустите его сами: echooo</value>
+  </data>
 </root>

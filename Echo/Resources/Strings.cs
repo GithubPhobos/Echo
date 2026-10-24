@@ -608,4 +608,46 @@ internal static class Strings
     public static string MicrophoneNotOpening => Get(nameof(MicrophoneNotOpening));
 
     public static string MicrophoneBack => Get(nameof(MicrophoneBack));
+
+    public static string CommandUpdate => Get(nameof(CommandUpdate));
+
+    public static string CommandRestart => Get(nameof(CommandRestart));
+
+    public static string ListenHintUpdate => Get(nameof(ListenHintUpdate));
+
+    public static string ResponseUpdateStarted => Get(nameof(ResponseUpdateStarted));
+
+    public static string ResponseUpdateChecking => Get(nameof(ResponseUpdateChecking));
+
+    public static string ResponseUpdateDownloading => Get(nameof(ResponseUpdateDownloading));
+
+    public static string ResponseUpdateReady => Get(nameof(ResponseUpdateReady));
+
+    public static string ResponseUpdateLatest => Get(nameof(ResponseUpdateLatest));
+
+    public static string ResponseUpdateNotInstalled => Get(nameof(ResponseUpdateNotInstalled));
+
+    public static string UpdateDownloaded => Get(nameof(UpdateDownloaded));
+
+    public static string UpdateDownloadFailed => Get(nameof(UpdateDownloadFailed));
+
+    public static string UpdateCheckFailed => Get(nameof(UpdateCheckFailed));
+
+    public static string UpdateApplied => Get(nameof(UpdateApplied));
+
+    public static string SummaryVersion => Get(nameof(SummaryVersion));
+
+    public static string InfoVersionLatest => Get(nameof(InfoVersionLatest));
+
+    public static string InfoVersionAvailable => Get(nameof(InfoVersionAvailable));
+
+    public static string InfoVersionDownloading => Get(nameof(InfoVersionDownloading));
+
+    public static string InfoVersionDownloaded => Get(nameof(InfoVersionDownloaded));
+
+    public static string AdditionalAutoUpdate => Get(nameof(AdditionalAutoUpdate));
+
+    public static string AdditionalAutoUpdateHint => Get(nameof(AdditionalAutoUpdateHint));
+
+    public static string RestartFailed => Get(nameof(RestartFailed));
 }

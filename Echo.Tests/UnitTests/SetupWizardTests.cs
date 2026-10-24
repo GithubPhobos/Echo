@@ -703,7 +703,8 @@ public sealed partial class SetupWizardTests : IDisposable
         // Arrange
         ReachAdditionalSettings()
             .Press(ConsoleKey.UpArrow).Press(ConsoleKey.UpArrow)                    // round from the first setting to the last one
-            .Press(ConsoleKey.Spacebar)                                             // log detail: from Debug on to Information
+            .Press(ConsoleKey.Spacebar)                                             // automatic updates: on
+            .Press(ConsoleKey.UpArrow).Press(ConsoleKey.Spacebar)                   // log detail: from Debug on to Information
             .Press(ConsoleKey.UpArrow).Press(ConsoleKey.Spacebar)                   // automatic insertion: off
             .Press(ConsoleKey.UpArrow).Press(ConsoleKey.Enter)                      // sound volume: open the field, which holds "10"
             .Type("00").Press(ConsoleKey.Enter)                                     // "1000" is out of range: the field stays open
@@ -743,6 +744,7 @@ public sealed partial class SetupWizardTests : IDisposable
                 AdditionalSettings.Volume,
                 AdditionalSettings.AutoInsert,
                 AdditionalSettings.LogLevel,
+                AdditionalSettings.AutoUpdate,
             ],
             saved.Additional.Changed);
 
@@ -753,6 +755,7 @@ public sealed partial class SetupWizardTests : IDisposable
         Assert.False(saved.Additional.IsOn(AdditionalSettings.AutoInsert));
         Assert.True(saved.Additional.IsOn(AdditionalSettings.PlaySound));
         Assert.Equal("Information", saved.Additional.Get(AdditionalSettings.LogLevel));
+        Assert.True(saved.Additional.IsOn(AdditionalSettings.AutoUpdate));
 
         Assert.Contains("Enter a whole number from 0 to 100", _console.Output);
 
@@ -905,7 +908,7 @@ public sealed partial class SetupWizardTests : IDisposable
         // Scrolled to its end, the list leaves the row that leads onwards where it was
         string[] scrolled = frames[2];
 
-        Assert.Contains(scrolled, line => line.Contains("◉ Log detail"));
+        Assert.Contains(scrolled, line => line.Contains("◉ Download updates automatically"));
         Assert.DoesNotContain(scrolled, line => line.Contains("Translation into English"));
         Assert.Equal(
             Array.FindIndex(opened, line => line.Contains("Continue")),

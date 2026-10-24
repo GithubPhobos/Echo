@@ -6,6 +6,7 @@ using Echo.Setup.Hardware;
 using Echo.Setup.Hotkeys;
 using Echo.Setup.Steps;
 using Echo.UI;
+using Echo.Updates;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -26,13 +27,17 @@ namespace Echo.Commands;
 /// <param name="audioInput">The microphones, for the name of the one in use.</param>
 /// <param name="terminalFocus">Tells whether Echo's own window is in front.</param>
 /// <param name="focusReports">What the terminal itself says about its window, where the system does not say it.</param>
+/// <param name="updater">Finds and downloads newer versions while the working screen runs.</param>
+/// <param name="versionFolders">Tells the line that installs Echo, for an Echo that cannot update itself.</param>
 internal sealed class ListenCommand(
     IAnsiConsole console,
     IAppPaths paths,
     SetupRunner setupRunner,
     IAudioInput audioInput,
     ITerminalFocus terminalFocus,
-    TerminalFocusReports? focusReports = null) : AsyncCommand<ListenCommand.ListenSettings>
+    TerminalFocusReports? focusReports = null,
+    IUpdater? updater = null,
+    IVersionFolders? versionFolders = null) : AsyncCommand<ListenCommand.ListenSettings>
 {
     internal const string Name = "listen";
     internal const string Description = "Starts push-to-talk voice typing (default).";
@@ -58,15 +63,23 @@ internal sealed class ListenCommand(
     private readonly IAudioInput _audioInput = audioInput;
     private readonly ITerminalFocus _terminalFocus = terminalFocus;
     private readonly TerminalFocusReports? _focusReports = focusReports;
+    private readonly IUpdater? _updater = updater;
+    private readonly IVersionFolders? _versionFolders = versionFolders;
 
     /// <summary>
     ///     Command line options of <see cref="ListenCommand"/>.
     /// </summary>
     internal sealed class ListenSettings : CommandSettings
     {
-        [CommandOption("--no-banner")]
+        [CommandOption(Relaunching.NoBannerOption)]
         [Description("Skips the startup animation.")]
         public bool NoBanner { get; init; }
+
+        /// <summary>
+        ///     The version that /restart started Echo from, which may have been an update.
+        /// </summary>
+        [CommandOption(Relaunching.UpdatedFromOption, IsHidden = true)]
+        public string? UpdatedFrom { get; init; }
     }
 
     /// <inheritdoc/>
@@ -118,9 +131,42 @@ internal sealed class ListenCommand(
         // The log of the screen outlives a trip to the setup wizard, so what happened before stays in sight
         var log = new ScreenLog();
 
+        bool isJustUpdated = settings.UpdatedFrom is { } from && ReleaseVersion.IsNewer(ApplicationInfo.Version, from);
+
+        if (isJustUpdated)
+            log.Add(EntryKind.Answer, Strings.Format(nameof(Strings.UpdateApplied), settings.UpdatedFrom, ApplicationInfo.Version));
+
+        void Tell(object? sender, UpdateNotice notice) => ListenCommands.Tell(log, notice);
+
+        if (_updater is not null)
+        {
+            _updater.Noticed += Tell;
+            _updater.Start(isJustUpdated);
+        }
+
+        try
+        {
+            return await RunScreensAsync(log, cancellationToken);
+        }
+        finally
+        {
+            if (_updater is not null)
+                _updater.Noticed -= Tell;
+        }
+    }
+
+    /// <summary>
+    ///     Runs the working screen, and the setup wizard in between when the user asks for it, until the user leaves.
+    /// </summary>
+    private async Task<int> RunScreensAsync(ScreenLog log, CancellationToken cancellationToken)
+    {
         while (true)
         {
             ListenOutcome outcome = await RunScreenAsync(log, cancellationToken);
+
+            // The screen and its services are stopped by now, so the key and the microphone are free for the new start
+            if (outcome == ListenOutcome.Restart)
+                return Relaunching.ExitCode;
 
             if (outcome != ListenOutcome.Setup)
                 return 0;
@@ -175,7 +221,9 @@ internal sealed class ListenCommand(
             levelSwitch,
             new UserSettingsStore(_paths),
             () => host.Services.GetRequiredService<ITextInsertionService>(),
-            () => SummarizeSettings(configuration, activity, levelSwitch));
+            () => SummarizeSettings(configuration, activity, levelSwitch),
+            _updater,
+            _versionFolders?.InstallCommand ?? string.Empty);
 
         var screen = new ListenScreen(
             _console,
@@ -184,7 +232,8 @@ internal sealed class ListenCommand(
             commands,
             DescribeSettings(configuration),
             ScreenTick,
-            _focusReports);
+            _focusReports,
+            _updater is null ? null : () => _updater.Status);
 
         Task starting = Task.Run(() => StartAsync(host, activity, cancellationToken), cancellationToken);
 
@@ -277,6 +326,8 @@ internal sealed class ListenCommand(
             : runtime;
 
         bool isAutoInsert = IsOn(nameof(TextInsertionSettings), nameof(TextInsertionSettings.UseAutoInsert));
+        bool isAutoUpdate = new UserSettingsStore(_paths).Load().Additional.IsOn(AdditionalSettings.AutoUpdate);
+        UpdateStatus version = _updater?.Status ?? new UpdateStatus(UpdateStage.Unknown, ApplicationInfo.Version);
         bool isSoundOn = IsOn(nameof(PushToTalkSettings), nameof(PushToTalkSettings.PlaySound));
 
         double volume = double.TryParse(
@@ -307,6 +358,8 @@ internal sealed class ListenCommand(
             (Strings.AdditionalAutoInsert, isAutoInsert ? Strings.ValueOn : Strings.ValueOff),
             (Strings.AdditionalPlaySound, isSoundOn ? $"{Strings.ValueOn}, {Math.Round(volume * 100)} %" : Strings.ValueOff),
             (Strings.AdditionalLogLevel, ListenCommands.Levels[(int)levelSwitch.MinimumLevel]),
+            (Strings.SummaryVersion, ListenCommands.DescribeVersion(version)),
+            (Strings.AdditionalAutoUpdate, isAutoUpdate ? Strings.ValueOn : Strings.ValueOff),
             (Strings.InfoSettingsFile, _paths.SettingsFile),
             (Strings.InfoLogsFolder, _paths.LogsDirectory),
         ];

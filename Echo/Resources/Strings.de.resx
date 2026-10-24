@@ -885,4 +885,67 @@
   <data name="MicrophoneBack" xml:space="preserve">
     <value>Das Mikrofon „{0}“ ist wieder da: Du kannst diktieren.</value>
   </data>
+  <data name="CommandUpdate" xml:space="preserve">
+    <value>Die neue Version von Echo herunterladen</value>
+  </data>
+  <data name="CommandRestart" xml:space="preserve">
+    <value>Echo neu starten, in der neuen Version, falls sie heruntergeladen ist</value>
+  </data>
+  <data name="ListenHintUpdate" xml:space="preserve">
+    <value>herunterladen</value>
+  </data>
+  <data name="ResponseUpdateStarted" xml:space="preserve">
+    <value>Echo {0} wird heruntergeladen: Der Fortschritt steht in der obersten Zeile</value>
+  </data>
+  <data name="ResponseUpdateChecking" xml:space="preserve">
+    <value>Es wird nach einer neuen Version gesucht…</value>
+  </data>
+  <data name="ResponseUpdateDownloading" xml:space="preserve">
+    <value>Wird bereits heruntergeladen: {0} %</value>
+  </data>
+  <data name="ResponseUpdateReady" xml:space="preserve">
+    <value>{0} ist bereits heruntergeladen: /restart wechselt zu ihr</value>
+  </data>
+  <data name="ResponseUpdateLatest" xml:space="preserve">
+    <value>Sie haben die neueste Version: {0}</value>
+  </data>
+  <data name="ResponseUpdateNotInstalled" xml:space="preserve">
+    <value>Dieses Echo wurde nicht mit dem Installationsskript installiert und kann sich daher nicht selbst aktualisieren. Die neue Version installiert dieser Befehl: {0}</value>
+  </data>
+  <data name="UpdateDownloaded" xml:space="preserve">
+    <value>Echo {0} ist heruntergeladen. /restart wechselt jetzt; sonst startet es beim nächsten Mal</value>
+  </data>
+  <data name="UpdateDownloadFailed" xml:space="preserve">
+    <value>Echo {0} konnte nicht heruntergeladen werden: {1}. /update versucht es erneut</value>
+  </data>
+  <data name="UpdateCheckFailed" xml:space="preserve">
+    <value>Es ließ sich nicht feststellen, ob eine neue Version erschienen ist: {0}</value>
+  </data>
+  <data name="UpdateApplied" xml:space="preserve">
+    <value>Echo aktualisiert: {0} → {1}</value>
+  </data>
+  <data name="SummaryVersion" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="InfoVersionLatest" xml:space="preserve">
+    <value>{0}, die neueste</value>
+  </data>
+  <data name="InfoVersionAvailable" xml:space="preserve">
+    <value>{0}, {1} ist erschienen</value>
+  </data>
+  <data name="InfoVersionDownloading" xml:space="preserve">
+    <value>{0}, {1} wird heruntergeladen: {2} %</value>
+  </data>
+  <data name="InfoVersionDownloaded" xml:space="preserve">
+    <value>{0}, {1} ist heruntergeladen</value>
+  </data>
+  <data name="AdditionalAutoUpdate" xml:space="preserve">
+    <value>Updates automatisch herunterladen</value>
+  </data>
+  <data name="AdditionalAutoUpdateHint" xml:space="preserve">
+    <value>Echo sucht bei jedem Start und einmal täglich nach einer neuen Version. Ist dies an, lädt sich eine neue Version von selbst herunter; ist es aus, wartet sie auf den Befehl /update. Eine heruntergeladene Version startet mit /restart oder beim nächsten Start.</value>
+  </data>
+  <data name="RestartFailed" xml:space="preserve">
+    <value>Echo konnte nicht neu gestartet werden: {0}. Starten Sie es selbst mit: echooo</value>
+  </data>
 </root>

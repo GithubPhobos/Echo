@@ -885,4 +885,67 @@
   <data name="MicrophoneBack" xml:space="preserve">
     <value>El micrófono «{0}» ha vuelto: ya puedes dictar.</value>
   </data>
+  <data name="CommandUpdate" xml:space="preserve">
+    <value>Descargar la nueva versión de Echo</value>
+  </data>
+  <data name="CommandRestart" xml:space="preserve">
+    <value>Reiniciar Echo, en la nueva versión si ya está descargada</value>
+  </data>
+  <data name="ListenHintUpdate" xml:space="preserve">
+    <value>descargar</value>
+  </data>
+  <data name="ResponseUpdateStarted" xml:space="preserve">
+    <value>Descargando Echo {0}: la línea de arriba muestra el avance</value>
+  </data>
+  <data name="ResponseUpdateChecking" xml:space="preserve">
+    <value>Comprobando si hay una nueva versión…</value>
+  </data>
+  <data name="ResponseUpdateDownloading" xml:space="preserve">
+    <value>Ya se está descargando: {0} %</value>
+  </data>
+  <data name="ResponseUpdateReady" xml:space="preserve">
+    <value>{0} ya está descargada: /restart cambia a ella</value>
+  </data>
+  <data name="ResponseUpdateLatest" xml:space="preserve">
+    <value>Tiene la última versión: {0}</value>
+  </data>
+  <data name="ResponseUpdateNotInstalled" xml:space="preserve">
+    <value>Este Echo no se instaló con el script de instalación, así que no puede actualizarse solo. La nueva versión se instala con: {0}</value>
+  </data>
+  <data name="UpdateDownloaded" xml:space="preserve">
+    <value>Echo {0} está descargado. /restart cambia a él ahora; si no, se usará en el próximo inicio</value>
+  </data>
+  <data name="UpdateDownloadFailed" xml:space="preserve">
+    <value>No se pudo descargar Echo {0}: {1}. /update lo intenta de nuevo</value>
+  </data>
+  <data name="UpdateCheckFailed" xml:space="preserve">
+    <value>No se pudo saber si hay una nueva versión: {0}</value>
+  </data>
+  <data name="UpdateApplied" xml:space="preserve">
+    <value>Echo actualizado: {0} → {1}</value>
+  </data>
+  <data name="SummaryVersion" xml:space="preserve">
+    <value>Versión</value>
+  </data>
+  <data name="InfoVersionLatest" xml:space="preserve">
+    <value>{0}, la última</value>
+  </data>
+  <data name="InfoVersionAvailable" xml:space="preserve">
+    <value>{0}, ya salió la {1}</value>
+  </data>
+  <data name="InfoVersionDownloading" xml:space="preserve">
+    <value>{0}, descargando la {1}: {2} %</value>
+  </data>
+  <data name="InfoVersionDownloaded" xml:space="preserve">
+    <value>{0}, la {1} está descargada</value>
+  </data>
+  <data name="AdditionalAutoUpdate" xml:space="preserve">
+    <value>Descargar las actualizaciones automáticamente</value>
+  </data>
+  <data name="AdditionalAutoUpdateHint" xml:space="preserve">
+    <value>Echo comprueba si hay una nueva versión en cada inicio y una vez al día. Si está activado, la nueva versión se descarga sola; si no, espera al comando /update. La versión descargada se usa con /restart o en el próximo inicio.</value>
+  </data>
+  <data name="RestartFailed" xml:space="preserve">
+    <value>No se pudo volver a iniciar Echo: {0}. Inícielo usted con: echooo</value>
+  </data>
 </root>

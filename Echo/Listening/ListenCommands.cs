@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using Echo.Setup;
+using Echo.Updates;
 using Serilog.Core;
 using Serilog.Events;
 
@@ -16,11 +17,15 @@ namespace Echo.Listening;
 ///     Asked for only then: a service that cannot be created, for a setting it cannot take, fails the copying, not the screen.
 /// </param>
 /// <param name="describeSettings">The main settings Echo runs with, as label and value, for <see cref="Info"/>.</param>
+/// <param name="updater">Downloads the newer version for <see cref="Update"/>; without it the command says there is nothing to do.</param>
+/// <param name="installCommand">The line that installs Echo, for an Echo that cannot update itself.</param>
 internal sealed partial class ListenCommands(IListenActivity activity,
                                              LoggingLevelSwitch levelSwitch,
                                              IUserSettingsStore settingsStore,
                                              Func<ITextInsertionService> insertion,
-                                             Func<IReadOnlyList<(string Label, string Value)>> describeSettings)
+                                             Func<IReadOnlyList<(string Label, string Value)>> describeSettings,
+                                             IUpdater? updater = null,
+                                             string installCommand = "")
 {
     public const string Setup = "/setup";
     public const string Info = "/info";
@@ -28,6 +33,8 @@ internal sealed partial class ListenCommands(IListenActivity activity,
     public const string Pause = "/pause";
     public const string Resume = "/resume";
     public const string LogLevel = "/log";
+    public const string Update = "/update";
+    public const string Restart = "/restart";
     public const string Help = "/help";
     public const string Quit = "/quit";
 
@@ -41,6 +48,8 @@ internal sealed partial class ListenCommands(IListenActivity activity,
     private readonly IUserSettingsStore _settingsStore = settingsStore;
     private readonly Func<ITextInsertionService> _insertion = insertion;
     private readonly Func<IReadOnlyList<(string Label, string Value)>> _describeSettings = describeSettings;
+    private readonly IUpdater? _updater = updater;
+    private readonly string _installCommand = installCommand;
 
     /// <summary>
     ///     Done once every <see cref="Copy"/> typed on the screen is through: the screen is left only then, so the
@@ -56,6 +65,8 @@ internal sealed partial class ListenCommands(IListenActivity activity,
         new(Pause, () => Strings.CommandPause),
         new(Resume, () => Strings.CommandResume),
         new(LogLevel, () => Strings.CommandLog, Levels),
+        new(Update, () => Strings.CommandUpdate),
+        new(Restart, () => Strings.CommandRestart),
         new(Help, () => Strings.CommandHelp),
         new(Quit, () => Strings.CommandQuit),
     ];
@@ -115,6 +126,14 @@ internal sealed partial class ListenCommands(IListenActivity activity,
             case Quit:
                 return ListenOutcome.Quit;
 
+            case Restart:
+                return ListenOutcome.Restart;
+
+            case Update:
+                StartUpdate();
+
+                break;
+
             case Info:
                 AddTable(Strings.ResponseInfoTitle, _describeSettings());
 
@@ -156,6 +175,81 @@ internal sealed partial class ListenCommands(IListenActivity activity,
         }
 
         return ListenOutcome.Continue;
+    }
+
+    /// <summary>
+    ///     Writes what the updater has to tell into the log, in the interface language.
+    /// </summary>
+    public static void Tell(ScreenLog log, UpdateNotice notice)
+    {
+        switch (notice.Kind)
+        {
+            case UpdateNoticeKind.DownloadStarted:
+                log.Add(EntryKind.Answer, Strings.Format(nameof(Strings.ResponseUpdateStarted), notice.Version));
+
+                break;
+
+            case UpdateNoticeKind.Downloaded:
+                log.Add(EntryKind.Answer, Strings.Format(nameof(Strings.UpdateDownloaded), notice.Version));
+
+                break;
+
+            case UpdateNoticeKind.DownloadFailed:
+                log.Add(EntryKind.Warning, Strings.Format(nameof(Strings.UpdateDownloadFailed), notice.Version, notice.Reason));
+
+                break;
+
+            case UpdateNoticeKind.UpToDate:
+                log.Add(EntryKind.Answer, Strings.Format(nameof(Strings.ResponseUpdateLatest), notice.Version));
+
+                break;
+
+            case UpdateNoticeKind.CheckFailed:
+                log.Add(EntryKind.Warning, Strings.Format(nameof(Strings.UpdateCheckFailed), notice.Reason));
+
+                break;
+        }
+    }
+
+    /// <summary>
+    ///     What /info says about the version: the one in use and what there is about a newer one.
+    /// </summary>
+    public static string DescribeVersion(UpdateStatus status) => status.Stage switch
+    {
+        UpdateStage.Latest => Strings.Format(nameof(Strings.InfoVersionLatest), status.Installed),
+        UpdateStage.Available => Strings.Format(nameof(Strings.InfoVersionAvailable), status.Installed, status.Newer),
+        UpdateStage.Downloading => Strings.Format(nameof(Strings.InfoVersionDownloading), status.Installed, status.Newer, status.Percent),
+        UpdateStage.Downloaded => Strings.Format(nameof(Strings.InfoVersionDownloaded), status.Installed, status.Newer),
+        _ => status.Installed
+    };
+
+    /// <summary>
+    ///     Downloads the newer version, or says why there is nothing to download.
+    /// </summary>
+    private void StartUpdate()
+    {
+        ScreenLog log = _activity.Log;
+
+        if (_updater is null)
+        {
+            log.Add(EntryKind.Answer, Strings.Format(nameof(Strings.ResponseUpdateNotInstalled), _installCommand));
+
+            return;
+        }
+
+        UpdateStatus status = _updater.Status;
+
+        string answer = _updater.Download() switch
+        {
+            UpdateStart.Started => Strings.Format(nameof(Strings.ResponseUpdateStarted), _updater.Status.Newer),
+            UpdateStart.Checking => Strings.ResponseUpdateChecking,
+            UpdateStart.AlreadyDownloading => Strings.Format(nameof(Strings.ResponseUpdateDownloading), _updater.Status.Percent),
+            UpdateStart.AlreadyDownloaded => Strings.Format(nameof(Strings.ResponseUpdateReady), status.Newer),
+            UpdateStart.UpToDate => Strings.Format(nameof(Strings.ResponseUpdateLatest), status.Installed),
+            _ => Strings.Format(nameof(Strings.ResponseUpdateNotInstalled), _installCommand)
+        };
+
+        log.Add(EntryKind.Answer, answer);
     }
 
     /// <summary>

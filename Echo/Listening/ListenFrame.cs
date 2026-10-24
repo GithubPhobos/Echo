@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using Echo.UI;
+using Echo.Updates;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 
@@ -15,7 +16,7 @@ internal sealed class ListenFrame(Theme theme)
     /// <summary>
     ///     How many columns the equalizer takes in the state line.
     /// </summary>
-    public const int EqualizerWidth = 12;
+    public const int EqualizerWidth = 10;
 
     /// <summary>
     ///     Stands in the place of the timer while nothing is recorded.
@@ -25,7 +26,12 @@ internal sealed class ListenFrame(Theme theme)
     /// <summary>
     ///     How many arcs spread to each side of the ear while the user speaks.
     /// </summary>
-    private const int MaxArcs = 5;
+    private const int MaxArcs = 4;
+
+    /// <summary>
+    ///     How long the arrow of a newer version stays lit, and then dark.
+    /// </summary>
+    private static readonly TimeSpan ArrowBlink = TimeSpan.FromMilliseconds(700);
 
     /// <summary>
     ///     The color of the model in the state line.
@@ -156,7 +162,7 @@ internal sealed class ListenFrame(Theme theme)
             lines.Add(string.Empty);
         }
 
-        lines.Add(BuildKeys(isPanelOpen: shownPanel > 0, inner));
+        lines.Add(BuildKeys(isPanelOpen: shownPanel > 0, offersUpdate: view.Update?.Stage == UpdateStage.Available, inner));
 
         return new ListenFrameResult(lines, logRows, scroll);
     }
@@ -234,9 +240,19 @@ internal sealed class ListenFrame(Theme theme)
 
         List<(string Markup, int Width)> pieces = [("  ", 2), (state, stateWidth), equalizer, key, model];
 
+        (string Markup, int Width) version = default;
+
+        if (view.Update is { } update)
+        {
+            (string markup, int versionWidth) = Version(update, view.Clock);
+
+            version = (gap + markup, gapWidth + versionWidth);
+            pieces.Add(version);
+        }
+
         // What does not fit is left out whole, since a piece cut in the middle reads as something else:
-        // the model first, which /info shows too, then the key, then the equalizer
-        foreach ((string Markup, int Width) piece in new[] { model, key, equalizer })
+        // the model first, which /info shows too, then the key, then the equalizer, and the version last
+        foreach ((string Markup, int Width) piece in new[] { model, key, equalizer, version })
         {
             if (pieces.Sum(candidate => candidate.Width) <= width)
                 break;
@@ -245,6 +261,51 @@ internal sealed class ListenFrame(Theme theme)
         }
 
         return string.Concat(pieces.Select(piece => piece.Markup));
+    }
+
+    /// <summary>
+    ///     The version in use, always, and in brackets what there is about a newer one: "√ 2.0.1" when it is the
+    ///     latest, "2.0.1 (↑)" with a blinking arrow when a newer one is out, "2.0.1 (⠹ 38%)" while it is downloaded,
+    ///     and "2.0.1 → 2.0.2 (/restart)" once it is.
+    /// </summary>
+    private (string Markup, int Width) Version(UpdateStatus update, TimeSpan clock)
+    {
+        string installed = update.Installed;
+        string newer = update.Newer ?? string.Empty;
+        string up = IsAscii ? "^" : "↑";
+        string to = IsAscii ? "->" : "→";
+
+        (string plain, string markup) = update.Stage switch
+        {
+            UpdateStage.Latest => (
+                $"{_theme.Good} {installed}",
+                Dim($"{_theme.Good} {installed}")),
+
+            UpdateStage.Available => (
+                $"{installed} ({up})",
+                Dim($"{installed} (") + $"[bold {(IsLit(clock) ? Theme.Accent : IdleDots)}]{Markup.Escape(up)}[/]" + Dim(")")),
+
+            UpdateStage.Downloading => (
+                $"{installed} ({_theme.Spinner(clock)} {Percent(update)})",
+                Dim($"{installed} (") + $"[bold {Theme.Highlight}]{Markup.Escape(_theme.Spinner(clock))}[/]" + Dim($" {Percent(update)})")),
+
+            UpdateStage.Downloaded => (
+                $"{installed} {to} {newer} ({ListenCommands.Restart})",
+                Dim($"{installed} {to} ") + $"[bold {Theme.Success}]{Markup.Escape(newer)}[/]" + Dim(" (")
+                    + $"[bold {Theme.Highlight}]{ListenCommands.Restart}[/]" + Dim(")")),
+
+            _ => (installed, Dim(installed))
+        };
+
+        return (markup, WidthOf(plain));
+
+        static string Dim(string text) => SetupUi.Dim(Markup.Escape(text));
+
+        static bool IsLit(TimeSpan clock) => (int)(clock / ArrowBlink) % 2 == 0;
+
+        // As wide at 5 % as at 38 %, so the line does not shift while the number grows
+        static string Percent(UpdateStatus update) =>
+            update.Percent.ToString(CultureInfo.InvariantCulture).PadLeft(2) + "%";
     }
 
     /// <summary>
@@ -688,22 +749,26 @@ internal sealed class ListenFrame(Theme theme)
         return $"  {shownLabel}  {shownDescription}{shownCurrent}";
     }
 
-    private string BuildKeys(bool isPanelOpen, int width)
+    /// <summary>
+    ///     The keys and commands that work now. While a newer version waits to be downloaded, /update stands among them,
+    ///     in the color of commands.
+    /// </summary>
+    private string BuildKeys(bool isPanelOpen, bool offersUpdate, int width)
     {
-        List<string> keys = isPanelOpen
-            ? [$"Enter {Strings.ListenHintPick}", $"{_theme.Arrows} {Strings.HintSelect}", $"Esc {Strings.ListenHintClose}"]
-            : [$"Enter {Strings.ListenHintRun}", $"{_theme.Arrows} PgUp PgDn {Strings.ListenHintLog}", $"Ctrl+C {Strings.ListenHintQuit}"];
+        // Each with how much it matters: on a narrow terminal the ones that matter least go first
+        List<(string Text, string Style, int Rank)> keys = isPanelOpen
+            ? [($"Enter {Strings.ListenHintPick}", Muted, 1), ($"{_theme.Arrows} {Strings.HintSelect}", Muted, 0), ($"Esc {Strings.ListenHintClose}", Muted, 3)]
+            : [($"Enter {Strings.ListenHintRun}", Muted, 1), ($"{_theme.Arrows} PgUp PgDn {Strings.ListenHintLog}", Muted, 0), ($"Ctrl+C {Strings.ListenHintQuit}", Muted, 3)];
 
-        string line = "  " + string.Join(Separator, keys);
+        if (offersUpdate && !isPanelOpen)
+            keys.Insert(keys.Count - 1, ($"{ListenCommands.Update} {Strings.ListenHintUpdate}", $"bold {Theme.Highlight}", 2));
 
-        // On a narrow terminal the keys that matter least go first
-        while (WidthOf(line) > width && keys.Count > 1)
-        {
-            keys.RemoveAt(keys.Count - 2);
-            line = "  " + string.Join(Separator, keys);
-        }
+        while (keys.Count > 1 && WidthOf("  " + string.Join(Separator, keys.Select(key => key.Text))) > width)
+            keys.Remove(keys.MinBy(key => key.Rank));
 
-        return $"[{Muted}]{Markup.Escape(line)}[/]";
+        string separator = $"[{Muted}]{Markup.Escape(Separator)}[/]";
+
+        return $"[{Muted}]  [/]" + string.Join(separator, keys.Select(key => $"[{key.Style}]{Markup.Escape(key.Text)}[/]"));
     }
 
     private static string Repeat(string text, int count) =>

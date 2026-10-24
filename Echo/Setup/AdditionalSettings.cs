@@ -14,6 +14,11 @@ internal static class AdditionalSettings
     /// </summary>
     public const string LogLevelSection = "Serilog:MinimumLevel";
 
+    /// <summary>
+    ///     Where the settings of updates live in the settings file.
+    /// </summary>
+    public const string UpdatesSection = "Updates";
+
     public static readonly AdditionalSetting Translate = new(
         "Translate", SettingGroup.Recognition, nameof(WhisperSettings), nameof(WhisperSettings.Translate), SettingKind.Switch, Off)
     {
@@ -92,6 +97,13 @@ internal static class AdditionalSettings
         Steps = ["Verbose", "Debug", "Information", "Warning", "Error", "Fatal"]
     };
 
+    /// <summary>
+    ///     Whether a newer version of Echo downloads by itself as soon as Echo finds out about it, or waits for /update.
+    ///     Echo checks for one either way.
+    /// </summary>
+    public static readonly AdditionalSetting AutoUpdate = new(
+        "AutoUpdate", SettingGroup.General, UpdatesSection, "AutoDownload", SettingKind.Switch, Off);
+
     public static readonly IReadOnlyList<AdditionalSetting> All =
     [
         Translate,
@@ -111,5 +123,6 @@ internal static class AdditionalSettings
         Volume,
         AutoInsert,
         LogLevel,
+        AutoUpdate,
     ];
 }

@@ -3,6 +3,9 @@
 ###############################################################################
 * text=auto
 
+# Shell scripts run on Linux, where a carriage return at the end of a line breaks them
+*.sh text eol=lf
+
 ###############################################################################
 # Set default behavior for command prompt diff.
 #
