@@ -1,5 +1,6 @@
 ﻿using Echo.Commands;
 using Echo.Listening;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace Echo.Tests.UnitTests;
@@ -22,5 +23,32 @@ public sealed class ListenCommandTests
         // Assert: the screen says so instead of staying at "starting"
         Assert.Equal(ListenState.Failed, activity.State);
         Assert.Contains(activity.Log.Snapshot(), entry => entry.Kind == EntryKind.Error && entry.Text.Contains("'bad'"));
+    }
+
+    [Fact]
+    public void ScreenLifetime_SystemAsksEchoToStop_EndsTheScreen()
+    {
+        // Arrange: the host the screen runs with, made the same way
+        using IHost host = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { ContentRootPath = AppContext.BaseDirectory }).Build();
+        using CancellationTokenSource running = ListenCommand.ScreenLifetime(host, CancellationToken.None);
+
+        // Act: a stop signal reaches the host as a request to stop, which is all the host does with it
+        host.Services.GetRequiredService<IHostApplicationLifetime>().StopApplication();
+
+        // Assert
+        Assert.True(running.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void ScreenLifetime_NothingAsksEchoToStop_KeepsTheScreen()
+    {
+        // Arrange
+        using IHost host = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { ContentRootPath = AppContext.BaseDirectory }).Build();
+
+        // Act
+        using CancellationTokenSource running = ListenCommand.ScreenLifetime(host, CancellationToken.None);
+
+        // Assert
+        Assert.False(running.IsCancellationRequested);
     }
 }

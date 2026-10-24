@@ -188,9 +188,11 @@ internal sealed class ListenCommand(
 
         Task starting = Task.Run(() => StartAsync(host, activity, cancellationToken), cancellationToken);
 
+        using CancellationTokenSource running = ScreenLifetime(host, cancellationToken);
+
         try
         {
-            return await screen.RunAsync(cancellationToken);
+            return await screen.RunAsync(running.Token);
         }
         finally
         {
@@ -209,6 +211,15 @@ internal sealed class ListenCommand(
             await Log.CloseAndFlushAsync();
         }
     }
+
+    /// <summary>
+    ///     How long the working screen runs: until the user leaves it, or until the system asks Echo to stop. A stop
+    ///     signal, such as the one of <c>kill</c> or of the system shutting down, is taken by the host, which only asks
+    ///     itself to stop and keeps the process alive: the screen then ends as with /quit, and Echo with it.
+    /// </summary>
+    internal static CancellationTokenSource ScreenLifetime(IHost host, CancellationToken cancellationToken) =>
+        CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken, host.Services.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping);
 
     /// <summary>
     ///     Starts the services. One that cannot even be created, for a setting it cannot take, say, is shown
