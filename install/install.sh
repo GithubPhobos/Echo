@@ -3,6 +3,10 @@
 #
 #   curl -fsSL https://githubphobos.github.io/Echo/install.sh | sh
 #
+# or, where there is no curl, as on a fresh Ubuntu desktop:
+#
+#   wget -qO- https://githubphobos.github.io/Echo/install.sh | sh
+#
 # A version can be given, which is also how an earlier version is put back:
 #
 #   curl -fsSL https://githubphobos.github.io/Echo/install.sh | sh -s 2.0.1
@@ -29,9 +33,22 @@ esac
 
 [ "$(uname -m)" = "x86_64" ] || fail "Echo runs on 64-bit Intel and AMD processors (x86_64) only, and this one is $(uname -m)."
 
-for program in curl tar sha256sum; do
+for program in tar sha256sum; do
     command -v "$program" > /dev/null 2>&1 || fail "the '$program' program is missing."
 done
+
+# Files come with curl, or with wget, which a fresh Ubuntu desktop has instead
+if command -v curl > /dev/null 2>&1; then
+    fetch() { curl -fSL --progress-bar "$1" -o "$2"; }
+    fetch_quietly() { curl -fsSL "$1" -o "$2"; }
+    final_address() { curl -fsSLI -o /dev/null -w '%{url_effective}' "$1"; }
+elif command -v wget > /dev/null 2>&1; then
+    fetch() { wget -q --show-progress -O "$2" "$1"; }
+    fetch_quietly() { wget -q -O "$2" "$1"; }
+    final_address() { wget -S --spider "$1" 2>&1 | sed -n 's/^ *[Ll]ocation: *//p' | tail -n 1 | tr -d '\r'; }
+else
+    fail "neither 'curl' nor 'wget' is there to download with."
+fi
 
 # The data folder of the XDG standard, which Echo uses for its models too; a relative path does not count
 case "${XDG_DATA_HOME:-}" in
@@ -46,12 +63,11 @@ version="${1:-}"
 version="${version#v}"
 
 if [ -z "$version" ]; then
-    latest=$(curl -fsSLI -o /dev/null -w '%{url_effective}' "$releases/latest") \
-        || fail "GitHub cannot be reached."
+    latest=$(final_address "$releases/latest") || fail "GitHub cannot be reached."
 
     case "$latest" in
         */releases/tag/v*) version="${latest##*/releases/tag/v}" ;;
-        *) fail "there is no release of Echo yet." ;;
+        *) fail "GitHub cannot be reached, or there is no release of Echo yet." ;;
     esac
 fi
 
@@ -61,9 +77,9 @@ trap 'rm -rf "$temporary"' EXIT INT TERM
 
 echo "Downloading Echo $version..."
 
-curl -fSL --progress-bar "$download/$archive" -o "$temporary/$archive" \
+fetch "$download/$archive" "$temporary/$archive" \
     || fail "Echo $version could not be downloaded. Is there such a version? See $releases"
-curl -fsSL "$download/SHA256SUMS" -o "$temporary/SHA256SUMS" \
+fetch_quietly "$download/SHA256SUMS" "$temporary/SHA256SUMS" \
     || fail "the checksums of Echo $version could not be downloaded."
 
 # Only the line of this archive is checked: the list names the archives of every system
