@@ -74,13 +74,17 @@ public sealed class CheckStepTests
     }
 
     [Fact]
-    public async Task MeasureSilence_DeviceDidNotAnswerAndIsMeasuredAgain_OpensItAnew()
+    public async Task MeasureSilence_DeviceDidNotAnswerAndIsMeasuredAgain_OpensItOnlyOnceTheFirstOpeningIsClosed()
     {
-        // Arrange: the first opening never ends, as with a device another program holds
+        // Arrange: the first opening hangs, as with a device another program holds, until that program lets it go
         using var holding = new ManualResetEventSlim();
         var firstEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var secondEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var firstClosed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var againEntered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         int openings = 0;
+
+        var firstSession = new Mock<IMicrophoneSession>();
+        firstSession.Setup(session => session.Dispose()).Callback(() => firstClosed.TrySetResult());
 
         Mock<IMicrophoneProbe> probe = Probe();
         probe.Setup(p => p.Open(0)).Returns(() =>
@@ -89,11 +93,12 @@ public sealed class CheckStepTests
             {
                 firstEntered.TrySetResult();
                 holding.Wait(_patience);
+
+                return firstSession.Object;
             }
-            else
-            {
-                secondEntered.TrySetResult();
-            }
+
+            // Whether the opening that hung is closed by the time the device is opened again
+            againEntered.TrySetResult(firstClosed.Task.IsCompleted);
 
             return Mock.Of<IMicrophoneSession>();
         });
@@ -101,37 +106,53 @@ public sealed class CheckStepTests
         var clock = new StoppedClock();
         CheckStep step = Step(probe, clock);
 
-        using (var first = new CancellationTokenSource())
-        {
-            _console.Input.PushKey(ConsoleKey.Enter);
-            Task measuring = step.Pages[1].ShowAsync(_context, _screen, first.Token);
-
-            await firstEntered.Task.WaitAsync(_patience);
-
-            // The time a device may take runs out, and the page says the device did not answer
-            clock.Expire();
-            await clock.LookedAtAfterExpiring.Task.WaitAsync(_patience);
-
-            await LeaveAsync(measuring, first);
-        }
-
         try
         {
-            // Act: the user measures again, as after closing the program that held the device
-            using var second = new CancellationTokenSource();
+            using (var first = new CancellationTokenSource())
+            {
+                _console.Input.PushKey(ConsoleKey.Enter);
+                Task measuring = step.Pages[1].ShowAsync(_context, _screen, first.Token);
 
-            _console.Input.PushKey(ConsoleKey.Enter);
-            Task measuring = step.Pages[1].ShowAsync(_context, _screen, second.Token);
+                await firstEntered.Task.WaitAsync(_patience);
 
-            // Assert: the opening that never ended is not waited for again
-            await secondEntered.Task.WaitAsync(_patience);
+                // The time a device may take runs out, and the page says the device did not answer
+                clock.Expire();
+                await clock.LookedAtAfterExpiring.Task.WaitAsync(_patience);
 
-            await LeaveAsync(measuring, second);
+                await LeaveAsync(measuring, first);
+            }
+
+            // Act: the user measures again while the device still hangs, and leaves before it answers
+            using (var second = new CancellationTokenSource())
+            {
+                _console.Input.PushKey(ConsoleKey.Enter);
+                Task measuring = step.Pages[1].ShowAsync(_context, _screen, second.Token);
+
+                bool isOpenedTwiceAtOnce = await Task.WhenAny(againEntered.Task, Task.Delay(TimeSpan.FromMilliseconds(200))) == againEntered.Task;
+                Assert.False(isOpenedTwiceAtOnce);
+
+                await LeaveAsync(measuring, second);
+            }
         }
         finally
         {
             holding.Set();
         }
+
+        // ...and measures once more, after the program that held the device let it go
+        using (var third = new CancellationTokenSource())
+        {
+            _console.Input.PushKey(ConsoleKey.Enter);
+            Task measuring = step.Pages[1].ShowAsync(_context, _screen, third.Token);
+
+            // Assert: the device was opened again only once the opening that hung was closed, and the attempt given
+            // up on before its turn came opened nothing
+            Assert.True(await againEntered.Task.WaitAsync(_patience));
+
+            await LeaveAsync(measuring, third);
+        }
+
+        Assert.Equal(2, openings);
     }
 
     [Fact]
@@ -183,6 +204,55 @@ public sealed class CheckStepTests
         await LeaveAsync(testing, leaving);
     }
 
+    [Fact]
+    public async Task TestDictation_DeviceOnTheListStillNotClosedInTime_IsNotOpenedBesideIt()
+    {
+        // Arrange: the opening of the device on the list hangs, and a device may take a tenth of a second to open
+        using var holding = new ManualResetEventSlim();
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        Mock<IMicrophoneProbe> probe = Probe();
+        probe.Setup(p => p.Open(0)).Returns(() =>
+        {
+            entered.TrySetResult();
+            holding.Wait(_patience);
+
+            return Mock.Of<IMicrophoneSession>();
+        });
+
+        var tester = new Mock<IDictationTester>();
+        tester.Setup(t => t.StartAsync(It.IsAny<SetupContext>(), It.IsAny<CancellationToken>())).Returns(() =>
+        {
+            started.TrySetResult();
+
+            return new TaskCompletionSource<IDictationTestSession>().Task;
+        });
+
+        CheckStep step = Step(probe, TimeProvider.System, tester.Object, SetupTimings.Default with { DeviceTimeout = TimeSpan.FromMilliseconds(100) });
+
+        await LeaveTheListAtOnceAsync(step);
+        await entered.Task.WaitAsync(_patience);
+
+        try
+        {
+            // Act: the dictation comes right after the list, and the device is still not closed when its time is up
+            using var leaving = new CancellationTokenSource();
+            Task testing = step.Pages[2].ShowAsync(_context, _screen, leaving.Token);
+
+            bool isStarted = await Task.WhenAny(started.Task, Task.Delay(TimeSpan.FromMilliseconds(500))) == started.Task;
+
+            await LeaveAsync(testing, leaving);
+
+            // Assert: the page says the device does not answer rather than opening it a second time
+            Assert.False(isStarted);
+        }
+        finally
+        {
+            holding.Set();
+        }
+    }
+
     private static Mock<IMicrophoneProbe> Probe()
     {
         var probe = new Mock<IMicrophoneProbe>();
@@ -191,11 +261,11 @@ public sealed class CheckStepTests
         return probe;
     }
 
-    private CheckStep Step(Mock<IMicrophoneProbe> probe, TimeProvider time, IDictationTester? tester = null) =>
+    private CheckStep Step(Mock<IMicrophoneProbe> probe, TimeProvider time, IDictationTester? tester = null, SetupTimings? timings = null) =>
         new(new SetupUi(_console, Theme.Ascii, TimeSpan.FromMilliseconds(1)),
             probe.Object,
             tester ?? Mock.Of<IDictationTester>(),
-            SetupTimings.Default,
+            timings ?? SetupTimings.Default,
             time);
 
     /// <summary>

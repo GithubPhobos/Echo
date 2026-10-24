@@ -1,6 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using Echo.Listening;
 using Echo.Services.BackgroundServices;
+using Echo.Setup.Audio;
+using NAudio.Wave;
 
 namespace Echo.Tests.UnitTests;
 
@@ -24,8 +26,9 @@ public sealed class EchoOrchestratorTests
 
     public EchoOrchestratorTests()
     {
-        // The microphone is there unless a test unplugs it
+        // The microphone is there unless a test unplugs it, and opens again whenever it is asked to
         _audioMock.Setup(a => a.StartRecording()).Returns(true);
+        _audioMock.Setup(a => a.ReopenMicrophone()).Returns(true);
 
         _orchestrator = new EchoOrchestrator(
             _loggerMock.Object,
@@ -659,7 +662,7 @@ public sealed class EchoOrchestratorTests
 
         var calls = new ConcurrentQueue<string>();
         _audioMock.Setup(a => a.StopRecording()).Callback(() => calls.Enqueue("stop")).Returns((MemoryStream?)null);
-        _audioMock.Setup(a => a.ReopenMicrophone()).Callback(() => calls.Enqueue("reopen"));
+        _audioMock.Setup(a => a.ReopenMicrophone()).Callback(() => calls.Enqueue("reopen")).Returns(true);
 
         await StartAsync(_orchestrator);
         _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
@@ -680,6 +683,113 @@ public sealed class EchoOrchestratorTests
         // Assert: the phrase was not cut, and the microphone was opened again as soon as it ended
         Assert.False(isOpenedWhileRecording);
         Assert.Equal(["stop", "reopen"], calls.ToArray());
+    }
+
+    [Fact]
+    public async Task MicrophonesChanged_KeyPressedBeforeTheQueuedOpeningRuns_OpensTheMicrophoneOnlyOnceTheRecordingEnds()
+    {
+        // Arrange: a slow opening of the loudspeakers holds up the queue, so the opening of the microphone waits
+        // behind it; the sounds opened after that show when the queue has run
+        using var soundsEntered = new ManualResetEventSlim();
+        using var soundsGoOn = new ManualResetEventSlim();
+        using var queueRun = new SemaphoreSlim(0);
+        HoldTheFirstOpeningOfTheSounds(soundsEntered, soundsGoOn, queueRun);
+
+        var calls = new ConcurrentQueue<string>();
+        _audioMock.Setup(a => a.MarkMicrophoneForReopening()).Callback(() => calls.Enqueue("mark"));
+        _audioMock.Setup(a => a.StartRecording()).Callback(() => calls.Enqueue("start")).Returns(true);
+        _audioMock.Setup(a => a.StopRecording()).Callback(() => calls.Enqueue("stop")).Returns((MemoryStream?)null);
+        _audioMock.Setup(a => a.ReopenMicrophone()).Callback(() => calls.Enqueue("reopen")).Returns(true);
+
+        await StartAsync(_orchestrator);
+
+        _devicesMock.Raise(d => d.LoudspeakersChanged += null, EventArgs.Empty);
+        Assert.True(soundsEntered.Wait(_patience));
+        _devicesMock.Raise(d => d.MicrophonesChanged += null, EventArgs.Empty);
+
+        // Act: the key comes after the notice, but before its opening runs
+        _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
+        _devicesMock.Raise(d => d.LoudspeakersChanged += null, EventArgs.Empty);
+        soundsGoOn.Set();
+        Assert.True(await queueRun.WaitAsync(_patience));
+        bool isOpenedWhileRecording = calls.Contains("reopen");
+
+        _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty);
+        await _orchestrator.StopAsync(CancellationToken.None);
+
+        // Assert: the microphone was marked before the key came, for the recording to open it again itself, and the
+        // opening in the queue waited for the end of the phrase
+        Assert.False(isOpenedWhileRecording);
+        Assert.Equal(["mark", "start", "stop", "reopen"], calls.ToArray());
+    }
+
+    [Fact]
+    public async Task MicrophonesChanged_KeyPressedBeforeTheQueuedOpeningRuns_RecordsTheWholePhraseFromTheMicrophoneOpenedAgain()
+    {
+        // Arrange: the real microphone service behind Echo; the system closed the microphone, and a slow opening of
+        // the loudspeakers holds up the queue
+        var input = new Mock<IAudioInput>();
+        input.Setup(i => i.GetDevices()).Returns([new MicrophoneDevice(0, "Headset")]);
+
+        var closed = new Mock<IAudioInputStream>();
+        var reopened = new Mock<IAudioInputStream>();
+        var openings = new Queue<IAudioInputStream>([closed.Object, reopened.Object]);
+        input.Setup(i => i.Open(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>())).Returns(openings.Dequeue);
+
+        using var audio = new AudioRecordingService(
+            input.Object,
+            Mock.Of<ILogger<AudioRecordingService>>(),
+            Options.Create(new RecordingDeviceSettings { DeviceIndex = 0, DeviceName = "Headset", BufferMs = 50, NumberOfBuffers = 3 }));
+
+        using var soundsEntered = new ManualResetEventSlim();
+        using var soundsGoOn = new ManualResetEventSlim();
+        using var queueRun = new SemaphoreSlim(0);
+        HoldTheFirstOpeningOfTheSounds(soundsEntered, soundsGoOn, queueRun);
+
+        long recorded = -1;
+        _whisperMock
+            .Setup(w => w.ProcessAudioAsync(It.IsAny<MemoryStream?>()))
+            .Callback<MemoryStream?>(stream =>
+            {
+                using var reader = new WaveFileReader(stream!);
+                recorded = reader.Length;
+            })
+            .ReturnsAsync((string?)null);
+
+        var orchestrator = new EchoOrchestrator(
+            _loggerMock.Object,
+            _soundMock.Object,
+            _textMock.Object,
+            audio,
+            _whisperMock.Object,
+            _monitorMock.Object,
+            Mock.Of<IErrorWindow>(),
+            deviceEvents: _devicesMock.Object);
+
+        await StartAsync(orchestrator);
+
+        _devicesMock.Raise(d => d.LoudspeakersChanged += null, EventArgs.Empty);
+        Assert.True(soundsEntered.Wait(_patience));
+        _devicesMock.Raise(d => d.MicrophonesChanged += null, EventArgs.Empty);
+
+        // Act: the phrase begins before the opening runs, and goes on while it does
+        _monitorMock.Raise(m => m.OnRecordingTriggered += null, EventArgs.Empty);
+        reopened.Raise(stream => stream.DataAvailable += null, Piece(bytes: 320));
+
+        _devicesMock.Raise(d => d.LoudspeakersChanged += null, EventArgs.Empty);
+        soundsGoOn.Set();
+        Assert.True(await queueRun.WaitAsync(_patience));
+
+        reopened.Raise(stream => stream.DataAvailable += null, Piece(bytes: 320));
+        closed.Raise(stream => stream.DataAvailable += null, Piece(bytes: 640));
+        _monitorMock.Raise(m => m.OnRecordingReleased += null, EventArgs.Empty);
+        await orchestrator.StopAsync(CancellationToken.None);
+
+        // Assert: the microphone the system closed was opened again before the phrase, which the new one recorded whole
+        Assert.Equal(640, recorded);
+        closed.Verify(stream => stream.Dispose(), Times.Once);
+        reopened.Verify(stream => stream.Dispose(), Times.Never);
+        input.Verify(i => i.Open(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(2));
     }
 
     [Fact]
@@ -735,4 +845,32 @@ public sealed class EchoOrchestratorTests
             _soundMock.Object,
             Mock.Of<ILogger<PushToTalkMonitorService>>(),
             Options.Create(new PushToTalkSettings { PlaySound = false }));
+
+    /// <summary>
+    ///     Makes the first opening of the loudspeakers wait until the test lets it go, holding up the openings queued
+    ///     after it; every later one says that the queue has run up to it.
+    /// </summary>
+    private void HoldTheFirstOpeningOfTheSounds(ManualResetEventSlim entered, ManualResetEventSlim goOn, SemaphoreSlim later)
+    {
+        int openings = 0;
+
+        _soundMock.Setup(s => s.ReopenSounds()).Callback(() =>
+        {
+            if (Interlocked.Increment(ref openings) > 1)
+            {
+                later.Release();
+
+                return;
+            }
+
+            entered.Set();
+            goOn.Wait(_patience);
+        });
+    }
+
+    /// <summary>
+    ///     A piece of loud sound, as the microphone sends it.
+    /// </summary>
+    private static AudioInputEventArgs Piece(int bytes) =>
+        new(Enumerable.Repeat((byte)0x40, bytes).ToArray(), bytes);
 }

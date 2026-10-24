@@ -157,6 +157,94 @@ public sealed class WindowsAudioDeviceEventsTests
     }
 
     [WindowsFact]
+    public async Task Changes_DeviceChangesWhileTheLastOnesAreLookedAt_AreToldOnceAfterTheQuietPeriodOfTheNewOne()
+    {
+        // Arrange: Windows is slow to say what the first microphone is
+        using var lookingAtFirst = new ManualResetEventSlim();
+        using var firstLookedAt = new ManualResetEventSlim();
+
+        using WindowsAudioDeviceEvents events = Events(deviceId =>
+        {
+            if (deviceId == "first microphone")
+            {
+                lookingAtFirst.Set();
+                firstLookedAt.Wait(_patience);
+            }
+
+            return DataFlow.Capture;
+        });
+
+        IMMNotificationClient engine = events;
+        engine.OnDeviceAdded("first microphone");
+
+        Task telling = Task.Run(() => _clock.Advance(WindowsAudioDeviceEvents.SettleTime));
+        Assert.True(lookingAtFirst.Wait(_patience));
+
+        // Act: another microphone comes while the first is looked at
+        engine.OnDeviceAdded("second microphone");
+        firstLookedAt.Set();
+        await telling.WaitAsync(_patience);
+        int toldTooEarly = _microphoneChanges;
+
+        _clock.Advance(WindowsAudioDeviceEvents.SettleTime);
+
+        // Assert: told once for both, when the devices were quiet after the second
+        Assert.Equal(0, toldTooEarly);
+        Assert.Equal(1, _microphoneChanges);
+        Assert.Equal(0, _loudspeakerChanges);
+    }
+
+    [WindowsFact]
+    public void Changes_DeviceChangesJustAsTheQuietPeriodRunsOut_AreToldOnlyAfterItsOwn()
+    {
+        // Arrange
+        using WindowsAudioDeviceEvents events = Events();
+        IMMNotificationClient engine = events;
+        engine.OnDeviceAdded(Microphone);
+
+        // Act: the loudspeakers change in the moment between the end of the first quiet period and its telling
+        engine.OnDeviceAdded(Loudspeakers);
+        _clock.RunLate(timer: 0);
+        (int Microphones, int Loudspeakers) toldTooEarly = (_microphoneChanges, _loudspeakerChanges);
+
+        _clock.Advance(WindowsAudioDeviceEvents.SettleTime);
+
+        // Assert
+        Assert.Equal((0, 0), toldTooEarly);
+        Assert.Equal(1, _microphoneChanges);
+        Assert.Equal(1, _loudspeakerChanges);
+    }
+
+    [WindowsFact]
+    public async Task Changes_EchoStoppedWhileTheyAreLookedAt_AreNotTold()
+    {
+        // Arrange
+        using var looking = new ManualResetEventSlim();
+        using var lookedAt = new ManualResetEventSlim();
+
+        WindowsAudioDeviceEvents events = Events(_ =>
+        {
+            looking.Set();
+            lookedAt.Wait(_patience);
+
+            return DataFlow.Capture;
+        });
+
+        ((IMMNotificationClient)events).OnDeviceAdded(Microphone);
+
+        Task telling = Task.Run(() => _clock.Advance(WindowsAudioDeviceEvents.SettleTime));
+        Assert.True(looking.Wait(_patience));
+
+        // Act
+        events.Dispose();
+        lookedAt.Set();
+        await telling.WaitAsync(_patience);
+
+        // Assert
+        Assert.Equal(0, _microphoneChanges);
+    }
+
+    [WindowsFact]
     public void Changes_RealAudioEngine_AsksItWhatTheDeviceIs()
     {
         // Arrange: the engine of this computer, which has never heard of this device
@@ -175,13 +263,14 @@ public sealed class WindowsAudioDeviceEventsTests
     }
 
     /// <summary>
-    ///     The notices on the test's clock, counted as they are told, with the two devices of the user known.
+    ///     The notices on the test's clock, counted as they are told, with the two devices of the user known unless the
+    ///     test says otherwise.
     /// </summary>
-    private WindowsAudioDeviceEvents Events()
+    private WindowsAudioDeviceEvents Events(Func<string, DataFlow?>? flowOf = null)
     {
-        var events = new WindowsAudioDeviceEvents(Mock.Of<ILogger<WindowsAudioDeviceEvents>>(), _clock, FlowOf);
-        events.MicrophonesChanged += (_, _) => _microphoneChanges++;
-        events.LoudspeakersChanged += (_, _) => _loudspeakerChanges++;
+        var events = new WindowsAudioDeviceEvents(Mock.Of<ILogger<WindowsAudioDeviceEvents>>(), _clock, flowOf ?? FlowOf);
+        events.MicrophonesChanged += (_, _) => Interlocked.Increment(ref _microphoneChanges);
+        events.LoudspeakersChanged += (_, _) => Interlocked.Increment(ref _loudspeakerChanges);
 
         return events;
     }
@@ -194,10 +283,11 @@ public sealed class WindowsAudioDeviceEventsTests
     };
 
     /// <summary>
-    ///     A clock that moves only when the test moves it, and runs the timers on the test's thread.
+    ///     A clock that moves only when the test moves it, and runs the timers that are due on the thread that moves it.
     /// </summary>
     private sealed class ManualClock : TimeProvider
     {
+        private readonly object _lock = new();
         private readonly List<ManualTimer> _timers = [];
 
         private TimeSpan _now;
@@ -206,17 +296,40 @@ public sealed class WindowsAudioDeviceEventsTests
         {
             var timer = new ManualTimer(this, () => callback(state));
             timer.Change(dueTime, period);
-            _timers.Add(timer);
+
+            lock (_lock)
+                _timers.Add(timer);
 
             return timer;
         }
 
         public void Advance(TimeSpan time)
         {
-            _now += time;
+            ManualTimer[] due;
 
-            foreach (ManualTimer timer in _timers.ToArray())
-                timer.RunIfDue();
+            lock (_lock)
+            {
+                _now += time;
+                due = [.. _timers.Where(timer => timer.TakeIfDue(_now))];
+            }
+
+            // Outside the lock: what a timer runs may set the next one
+            foreach (ManualTimer timer in due)
+                timer.Tick();
+        }
+
+        /// <summary>
+        ///     Runs a timer, in the order they were made, even though it was set again or let go since: a timer of the
+        ///     system whose time ran out just before does that.
+        /// </summary>
+        public void RunLate(int timer)
+        {
+            ManualTimer late;
+
+            lock (_lock)
+                late = _timers[timer];
+
+            late.Tick();
         }
 
         /// <summary>
@@ -228,22 +341,33 @@ public sealed class WindowsAudioDeviceEventsTests
 
             public bool Change(TimeSpan dueTime, TimeSpan period)
             {
-                _due = dueTime == Timeout.InfiniteTimeSpan ? null : clock._now + dueTime;
+                lock (clock._lock)
+                    _due = dueTime == Timeout.InfiniteTimeSpan ? null : clock._now + dueTime;
 
                 return true;
             }
 
-            public void RunIfDue()
+            /// <summary>
+            ///     Whether the timer is due, taking it if it is. Called under the lock of the clock.
+            /// </summary>
+            public bool TakeIfDue(TimeSpan now)
             {
-                if (_due is not { } due || due > clock._now)
-                    return;
+                if (_due is not { } due || due > now)
+                    return false;
 
                 _due = null;
-                tick();
+
+                return true;
             }
 
-            public void Dispose() =>
-                _due = null;
+            public void Tick() =>
+                tick();
+
+            public void Dispose()
+            {
+                lock (clock._lock)
+                    _due = null;
+            }
 
             public ValueTask DisposeAsync()
             {

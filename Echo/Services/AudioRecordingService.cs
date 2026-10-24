@@ -39,8 +39,9 @@ internal sealed class AudioRecordingService(
     private readonly object _lockObj = new();
 
     /// <summary>
-    ///     Guards opening and closing the microphone. Apart from <see cref="_lockObj"/>, since closing waits for
-    ///     the audio thread, which may itself be waiting for that one.
+    ///     Guards opening and closing the microphone, and the beginning of a recording, so that the microphone is never
+    ///     opened again in the middle of one. Taken before <see cref="_lockObj"/>, never while holding it, since closing
+    ///     waits for the audio thread, which may itself be waiting for that one.
     /// </summary>
     private readonly object _deviceLock = new();
 
@@ -51,6 +52,12 @@ internal sealed class AudioRecordingService(
     ///     Only then is a microphone that the system closed opened again.
     /// </summary>
     private bool _keepsMicrophoneOpen;
+
+    /// <summary>
+    ///     Whether the microphone is to be opened again, as the system may have closed it. Set without waiting, as soon
+    ///     as Echo hears of it: a recording that begins before the opening is done opens it again first.
+    /// </summary>
+    private volatile bool _isStale;
 
     /// <summary>
     ///     Whether the screen said that the microphone does not open: once it opens again, the screen says it is back.
@@ -138,14 +145,25 @@ internal sealed class AudioRecordingService(
     }
 
     /// <inheritdoc/>
-    public void ReopenMicrophone()
+    public void MarkMicrophoneForReopening() =>
+        _isStale = true;
+
+    /// <inheritdoc/>
+    public bool ReopenMicrophone()
     {
         lock (_deviceLock)
         {
-            if (!_keepsMicrophoneOpen) return;
+            // Opened again by a recording that began first, or closed along with Echo
+            if (!_isStale || !_keepsMicrophoneOpen)
+                return true;
 
-            Close();
-            TryOpen();
+            // The recording under way began before the microphone was marked: opened again now, it would be cut
+            if (_isPttActive)
+                return false;
+
+            Reopen();
+
+            return true;
         }
     }
 
@@ -154,51 +172,57 @@ internal sealed class AudioRecordingService(
     {
         if (_isPttActive) return true;
 
+        // The microphone stays as it is until the recording has begun: one opened again from now on waits for its end
         lock (_deviceLock)
         {
-            // The microphone the system closed may not have opened again right away: each recording tries once more
-            if (_keepsMicrophoneOpen && _microphone is null)
-                TryOpen();
+            if (_keepsMicrophoneOpen)
+            {
+                // The microphone the system may have closed is opened again before it records, and one that did not
+                // open again right away is tried once more at each recording
+                if (_isStale)
+                    Reopen();
+                else if (_microphone is null)
+                    TryOpen();
+            }
 
             // Without it nothing is recorded, rather than a recording found empty once the key comes up: the screen
             // has said why
             if (_microphone is null)
                 return false;
-        }
 
-        try
-        {
-            // Lock prevents OnRecording from writing into partially initialized streams
-            lock (_lockObj)
+            try
             {
-                _audioStream = new MemoryStream();
+                // Lock prevents OnRecording from writing into partially initialized streams
+                lock (_lockObj)
+                {
+                    _audioStream = new MemoryStream();
 
-                // NAudio requires a WaveFileWriter to generate the correct WAV header (RIFF) in memory
-                _writer = new WaveFileWriter(
-                    new IgnoreDisposeStream(_audioStream),
-                    _whisperFormat);
+                    // NAudio requires a WaveFileWriter to generate the correct WAV header (RIFF) in memory
+                    _writer = new WaveFileWriter(
+                        new IgnoreDisposeStream(_audioStream),
+                        _whisperFormat);
 
-                _hasVoiceStarted = false;
-                _isPttActive = true;
+                    _hasVoiceStarted = false;
+                    _isPttActive = true;
+                }
             }
-
-        }
-        catch (Exception exc)
-        {
-            _logger.LogError(exc, "{WarningEmoji} Failed to start audio recording: {ErrorMessage}.",
-                LoggerConstants.WarningEmoji, exc.Message);
-
-            // In case of failure, clear session state but KEEP hardware running
-            lock (_lockObj)
+            catch (Exception exc)
             {
-                _isPttActive = false;
-                _writer?.Dispose();
-                _writer = null;
-                _audioStream?.Dispose();
-                _audioStream = null;
-            }
+                _logger.LogError(exc, "{WarningEmoji} Failed to start audio recording: {ErrorMessage}.",
+                    LoggerConstants.WarningEmoji, exc.Message);
 
-            throw;
+                // In case of failure, clear session state but KEEP hardware running
+                lock (_lockObj)
+                {
+                    _isPttActive = false;
+                    _writer?.Dispose();
+                    _writer = null;
+                    _audioStream?.Dispose();
+                    _audioStream = null;
+                }
+
+                throw;
+            }
         }
 
         return true;
@@ -332,6 +356,17 @@ internal sealed class AudioRecordingService(
         }
 
         return microphone;
+    }
+
+    /// <summary>
+    ///     Closes the microphone the system may have closed and opens it again. Called under <see cref="_deviceLock"/>.
+    /// </summary>
+    private void Reopen()
+    {
+        _isStale = false;
+
+        Close();
+        TryOpen();
     }
 
     /// <summary>

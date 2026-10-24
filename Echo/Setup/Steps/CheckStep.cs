@@ -74,6 +74,7 @@ internal sealed class CheckStep : ISetupStep
     /// <summary>
     ///     When each device is closed, by its index. A device left on one page may still be opening, and the next page
     ///     opens it again only once that opening is through and closed: two openings of one device at once may find it busy.
+    ///     That holds for an opening given up on as well, however long it takes: a device that hangs is opened once.
     /// </summary>
     private readonly ConcurrentDictionary<int, Task> _closings = new();
 
@@ -488,13 +489,21 @@ internal sealed class CheckStep : ISetupStep
     }
 
     /// <summary>
-    ///     Starts the test dictation once the device is closed on the pages before, or once it has had the time a device
-    ///     may take to open: the dictation opens the device on its own, and two openings at once may find it busy.
+    ///     Starts the test dictation once the device is closed on the pages before: the dictation opens the device on its
+    ///     own, and two openings at once may find it busy. A device not closed within the time it may take to open is
+    ///     said not to answer, as the dictation says of a device that does not open.
     /// </summary>
     private async Task<IDictationTestSession> StartDictationAsync(SetupContext context, CancellationToken cancellationToken)
     {
         if (_closings.TryGetValue(context.MicrophoneIndex, out Task? closing))
+        {
+            // A closing that failed has let the device go all the same
             await closing.WaitAsync(_timings.DeviceTimeout, _time, cancellationToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!closing.IsCompleted)
+                throw new DictationTestException(Strings.MicrophoneNoResponse, new TimeoutException());
+        }
 
         return await _dictationTester.StartAsync(context, cancellationToken);
     }
@@ -585,7 +594,12 @@ internal sealed class CheckStep : ISetupStep
         private int _deviceIndex;
         private long _waitingSince;
 
-        private Task<IMicrophoneSession>? _opening;
+        /// <summary>
+        ///     The opening this page still waits for. One given up on before its turn to open came opens nothing.
+        /// </summary>
+        private object? _attempt;
+
+        private Task<IMicrophoneSession?>? _opening;
 
         /// <summary>
         ///     The open microphone, once it has answered.
@@ -605,10 +619,15 @@ internal sealed class CheckStep : ISetupStep
             _deviceIndex = deviceIndex;
             _waitingSince = _time.GetTimestamp();
 
-            // The device opens once an opening of it left on the page before is closed; the waiting counts towards the
-            // time it may take
+            // The device opens once an opening of it left before is closed, even one given up on long ago; the waiting
+            // counts towards the time it may take
+            object attempt = new();
+            Volatile.Write(ref _attempt, attempt);
+
             Task closed = _closings.TryGetValue(deviceIndex, out Task? closing) ? closing : Task.CompletedTask;
-            _opening = closed.ContinueWith(_ => _probe.Open(deviceIndex), TaskScheduler.Default);
+            _opening = closed.ContinueWith(
+                _ => Volatile.Read(ref _attempt) == attempt ? _probe.Open(deviceIndex) : null,
+                TaskScheduler.Default);
         }
 
         /// <summary>
@@ -631,11 +650,9 @@ internal sealed class CheckStep : ISetupStep
             }
             else if (_time.GetElapsedTime(_waitingSince) > _timeout)
             {
+                // Trying again waits for this opening too: a device that hangs is never opened twice at once
                 Error = Strings.MicrophoneNoResponse;
                 Abandon();
-
-                // A device that does not answer is not waited for any more: trying again opens it anew
-                _closings.TryRemove(_deviceIndex, out _);
             }
 
             return Session;
@@ -659,11 +676,13 @@ internal sealed class CheckStep : ISetupStep
             if (_opening is null)
                 return;
 
+            Volatile.Write(ref _attempt, null);
+
             _closings[_deviceIndex] = _opening.ContinueWith(
                 opened =>
                 {
                     if (opened.IsCompletedSuccessfully)
-                        opened.Result.Dispose();
+                        opened.Result?.Dispose();
                 },
                 TaskScheduler.Default);
 

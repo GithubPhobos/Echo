@@ -9,7 +9,7 @@ namespace Echo.Platform.Windows;
 /// <remarks>
 ///     Windows tells about its sound devices through the notices of its audio engine. A device that comes back after
 ///     sleep goes away and comes back several times within a few seconds, so the changes are told only once the
-///     devices have been quiet for a moment.
+///     devices have been quiet for a moment, and once for the whole series.
 /// </remarks>
 [SupportedOSPlatform("windows")]
 internal sealed class WindowsAudioDeviceEvents : IAudioDeviceEvents, IMMNotificationClient, IDisposable
@@ -23,7 +23,12 @@ internal sealed class WindowsAudioDeviceEvents : IAudioDeviceEvents, IMMNotifica
     private readonly ILogger<WindowsAudioDeviceEvents> _logger;
     private readonly MMDeviceEnumerator? _devices;
     private readonly Func<string, DataFlow?> _flowOf;
-    private readonly ITimer _settling;
+    private readonly TimeProvider _time;
+
+    /// <summary>
+    ///     One telling at a time: a slow look at the devices must not let the telling of a later change overtake it.
+    /// </summary>
+    private readonly object _telling = new();
 
     /// <summary>
     ///     Guards everything below: the notices come on threads of the system, and the changes are told on another.
@@ -36,7 +41,19 @@ internal sealed class WindowsAudioDeviceEvents : IAudioDeviceEvents, IMMNotifica
     /// </summary>
     private readonly HashSet<string> _changedDevices = [];
 
-    private bool _isDefaultLoudspeakersChanged;
+    /// <summary>
+    ///     The quiet period after the latest change, which tells the whole series.
+    /// </summary>
+    private ITimer? _settling;
+
+    /// <summary>
+    ///     How many changes have come: a telling that finds more than when it began leaves them to the quiet period of the
+    ///     latest one.
+    /// </summary>
+    private long _changes;
+
+    private bool _isMicrophonesChanged;
+    private bool _isLoudspeakersChanged;
     private bool _isDisposed;
 
     /// <inheritdoc/>
@@ -84,8 +101,8 @@ internal sealed class WindowsAudioDeviceEvents : IAudioDeviceEvents, IMMNotifica
                                       Func<string, DataFlow?>? flowOf)
     {
         _logger = logger;
+        _time = time;
         _flowOf = flowOf ?? FlowOf;
-        _settling = time.CreateTimer(_ => Tell(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
     }
 
     /// <inheritdoc/>
@@ -112,7 +129,7 @@ internal sealed class WindowsAudioDeviceEvents : IAudioDeviceEvents, IMMNotifica
 
         lock (_lock)
         {
-            _isDefaultLoudspeakersChanged = true;
+            _isLoudspeakersChanged = true;
             Settle();
         }
     }
@@ -134,6 +151,7 @@ internal sealed class WindowsAudioDeviceEvents : IAudioDeviceEvents, IMMNotifica
                 return;
 
             _isDisposed = true;
+            _settling?.Dispose();
         }
 
         if (_devices is not null)
@@ -141,8 +159,6 @@ internal sealed class WindowsAudioDeviceEvents : IAudioDeviceEvents, IMMNotifica
             _devices.UnregisterEndpointNotificationCallback(this);
             _devices.Dispose();
         }
-
-        _settling.Dispose();
     }
 
     private void Note(string deviceId)
@@ -155,50 +171,74 @@ internal sealed class WindowsAudioDeviceEvents : IAudioDeviceEvents, IMMNotifica
     }
 
     /// <summary>
-    ///     Waits for the devices to be quiet again from now on.
+    ///     Counts a change and waits for the devices to be quiet again from now on. Called under <see cref="_lock"/>.
     /// </summary>
     private void Settle()
     {
-        if (!_isDisposed)
-            _settling.Change(SettleTime, Timeout.InfiniteTimeSpan);
+        if (_isDisposed)
+            return;
+
+        // A quiet period of its own for every change: one that has already run out finds that a later change came
+        long changes = ++_changes;
+
+        _settling?.Dispose();
+        _settling = _time.CreateTimer(_ => Tell(changes), null, SettleTime, Timeout.InfiniteTimeSpan);
     }
 
     /// <summary>
     ///     Tells the changes once the devices have settled: what each changed device does decides what changed.
     /// </summary>
-    private void Tell()
+    /// <param name="changes">How many changes had come when this quiet period began.</param>
+    private void Tell(long changes)
     {
-        string[] changedDevices;
-        bool isLoudspeakersChanged;
-
-        lock (_lock)
+        lock (_telling)
         {
-            if (_isDisposed)
-                return;
+            string[] changedDevices;
 
-            changedDevices = [.. _changedDevices];
-            _changedDevices.Clear();
+            lock (_lock)
+            {
+                // A later change, even one that came just as this period ran out, has a quiet period of its own
+                if (_isDisposed || _changes != changes)
+                    return;
 
-            isLoudspeakersChanged = _isDefaultLoudspeakersChanged;
-            _isDefaultLoudspeakersChanged = false;
+                changedDevices = [.. _changedDevices];
+                _changedDevices.Clear();
+            }
+
+            bool isMicrophonesChanged = false;
+            bool isLoudspeakersChanged = false;
+
+            foreach (string deviceId in changedDevices)
+            {
+                // A device the system does not know any more may have been either
+                DataFlow? flow = _flowOf(deviceId);
+
+                isMicrophonesChanged |= flow is null or DataFlow.Capture;
+                isLoudspeakersChanged |= flow is null or DataFlow.Render;
+            }
+
+            lock (_lock)
+            {
+                _isMicrophonesChanged |= isMicrophonesChanged;
+                _isLoudspeakersChanged |= isLoudspeakersChanged;
+
+                // A device changed while these were looked at: they are told with it, once the devices are quiet again
+                if (_isDisposed || _changes != changes)
+                    return;
+
+                isMicrophonesChanged = _isMicrophonesChanged;
+                isLoudspeakersChanged = _isLoudspeakersChanged;
+
+                _isMicrophonesChanged = false;
+                _isLoudspeakersChanged = false;
+            }
+
+            if (isMicrophonesChanged)
+                MicrophonesChanged?.Invoke(this, EventArgs.Empty);
+
+            if (isLoudspeakersChanged)
+                LoudspeakersChanged?.Invoke(this, EventArgs.Empty);
         }
-
-        bool isMicrophonesChanged = false;
-
-        foreach (string deviceId in changedDevices)
-        {
-            // A device the system does not know any more may have been either
-            DataFlow? flow = _flowOf(deviceId);
-
-            isMicrophonesChanged |= flow is null or DataFlow.Capture;
-            isLoudspeakersChanged |= flow is null or DataFlow.Render;
-        }
-
-        if (isMicrophonesChanged)
-            MicrophonesChanged?.Invoke(this, EventArgs.Empty);
-
-        if (isLoudspeakersChanged)
-            LoudspeakersChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>

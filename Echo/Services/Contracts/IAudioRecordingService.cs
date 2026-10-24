@@ -15,21 +15,32 @@ internal interface IAudioRecordingService : IDisposable
     void InititalizeAudioRecordingCapabilities();
 
     /// <summary>
-    ///     Closes the microphone and opens it again, found by its name, as the system may have closed it.
+    ///     Marks the microphone to be opened again, as the system may have closed it. Returns at once: the opening is
+    ///     done by <see cref="ReopenMicrophone"/>, or by the next recording if that begins first.
+    /// </summary>
+    void MarkMicrophoneForReopening();
+
+    /// <summary>
+    ///     Closes the microphone marked for it and opens it again, found by its name.
     /// </summary>
     /// <remarks>
     ///     Never throws: a microphone that does not open is reported on the screen and in the log, and tried again at
     ///     the next recording.
-    ///     Does nothing before the microphone was first opened and after the service is closed.
+    ///     Does nothing when the microphone is not marked any more, before it was first opened and after the service is
+    ///     closed.
     /// </remarks>
-    void ReopenMicrophone();
+    /// <returns>
+    ///     False when a recording that began before the mark has the microphone: opened again then, the recording would
+    ///     be cut. It stays marked, for a call after that recording or for the next recording to open it again.
+    /// </returns>
+    bool ReopenMicrophone();
 
     /// <summary>
     ///     Begins a new logical recording session.
     /// </summary>
     /// <remarks>
     ///     Instantly opens a new memory stream to capture incoming bytes from the already-running hardware.
-    ///     A microphone that is not open is tried once more first.
+    ///     A microphone marked to be opened again is opened again first, and one that is not open is tried once more.
     /// </remarks>
     /// <returns>
     ///     Whether the recording began: without its microphone nothing is recorded, and the screen is told why.

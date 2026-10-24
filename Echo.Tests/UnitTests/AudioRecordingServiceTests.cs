@@ -102,7 +102,7 @@ public sealed class AudioRecordingServiceTests
         service.InititalizeAudioRecordingCapabilities();
 
         // Act
-        service.ReopenMicrophone();
+        Reopen(service);
         service.StartRecording();
         reopened.Raise(stream => stream.DataAvailable += null, Piece(bytes: 320));
         closed.Raise(stream => stream.DataAvailable += null, Piece(bytes: 640));
@@ -123,7 +123,7 @@ public sealed class AudioRecordingServiceTests
         Devices("Webcam", "Headset");
 
         // Act
-        service.ReopenMicrophone();
+        Reopen(service);
 
         // Assert
         _audioInput.Verify(input => input.Open(1, It.IsAny<int>(), It.IsAny<int>()), Times.Once);
@@ -142,7 +142,7 @@ public sealed class AudioRecordingServiceTests
         service.InititalizeAudioRecordingCapabilities();
 
         // Act
-        Exception? exception = Record.Exception(service.ReopenMicrophone);
+        Exception? exception = Record.Exception(() => Reopen(service));
 
         // Assert
         Assert.Null(exception);
@@ -159,7 +159,7 @@ public sealed class AudioRecordingServiceTests
         using AudioRecordingService service = Service(index: 0, name: "Headset");
         service.InititalizeAudioRecordingCapabilities();
         Devices();
-        service.ReopenMicrophone();
+        Reopen(service);
         Devices("Headset");
 
         // Act
@@ -180,7 +180,7 @@ public sealed class AudioRecordingServiceTests
         service.Dispose();
 
         // Act
-        service.ReopenMicrophone();
+        Reopen(service);
 
         // Assert
         _audioInput.Verify(input => input.Open(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
@@ -196,7 +196,7 @@ public sealed class AudioRecordingServiceTests
         using AudioRecordingService service = Service(index: 0, name: "Headset", activity);
         service.InititalizeAudioRecordingCapabilities();
         Devices("Built-in microphone");
-        service.ReopenMicrophone();
+        Reopen(service);
 
         // Act
         bool isRecording = service.StartRecording();
@@ -224,7 +224,7 @@ public sealed class AudioRecordingServiceTests
         var activity = new ListenActivity(new ScreenLog(), () => false);
         using AudioRecordingService service = Service(index: 0, name: "Headset", activity);
         service.InititalizeAudioRecordingCapabilities();
-        service.ReopenMicrophone();
+        Reopen(service);
 
         // Act
         bool isRecording = service.StartRecording();
@@ -245,12 +245,12 @@ public sealed class AudioRecordingServiceTests
         using AudioRecordingService service = Service(index: 0, name: "Headset", activity);
         service.InititalizeAudioRecordingCapabilities();
         Devices();
-        service.ReopenMicrophone();
+        Reopen(service);
         Devices("Headset");
 
         // Act
-        service.ReopenMicrophone();
-        service.ReopenMicrophone();
+        Reopen(service);
+        Reopen(service);
 
         // Assert
         Assert.Equal([Strings.Format(nameof(Strings.MicrophoneBack), "Headset")], Said(activity, EntryKind.Message));
@@ -267,10 +267,88 @@ public sealed class AudioRecordingServiceTests
         service.InititalizeAudioRecordingCapabilities();
 
         // Act
-        service.ReopenMicrophone();
+        Reopen(service);
 
         // Assert
         Assert.Empty(activity.Log.Snapshot());
+    }
+
+    [Fact]
+    public void StartRecording_KeyPressedBeforeTheMarkedMicrophoneIsOpenedAgain_OpensItAgainFirst()
+    {
+        // Arrange: Echo has heard that the system may have closed the microphone, and the key comes before the opening
+        Devices("Headset");
+        var closed = new Mock<IAudioInputStream>();
+        var reopened = new Mock<IAudioInputStream>();
+        Microphones(closed.Object, reopened.Object);
+        using AudioRecordingService service = Service(index: 0, name: "Headset");
+        service.InititalizeAudioRecordingCapabilities();
+        service.MarkMicrophoneForReopening();
+
+        // Act: the phrase is said, and the opening comes in the middle of it
+        bool isRecording = service.StartRecording();
+        reopened.Raise(stream => stream.DataAvailable += null, Piece(bytes: 320));
+        bool isLeftToTheOpening = service.ReopenMicrophone();
+        reopened.Raise(stream => stream.DataAvailable += null, Piece(bytes: 320));
+
+        // Assert: the phrase was recorded whole from the microphone opened again, and nothing was left to open
+        Assert.True(isRecording);
+        Assert.True(isLeftToTheOpening);
+        Assert.Equal(640, RecordedBytes(service));
+        closed.Verify(stream => stream.Dispose(), Times.Once);
+        reopened.Verify(stream => stream.Dispose(), Times.Never);
+        _audioInput.Verify(input => input.Open(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.Exactly(2));
+    }
+
+    [Fact]
+    public void ReopenMicrophone_RecordingBeganBeforeTheMark_LeavesItWholeAndOpensTheMicrophoneAfterIt()
+    {
+        // Arrange: the phrase had begun when Echo heard that the microphone may have been closed
+        Devices("Headset");
+        var closed = new Mock<IAudioInputStream>();
+        var reopened = new Mock<IAudioInputStream>();
+        Microphones(closed.Object, reopened.Object);
+        using AudioRecordingService service = Service(index: 0, name: "Headset");
+        service.InititalizeAudioRecordingCapabilities();
+        service.StartRecording();
+        service.MarkMicrophoneForReopening();
+
+        // Act
+        bool isOpenedDuringThePhrase = service.ReopenMicrophone();
+        closed.Raise(stream => stream.DataAvailable += null, Piece(bytes: 320));
+        long recorded = RecordedBytes(service);
+        bool isOpenedAfterIt = service.ReopenMicrophone();
+
+        // Assert
+        Assert.False(isOpenedDuringThePhrase);
+        Assert.Equal(320, recorded);
+        Assert.True(isOpenedAfterIt);
+        closed.Verify(stream => stream.Dispose(), Times.Once);
+        reopened.Verify(stream => stream.Start(), Times.Once);
+    }
+
+    [Fact]
+    public void StartRecording_MicrophoneLeftMarkedByAPhrase_OpensItAgainBeforeTheNextOne()
+    {
+        // Arrange: the opening the phrase held off has not come yet when the next phrase begins
+        Devices("Headset");
+        var closed = new Mock<IAudioInputStream>();
+        var reopened = new Mock<IAudioInputStream>();
+        Microphones(closed.Object, reopened.Object);
+        using AudioRecordingService service = Service(index: 0, name: "Headset");
+        service.InititalizeAudioRecordingCapabilities();
+        service.StartRecording();
+        service.MarkMicrophoneForReopening();
+        service.ReopenMicrophone();
+        service.StopRecording();
+
+        // Act
+        service.StartRecording();
+        reopened.Raise(stream => stream.DataAvailable += null, Piece(bytes: 320));
+
+        // Assert
+        Assert.Equal(320, RecordedBytes(service));
+        closed.Verify(stream => stream.Dispose(), Times.Once);
     }
 
     private void Devices(params string[] names) =>
@@ -281,6 +359,16 @@ public sealed class AudioRecordingServiceTests
             Mock.Of<ILogger<AudioRecordingService>>(),
             Options.Create(new RecordingDeviceSettings { DeviceIndex = index, DeviceName = name, BufferMs = 50, NumberOfBuffers = 3 }),
             activity);
+
+    /// <summary>
+    ///     What Echo does when the system may have closed the microphone: marks it at once, then opens it again.
+    /// </summary>
+    private static bool Reopen(AudioRecordingService service)
+    {
+        service.MarkMicrophoneForReopening();
+
+        return service.ReopenMicrophone();
+    }
 
     /// <summary>
     ///     The lines of one kind the service put on the screen, in order.

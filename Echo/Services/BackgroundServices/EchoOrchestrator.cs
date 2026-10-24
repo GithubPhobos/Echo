@@ -276,21 +276,23 @@ internal sealed class EchoOrchestrator(
         {
             if (_isStopping || !_isRecording)
                 return;
-
-            _isRecording = false;
-            ShowState();
         }
 
+        // Ended before it stops counting as recording, as when the key comes up: an opening of the microphone that
+        // waits for the end of the recording then never finds it still going
         _audioRecordingService.StopRecording();
-
-        _logger.LogWarning("{WarningEmoji} The push-to-talk key stopped reaching Echo while recording; the phrase is dropped.",
-            LoggerConstants.WarningEmoji);
 
         lock (_stateLock)
         {
+            _isRecording = false;
+            ShowState();
+
             if (_reopensMicrophoneAfterRecording)
                 ReopenMicrophone();
         }
+
+        _logger.LogWarning("{WarningEmoji} The push-to-talk key stopped reaching Echo while recording; the phrase is dropped.",
+            LoggerConstants.WarningEmoji);
     }
 
     /// <summary>
@@ -302,10 +304,13 @@ internal sealed class EchoOrchestrator(
         _logger.LogInformation("{StudioMicrophoneEmoji} Back in this session: opening the microphone and the sounds again.",
             LoggerConstants.StudioMicrophoneEmoji);
 
+        // Marked at once: a recording that begins before the opening runs opens the microphone again itself
+        _audioRecordingService.MarkMicrophoneForReopening();
+
         lock (_stateLock)
         {
-            ReopenSounds();
             ReopenMicrophone();
+            ReopenSounds();
         }
     }
 
@@ -317,6 +322,9 @@ internal sealed class EchoOrchestrator(
     {
         _logger.LogDebug("{StudioMicrophoneEmoji} The microphones of the system changed: opening the microphone again.",
             LoggerConstants.StudioMicrophoneEmoji);
+
+        // Marked at once: a recording that begins before the opening runs opens the microphone again itself
+        _audioRecordingService.MarkMicrophoneForReopening();
 
         lock (_stateLock)
             ReopenMicrophone();
@@ -336,23 +344,42 @@ internal sealed class EchoOrchestrator(
     }
 
     /// <summary>
-    ///     Opens the microphone again, or, while a recording is under way, once the key comes up.
-    ///     Called under <see cref="_stateLock"/>.
+    ///     Queues the opening of the microphone again. Called under <see cref="_stateLock"/>.
     /// </summary>
     private void ReopenMicrophone()
     {
-        if (_isStopping)
-            return;
+        _reopensMicrophoneAfterRecording = false;
 
-        if (_isRecording)
+        if (!_isStopping)
+            Reopen(ReopenMicrophoneOutsideRecording);
+    }
+
+    /// <summary>
+    ///     Opens the microphone again unless a recording is under way, which it would cut: then once the key comes up.
+    ///     Looked at when the opening runs, not when it was queued, since a key pressed meanwhile starts a recording.
+    /// </summary>
+    private void ReopenMicrophoneOutsideRecording()
+    {
+        lock (_stateLock)
         {
-            _reopensMicrophoneAfterRecording = true;
+            if (_isRecording)
+            {
+                _reopensMicrophoneAfterRecording = true;
 
-            return;
+                return;
+            }
         }
 
-        _reopensMicrophoneAfterRecording = false;
-        Reopen(_audioRecordingService.ReopenMicrophone);
+        if (_audioRecordingService.ReopenMicrophone())
+            return;
+
+        // A recording began between the look above and the opening, and the service left it whole. The microphone
+        // stays marked: the end of that recording opens it again, or, if it has already ended, the next recording
+        lock (_stateLock)
+        {
+            if (_isRecording)
+                _reopensMicrophoneAfterRecording = true;
+        }
     }
 
     /// <summary>
