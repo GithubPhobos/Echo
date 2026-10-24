@@ -152,7 +152,7 @@ internal sealed class X11HotkeyListener(ILogger<X11HotkeyListener> logger) : IHo
             if (!Grab(display, keycode, root))
             {
                 started.TrySetException(new Exception(
-                    "Another program already uses this push-to-talk key. Pick another one with 'echooo setup'."));
+                    "Another program already uses this push-to-talk key. Close it, or choose another key in setup."));
 
                 return;
             }
