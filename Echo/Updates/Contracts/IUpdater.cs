@@ -18,10 +18,13 @@ internal interface IUpdater
 
     /// <summary>
     ///     Starts the work in the background, once: removes the versions left from before, then checks for a newer one,
-    ///     at once and every day after that.
+    ///     once Echo is ready and every day after that.
     /// </summary>
     /// <param name="isJustUpdated">Whether this start comes right after an update, which was to the latest version.</param>
-    void Start(bool isJustUpdated);
+    /// <param name="ready">
+    ///     Done once Echo is ready, or could not start: what the check tells comes after the lines of the start-up.
+    /// </param>
+    void Start(bool isJustUpdated, Task ready);
 
     /// <summary>
     ///     Downloads the newer version, for /update.

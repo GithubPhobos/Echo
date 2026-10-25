@@ -10,6 +10,7 @@ internal sealed class ListenActivity(ScreenLog log, Func<bool> isEchoFocused) : 
     private readonly object _lock = new();
     private readonly Queue<float> _levels = new(Enumerable.Repeat(0f, KeptLevels));
     private readonly Func<bool> _isEchoFocused = isEchoFocused;
+    private readonly TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private ListenState _state = ListenState.Starting;
     private DateTimeOffset _recordingStarted;
@@ -24,6 +25,9 @@ internal sealed class ListenActivity(ScreenLog log, Func<bool> isEchoFocused) : 
                 return _state;
         }
     }
+
+    /// <inheritdoc/>
+    public Task Started => _started.Task;
 
     /// <inheritdoc/>
     public DateTimeOffset RecordingStarted
@@ -69,6 +73,11 @@ internal sealed class ListenActivity(ScreenLog log, Func<bool> isEchoFocused) : 
             // Back from a recording to waiting means "paused" while the user has paused Echo
             _state = state == ListenState.Listening && _isPaused ? ListenState.Paused : state;
         }
+
+        // Only a finished start-up waits for the key or fails; a phrase said while the model loads is recorded
+        // and recognized before Echo waits for the key
+        if (state is ListenState.Listening or ListenState.Failed)
+            _started.TrySetResult();
     }
 
     /// <inheritdoc/>

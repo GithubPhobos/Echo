@@ -9,6 +9,11 @@ internal interface IListenActivity
     ListenState State { get; }
 
     /// <summary>
+    ///     Done once the start-up is through: Echo waits for the key, or could not start.
+    /// </summary>
+    Task Started { get; }
+
+    /// <summary>
     ///     When the current recording started; meaningful only while recording.
     /// </summary>
     DateTimeOffset RecordingStarted { get; }

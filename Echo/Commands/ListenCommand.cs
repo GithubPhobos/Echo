@@ -67,6 +67,12 @@ internal sealed class ListenCommand(
     private readonly IVersionFolders? _versionFolders = versionFolders;
 
     /// <summary>
+    ///     Done once the start-up of a working screen is through: the one after a trip to the setup wizard counts too,
+    ///     when the user left the first before it was.
+    /// </summary>
+    private readonly TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>
     ///     Command line options of <see cref="ListenCommand"/>.
     /// </summary>
     internal sealed class ListenSettings : CommandSettings
@@ -136,7 +142,7 @@ internal sealed class ListenCommand(
         if (_updater is not null)
         {
             _updater.Noticed += Tell;
-            _updater.Start(isJustUpdated);
+            _updater.Start(isJustUpdated, _started.Task);
         }
 
         try
@@ -198,6 +204,8 @@ internal sealed class ListenCommand(
         // Echo's window counts as having the keyboard only when that is known: otherwise a phrase
         // is typed into the window in front, as it would be without the screen
         var activity = new ListenActivity(log, () => _terminalFocus.IsFocused() == true);
+
+        _ = activity.Started.ContinueWith(_ => _started.TrySetResult(), TaskScheduler.Default);
 
         var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
         {

@@ -1,4 +1,5 @@
-﻿using System.IO.Compression;
+﻿using System.Diagnostics;
+using System.IO.Compression;
 using Echo.Platform.Linux;
 using Echo.Platform.Windows;
 using Echo.Setup;
@@ -213,13 +214,37 @@ public sealed class UpdaterTests : IDisposable
 
         // Act
         Updater updater = Create();
-        updater.Start(isJustUpdated: true);
+        updater.Start(isJustUpdated: true, Task.CompletedTask);
 
         // Assert
         Assert.Equal(new UpdateStatus(UpdateStage.Latest, "2.0.1"), updater.Status);
 
         answer.SetResult(Release("2.0.1"));
         await updater.WhenIdleAsync();
+    }
+
+    [Fact]
+    public async Task Start_BeforeEchoIsReady_RemovesOldVersionsButChecksOnlyOnceItIs()
+    {
+        // Arrange
+        Latest("2.0.2");
+        Directory.CreateDirectory(_layout.VersionDirectory("2.0.0"));
+
+        var ready = new TaskCompletionSource();
+        Updater updater = Create();
+
+        // Act
+        updater.Start(isJustUpdated: false, ready.Task);
+        await WaitUntilAsync(() => !Directory.Exists(_layout.VersionDirectory("2.0.0")));
+
+        // Assert: what the check tells would come among the lines of the start-up
+        Assert.Equal(UpdateStage.Unknown, updater.Status.Stage);
+        _source.Verify(source => source.LatestAsync(It.IsAny<CancellationToken>()), Times.Never);
+
+        ready.SetResult();
+        await updater.WhenIdleAsync();
+
+        Assert.Equal(new UpdateStatus(UpdateStage.Available, "2.0.1", "2.0.2"), updater.Status);
     }
 
     [Fact]
@@ -359,7 +384,7 @@ public sealed class UpdaterTests : IDisposable
         // Arrange
         Latest("2.0.2");
         Updater updater = Create(isInstalled: false);
-        updater.Start(isJustUpdated: false);
+        updater.Start(isJustUpdated: false, Task.CompletedTask);
         await updater.WhenIdleAsync();
 
         // Act
@@ -532,10 +557,21 @@ public sealed class UpdaterTests : IDisposable
     {
         Updater updater = Create();
 
-        updater.Start(isJustUpdated: false);
+        updater.Start(isJustUpdated: false, Task.CompletedTask);
         await updater.WhenIdleAsync();
 
         return updater;
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition)
+    {
+        var waited = Stopwatch.StartNew();
+
+        while (!condition())
+        {
+            Assert.True(waited.Elapsed < TimeSpan.FromSeconds(10), "The condition did not come true.");
+            await Task.Delay(10);
+        }
     }
 
     /// <summary>

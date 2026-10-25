@@ -76,7 +76,7 @@ internal sealed class Updater(IReleaseSource source,
     private static Serilog.ILogger FileLog => Log.ForContext(ScreenLogSink.HiddenProperty, true);
 
     /// <inheritdoc/>
-    public void Start(bool isJustUpdated)
+    public void Start(bool isJustUpdated, Task ready)
     {
         lock (_lock)
         {
@@ -88,11 +88,12 @@ internal sealed class Updater(IReleaseSource source,
 
             _timer = _time.CreateTimer(_ => Check(isAsked: false), null, CheckInterval, CheckInterval);
 
-            _starting = Task.Run(() =>
+            _starting = Task.Run(async () =>
             {
                 RemoveOldVersions();
 
-                return Check(isAsked: false);
+                await ready;
+                await Check(isAsked: false);
             });
         }
     }
