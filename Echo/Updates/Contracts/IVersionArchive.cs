@@ -26,6 +26,7 @@ internal interface IVersionArchive
     /// <param name="progress">How much of what has to be downloaded is.</param>
     /// <exception cref="HttpRequestException">The server could not be reached, or does not give parts of a file.</exception>
     /// <exception cref="IOException">The connection was lost, or a file could not be written.</exception>
+    /// <exception cref="TimeoutException">The server stopped sending.</exception>
     /// <exception cref="InvalidDataException">The archive is damaged.</exception>
     void UnpackChanges(ReleaseInfo release, string sameFrom, string directory, IProgress<DownloadProgress> progress);
 }

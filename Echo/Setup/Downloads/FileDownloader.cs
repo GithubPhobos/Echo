@@ -6,14 +6,22 @@ namespace Echo.Setup.Downloads;
 
 /// <inheritdoc cref="IFileDownloader"/>
 /// <param name="httpClient">The client used for all downloads.</param>
-internal sealed class FileDownloader(HttpClient httpClient) : IFileDownloader
+/// <param name="stallTimeout">How long a server may send nothing before the download is given up on.</param>
+internal sealed class FileDownloader(HttpClient httpClient, TimeSpan stallTimeout) : IFileDownloader
 {
+    /// <summary>
+    ///     How long a server may send nothing before a download is given up on, as when the connection is lost: a
+    ///     server that stops sending and keeps the connection open would be waited for forever.
+    /// </summary>
+    public static readonly TimeSpan StallTimeout = TimeSpan.FromSeconds(30);
+
     private const string PartialSuffix = ".part";
     private const int BufferSize = 128 * 1024;
 
     private static readonly TimeSpan _reportInterval = TimeSpan.FromMilliseconds(120);
 
     private readonly HttpClient _httpClient = httpClient;
+    private readonly TimeSpan _stallTimeout = stallTimeout;
 
     /// <inheritdoc/>
     public async Task DownloadAsync(DownloadRequest request,
@@ -74,14 +82,22 @@ internal sealed class FileDownloader(HttpClient httpClient) : IFileDownloader
         if (alreadyDownloaded > 0)
             message.Headers.Range = new RangeHeaderValue(alreadyDownloaded, null);
 
+        // Counts anew with every piece that comes
+        using var stalled = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        stalled.CancelAfter(_stallTimeout);
+
         HttpResponseMessage response;
         try
         {
-            response = await _httpClient.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            response = await _httpClient.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, stalled.Token);
         }
         catch (HttpRequestException exc)
         {
             throw new DownloadException($"Could not reach {request.Url.Host}: {exc.Message}", exc);
+        }
+        catch (OperationCanceledException exc) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw Stalled(request, exc);
         }
 
         using (response)
@@ -101,8 +117,6 @@ internal sealed class FileDownloader(HttpClient httpClient) : IFileDownloader
                 BufferSize,
                 useAsync: true);
 
-            await using Stream source = await response.Content.ReadAsStreamAsync(cancellationToken);
-
             byte[] buffer = new byte[BufferSize];
             var sinceReport = Stopwatch.StartNew();
             long bytesSinceReport = 0;
@@ -110,9 +124,13 @@ internal sealed class FileDownloader(HttpClient httpClient) : IFileDownloader
 
             try
             {
+                await using Stream source = await response.Content.ReadAsStreamAsync(stalled.Token);
+
                 int read;
-                while ((read = await source.ReadAsync(buffer, cancellationToken)) > 0)
+                while ((read = await source.ReadAsync(buffer, stalled.Token)) > 0)
                 {
+                    stalled.CancelAfter(_stallTimeout);
+
                     await target.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
 
                     done += read;
@@ -131,6 +149,12 @@ internal sealed class FileDownloader(HttpClient httpClient) : IFileDownloader
                     }
                 }
             }
+            catch (Exception exc) when ((exc is OperationCanceledException or IOException)
+                                        && stalled.IsCancellationRequested
+                                        && !cancellationToken.IsCancellationRequested)
+            {
+                throw Stalled(request, exc);
+            }
             catch (IOException exc)
             {
                 throw new DownloadException($"The connection to {request.Url.Host} was lost: {exc.Message}", exc);
@@ -140,6 +164,9 @@ internal sealed class FileDownloader(HttpClient httpClient) : IFileDownloader
                 throw new DownloadException($"The download from {request.Url.Host} ended early ({done} of {request.SizeBytes} bytes).");
         }
     }
+
+    private DownloadException Stalled(DownloadRequest request, Exception exc) =>
+        new($"{request.Url.Host} sent nothing for {_stallTimeout.TotalSeconds} seconds.", exc);
 
     private static async Task<string> ComputeSha256Async(string path, CancellationToken cancellationToken)
     {

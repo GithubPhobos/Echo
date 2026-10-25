@@ -9,7 +9,7 @@ internal interface IFileDownloader
     ///     Downloads the file to <paramref name="destinationPath"/> and verifies its checksum.
     ///     A partial file is kept on cancellation and on network errors, and reused by the next call.
     /// </summary>
-    /// <exception cref="DownloadException">The server refused, or the checksum did not match.</exception>
+    /// <exception cref="DownloadException">The server refused or stopped sending, or the checksum did not match.</exception>
     Task DownloadAsync(DownloadRequest request,
                        string destinationPath,
                        IProgress<DownloadProgress> progress,

@@ -36,7 +36,8 @@ internal interface IVersionFolders
     void PointTo(string link, string directory);
 
     /// <summary>
-    ///     Removes the folder of a version unless an Echo runs from it. Returns whether it is gone.
+    ///     Removes the folder of a version unless an Echo runs from it. Returns whether it is gone. A folder that is
+    ///     not gone may still have lost some of its files, as when one of them was held by another program.
     /// </summary>
     bool TryRemove(string directory);
 }

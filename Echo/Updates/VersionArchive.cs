@@ -8,12 +8,14 @@ namespace Echo.Updates;
 /// <inheritdoc cref="IVersionArchive"/>
 /// <param name="httpClient">The client the parts of an archive on the server are downloaded with.</param>
 /// <param name="folders">Gives an unpacked file what this system keeps about it besides its contents.</param>
-internal sealed class VersionArchive(HttpClient httpClient, IVersionFolders folders) : IVersionArchive
+/// <param name="stallTimeout">How long the server may send nothing before the archive is given up on.</param>
+internal sealed class VersionArchive(HttpClient httpClient, IVersionFolders folders, TimeSpan stallTimeout) : IVersionArchive
 {
     private const int BufferSize = 128 * 1024;
 
     private readonly HttpClient _httpClient = httpClient;
     private readonly IVersionFolders _folders = folders;
+    private readonly TimeSpan _stallTimeout = stallTimeout;
 
     /// <summary>
     ///     Lines for the log file only.
@@ -39,7 +41,7 @@ internal sealed class VersionArchive(HttpClient httpClient, IVersionFolders fold
     {
         Directory.CreateDirectory(directory);
 
-        using var remote = new RemoteFileStream(_httpClient, release.ArchiveUrl!, release.ArchiveSize);
+        using var remote = new RemoteFileStream(_httpClient, release.ArchiveUrl!, release.ArchiveSize, _stallTimeout);
         using var zip = new ZipArchive(remote, ZipArchiveMode.Read);
 
         List<(ZipArchiveEntry Entry, string File)> changed = [];

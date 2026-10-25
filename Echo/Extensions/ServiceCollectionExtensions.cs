@@ -102,7 +102,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<IProcessRunner, ProcessRunner>();
         services.AddSingleton<IHardwareProbe, HardwareProbe>();
         services.AddSingleton<IRecognitionRuntime, RecognitionRuntime>();
-        services.AddSingleton<IFileDownloader>(_ => new FileDownloader(CreateDownloadClient()));
+        services.AddSingleton<IFileDownloader>(_ => new FileDownloader(CreateDownloadClient(), FileDownloader.StallTimeout));
         services.AddSingleton<ICudaRuntime, CudaRuntime>();
         services.AddSingleton<IHotkeyCaptureFactory, HotkeyCaptureFactory>();
         services.AddSingleton<IMicrophoneProbe, MicrophoneProbe>();
@@ -125,7 +125,8 @@ internal static class ServiceCollectionExtensions
 
         services.AddSingleton<IVersionArchive>(provider => new VersionArchive(
             CreateDownloadClient(),
-            provider.GetRequiredService<IVersionFolders>()));
+            provider.GetRequiredService<IVersionFolders>(),
+            FileDownloader.StallTimeout));
 
         services.AddSingleton<IUpdater>(provider => new Updater(
             provider.GetRequiredService<IReleaseSource>(),
@@ -223,7 +224,7 @@ internal static class ServiceCollectionExtensions
 
     private static HttpClient CreateDownloadClient()
     {
-        // No overall timeout: a model is gigabytes, and a stalled connection surfaces as a read error anyway
+        // No overall timeout: a model is gigabytes. The downloads give up on a server that stops sending instead
         var client = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
 
         client.DefaultRequestHeaders.UserAgent.ParseAdd($"{ApplicationInfo.CommandName}/{ApplicationInfo.Version}");

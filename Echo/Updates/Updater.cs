@@ -282,23 +282,13 @@ internal sealed class Updater(IReleaseSource source,
         {
             FileLog.Information("Downloading Echo {Version} from {Url}", release.Version, release.ArchiveUrl);
 
-            RemoveDirectory(partial);
-
-            // A folder of the version left by an earlier attempt may be incomplete, so it is made anew;
-            // one that an Echo runs from cannot be removed, and is whole
-            if (!Directory.Exists(target) || _folders.TryRemove(target))
+            // Another Echo or the install script may be changing the versions: this one waits for it, and may then
+            // find this very version put in place by it
+            using (await TakeLockAsync(layout))
             {
-                if (!TryUnpackChanges(release, target))
-                    await DownloadWholeAsync(release, partial, target);
-
-                if (!File.Exists(Path.Combine(target, _folders.ExecutableName)))
-                    throw new InvalidDataException($"The archive of Echo {release.Version} has no {_folders.ExecutableName}.");
+                if (!IsCurrent(layout, target))
+                    await PutInPlaceAsync(release, layout, partial, target);
             }
-
-            // From now on Echo starts in the new version; the running one keeps its own folder
-            _folders.PointTo(layout.Current, target);
-
-            RemoveDirectory(partial);
 
             lock (_lock)
                 _status = new UpdateStatus(UpdateStage.Downloaded, _installed, release.Version);
@@ -311,15 +301,61 @@ internal sealed class Updater(IReleaseSource source,
         {
             FileLog.Warning("Could not download Echo {Version}: {Reason}", release.Version, exc.Message);
 
-            // A folder unpacked only in part is never pointed at; it goes with the next attempt or the next start
-            RemoveDirectory(partial);
-
             lock (_lock)
                 _status = new UpdateStatus(UpdateStage.Available, _installed, release.Version);
 
             Notify(new UpdateNotice(UpdateNoticeKind.DownloadFailed, release.Version, exc.Message));
         }
     }
+
+    /// <summary>
+    ///     Makes the folder of the new version and points "current" at it. Called with the lock of the versions held.
+    /// </summary>
+    private async Task PutInPlaceAsync(ReleaseInfo release, InstallLayout layout, string partial, string target)
+    {
+        try
+        {
+            RemoveDirectory(partial);
+
+            // A folder of the version left by an earlier attempt may be incomplete, so it is made anew. One that cannot
+            // be removed may have lost some of its files already: it is never pointed at, and goes at a later start
+            if (Directory.Exists(target) && !_folders.TryRemove(target))
+                throw new IOException($"{target} is left from an earlier attempt and cannot be removed now.");
+
+            if (!TryUnpackChanges(release, target))
+                await DownloadWholeAsync(release, partial, target);
+
+            if (!File.Exists(Path.Combine(target, _folders.ExecutableName)))
+                throw new InvalidDataException($"The archive of Echo {release.Version} has no {_folders.ExecutableName}.");
+
+            // From now on Echo starts in the new version; the running one keeps its own folder
+            _folders.PointTo(layout.Current, target);
+        }
+        finally
+        {
+            // A folder unpacked only in part is never pointed at; it goes with the next attempt or the next start
+            RemoveDirectory(partial);
+        }
+    }
+
+    /// <summary>
+    ///     Takes the right to change the versions, waiting while another Echo or the install script holds it.
+    /// </summary>
+    private static async Task<InstallLock> TakeLockAsync(InstallLayout layout)
+    {
+        if (InstallLock.TryTake(layout) is { } taken)
+            return taken;
+
+        FileLog.Information("Another Echo or the install script is changing the versions; waiting until it is done");
+
+        return await InstallLock.TakeAsync(layout);
+    }
+
+    /// <summary>
+    ///     Whether "current" leads to <paramref name="directory"/> already. Only a whole version is ever pointed at.
+    /// </summary>
+    private static bool IsCurrent(InstallLayout layout, string directory) =>
+        Directory.Exists(directory) && layout.CurrentDirectory() is { } current && IsSame(current, directory);
 
     /// <summary>
     ///     Makes the folder of the new version from the files of this one that stayed the same and the changed files
@@ -385,10 +421,20 @@ internal sealed class Updater(IReleaseSource source,
         if (_layout is null || !Directory.Exists(_layout.Versions))
             return;
 
-        string? current = _layout.CurrentDirectory();
-
         try
         {
+            // What another Echo or the install script is putting in place now is not left over
+            using InstallLock? held = InstallLock.TryTake(_layout);
+
+            if (held is null)
+            {
+                FileLog.Debug("Another Echo or the install script is changing {Folder}; it is tidied at a later start", _layout.Versions);
+
+                return;
+            }
+
+            string? current = _layout.CurrentDirectory();
+
             foreach (string entry in Directory.EnumerateFileSystemEntries(_layout.Versions).ToList())
             {
                 if (IsSame(entry, _ownDirectory) || (current is not null && IsSame(entry, current)))

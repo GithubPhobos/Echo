@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO.Compression;
+using System.Runtime.Versioning;
 using System.Text;
 using Echo.Platform.Linux;
 using Echo.Platform.Windows;
@@ -36,6 +37,8 @@ public sealed class UpdateRoundTests : IDisposable
     /// </summary>
     private readonly byte[] _library = new byte[3_000_000];
 
+    private TimeSpan _stallTimeout = FileDownloader.StallTimeout;
+
     public UpdateRoundTests()
     {
         _layout = new InstallLayout(_root);
@@ -44,17 +47,7 @@ public sealed class UpdateRoundTests : IDisposable
         // Echo 2.0.0, as the install script puts it
         string installed = _layout.VersionDirectory("2.0.0");
 
-        foreach ((string name, (byte[] contents, UnixFileMode mode)) in Files("2.0.0"))
-        {
-            string file = Path.Combine(installed, name);
-
-            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
-            File.WriteAllBytes(file, contents);
-
-            if (!OperatingSystem.IsWindows())
-                File.SetUnixFileMode(file, mode);
-        }
-
+        WriteVersion("2.0.0", installed);
         _folders.PointTo(_layout.Current, installed);
     }
 
@@ -195,13 +188,131 @@ public sealed class UpdateRoundTests : IDisposable
         Assert.Equal(["2.0.0"], Directory.EnumerateFileSystemEntries(_layout.Versions).Select(entry => Path.GetFileName(entry)));
     }
 
-    private Updater Create(string installed)
+    [Fact]
+    public async Task Round_ServerStopsSending_GivesUpAndKeepsTheVersionInUse()
+    {
+        // Arrange: the storage sends half of what is asked of the archive and then nothing, keeping the connection
+        _server.Publish("2.0.1", Release("2.0.1"));
+        _server.StallsOn = _folders.ArchiveName;
+        _stallTimeout = TimeSpan.FromMilliseconds(500);
+
+        // Act: first the changed files stall, then the whole archive
+        using (Updater running = Create("2.0.0"))
+        {
+            running.Start(isJustUpdated: false, Task.CompletedTask);
+            await running.WhenIdleAsync();
+            running.Download();
+            await running.WhenIdleAsync().WaitAsync(TimeSpan.FromSeconds(20));
+
+            // Assert: /update can try again
+            Assert.Equal(new UpdateStatus(UpdateStage.Available, "2.0.0", "2.0.1"), running.Status);
+        }
+
+        UpdateNotice notice = Assert.Single(_notices);
+
+        Assert.Equal(UpdateNoticeKind.DownloadFailed, notice.Kind);
+        Assert.Contains("sent nothing", notice.Reason);
+        AssertVersion("2.0.0", _layout.Current);
+        Assert.Equal(["2.0.0"], Directory.EnumerateFileSystemEntries(_layout.Versions).Select(entry => Path.GetFileName(entry)));
+    }
+
+    [Fact]
+    public async Task Round_FolderLeftByAnEarlierAttemptCannotBeRemovedWhole_KeepsTheVersionInUse()
+    {
+        // Arrange: 2.0.0 finds 2.0.1, and then a folder of 2.0.1 is there, left by an attempt that broke off
+        _server.Publish("2.0.1", Release("2.0.1"));
+
+        using Updater running = Create("2.0.0");
+
+        running.Start(isJustUpdated: false, Task.CompletedTask);
+        await running.WhenIdleAsync();
+
+        string leftover = _layout.VersionDirectory("2.0.1");
+        WriteVersion("2.0.1", leftover);
+
+        // Act: another program holds a file of it, so only some of its files can be removed
+        using (Hold(leftover))
+        {
+            running.Download();
+            await running.WhenIdleAsync();
+        }
+
+        // Assert: what is left of it is never pointed at
+        UpdateNotice notice = Assert.Single(_notices);
+
+        Assert.Equal(UpdateNoticeKind.DownloadFailed, notice.Kind);
+        Assert.Contains("cannot be removed", notice.Reason);
+        Assert.Equal(new UpdateStatus(UpdateStage.Available, "2.0.0", "2.0.1"), running.Status);
+        AssertVersion("2.0.0", _layout.Current);
+
+        // Once the program lets go, /update makes the folder anew
+        running.Download();
+        await running.WhenIdleAsync();
+
+        Assert.Equal(UpdateStage.Downloaded, running.Status.Stage);
+        AssertVersion("2.0.1", _layout.Current);
+    }
+
+    [Fact]
+    public async Task Round_SecondEchoStartsWhileTheFirstPutsTheVersionInPlace_LeavesItAlone()
+    {
+        // Arrange: the first Echo has made the folder of 2.0.1 and is about to point "current" at it
+        _server.Publish("2.0.1", Release("2.0.1"));
+
+        var gated = new GatedFolders(_folders);
+        using Updater first = Create("2.0.0", gated);
+
+        first.Start(isJustUpdated: false, Task.CompletedTask);
+        await first.WhenIdleAsync();
+        first.Download();
+        await gated.Reached.Task.WaitAsync(TimeSpan.FromSeconds(20));
+
+        // Act: a second Echo of the version in use starts, which tidies the versions at its start
+        using (Updater second = Create("2.0.0"))
+        {
+            second.Start(isJustUpdated: false, Task.CompletedTask);
+            await second.WhenIdleAsync();
+        }
+
+        gated.Opened.SetResult();
+        await first.WhenIdleAsync();
+
+        // Assert
+        Assert.Equal(UpdateStage.Downloaded, first.Status.Stage);
+        AssertVersion("2.0.1", _layout.Current);
+    }
+
+    [Fact]
+    public async Task Round_TwoEchoesUpdateAtOnce_BothSwitchToTheWholeVersion()
+    {
+        // Arrange
+        _server.Publish("2.0.1", Release("2.0.1"));
+
+        using Updater first = Create("2.0.0");
+        using Updater second = Create("2.0.0");
+
+        first.Start(isJustUpdated: false, Task.CompletedTask);
+        second.Start(isJustUpdated: false, Task.CompletedTask);
+        await Task.WhenAll(first.WhenIdleAsync(), second.WhenIdleAsync());
+
+        // Act
+        first.Download();
+        second.Download();
+        await Task.WhenAll(first.WhenIdleAsync(), second.WhenIdleAsync());
+
+        // Assert: one made the folder, and the other found it in place
+        Assert.Equal(UpdateStage.Downloaded, first.Status.Stage);
+        Assert.Equal(UpdateStage.Downloaded, second.Status.Stage);
+        AssertVersion("2.0.1", _layout.Current);
+    }
+
+    private Updater Create(string installed, IVersionFolders? folders = null)
     {
         var updater = new Updater(
             new GitHubReleaseSource(_client, _server.LatestRelease, _folders.ArchiveName),
-            new FileDownloader(_client),
-            new VersionArchive(_client, _folders),
-            _folders,
+            new FileDownloader(_client, _stallTimeout),
+            new VersionArchive(_client, _folders, _stallTimeout),
+            folders ?? _folders,
             new MemorySettings(),
             TimeProvider.System,
             _layout,
@@ -237,6 +348,23 @@ public sealed class UpdateRoundTests : IDisposable
             files["de/echooo.resources.dll"] = (Text($"Echo {version} auf Deutsch"), Readable);
 
         return files;
+    }
+
+    /// <summary>
+    ///     Writes the files of a version, as the install script or an update unpacks them.
+    /// </summary>
+    private void WriteVersion(string version, string directory)
+    {
+        foreach ((string name, (byte[] contents, UnixFileMode mode)) in Files(version))
+        {
+            string file = Path.Combine(directory, name);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.WriteAllBytes(file, contents);
+
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(file, mode);
+        }
     }
 
     /// <summary>
@@ -296,6 +424,19 @@ public sealed class UpdateRoundTests : IDisposable
         Encoding.UTF8.GetBytes(text);
 
     /// <summary>
+    ///     Keeps a file of the version in <paramref name="directory"/> from being deleted, as another program such as an
+    ///     antivirus can: on Windows by holding the library open, on Linux by taking away the right to change the
+    ///     folder of the sounds.
+    /// </summary>
+    private static IDisposable Hold(string directory)
+    {
+        if (OperatingSystem.IsWindows())
+            return File.Open(Path.Combine(directory, "library.dll"), FileMode.Open, FileAccess.Read, FileShare.Read);
+
+        return new UnchangeableFolder(Path.Combine(directory, "Assets"));
+    }
+
+    /// <summary>
     ///     The way the system the tests run on keeps versions.
     /// </summary>
     private static IVersionFolders SystemFolders()
@@ -307,5 +448,53 @@ public sealed class UpdateRoundTests : IDisposable
             return new LinuxVersionFolders();
 
         throw new PlatformNotSupportedException();
+    }
+
+    /// <summary>
+    ///     A folder no one may change while it is held, so the files in it cannot be deleted.
+    /// </summary>
+    [UnsupportedOSPlatform("windows")]
+    private sealed class UnchangeableFolder : IDisposable
+    {
+        private readonly string _folder;
+
+        public UnchangeableFolder(string folder)
+        {
+            _folder = folder;
+            File.SetUnixFileMode(folder, Runnable & ~(UnixFileMode.UserWrite | UnixFileMode.GroupWrite | UnixFileMode.OtherWrite));
+        }
+
+        public void Dispose() => File.SetUnixFileMode(_folder, Runnable);
+    }
+
+    /// <summary>
+    ///     The folders of this system, which stop before pointing the link until the test opens them.
+    /// </summary>
+    private sealed class GatedFolders(IVersionFolders folders) : IVersionFolders
+    {
+        /// <summary>
+        ///     Set when the link is about to be pointed.
+        /// </summary>
+        public TaskCompletionSource Reached { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Opened { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public string ArchiveName => folders.ArchiveName;
+
+        public string ExecutableName => folders.ExecutableName;
+
+        public string InstallCommand => folders.InstallCommand;
+
+        public void ApplyAttributes(ZipArchiveEntry entry, string file) => folders.ApplyAttributes(entry, file);
+
+        public bool TryRemove(string directory) => folders.TryRemove(directory);
+
+        public void PointTo(string link, string directory)
+        {
+            Reached.TrySetResult();
+            Opened.Task.Wait();
+
+            folders.PointTo(link, directory);
+        }
     }
 }

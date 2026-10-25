@@ -12,6 +12,11 @@ internal sealed class InstallLayout(string root)
     public const string CurrentName = "current";
 
     /// <summary>
+    ///     The name of the file the install script locks too, with the flock program: see <see cref="InstallLock"/>.
+    /// </summary>
+    public const string LockName = "versions.lock";
+
+    /// <summary>
     ///     Ends the name of the folder a version is downloaded into, before it is complete.
     /// </summary>
     private const string PartialSuffix = ".part";
@@ -24,6 +29,11 @@ internal sealed class InstallLayout(string root)
     ///     The link to the version in use: the one Echo starts from.
     /// </summary>
     public string Current => Path.Combine(Root, CurrentName);
+
+    /// <summary>
+    ///     The file whose lock gives the right to change the versions.
+    /// </summary>
+    public string LockFile => Path.Combine(Root, LockName);
 
     public string VersionDirectory(string version) => Path.Combine(Versions, version);
 

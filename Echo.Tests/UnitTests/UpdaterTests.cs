@@ -461,6 +461,98 @@ public sealed class UpdaterTests : IDisposable
     }
 
     [Fact]
+    public async Task Download_FolderLeftByAnEarlierAttemptCannotBeRemoved_KeepsTheVersionInUse()
+    {
+        // Arrange: another program holds a file of it, so it may have lost some of its files already
+        Latest("2.0.2");
+        Updater updater = await StartAsync();
+        string leftover = _layout.VersionDirectory("2.0.2");
+
+        Directory.CreateDirectory(leftover);
+        _folders.Running.Add(leftover);
+
+        // Act
+        updater.Download();
+        await updater.WhenIdleAsync();
+
+        // Assert: it is never pointed at, and /update can try again
+        UpdateNotice notice = Assert.Single(_notices);
+
+        Assert.Equal(UpdateNoticeKind.DownloadFailed, notice.Kind);
+        Assert.Contains("cannot be removed", notice.Reason);
+        Assert.Equal(new UpdateStatus(UpdateStage.Available, "2.0.1", "2.0.2"), updater.Status);
+        Assert.Empty(_folders.Links);
+        Assert.Equal(0, _downloader.Calls);
+    }
+
+    [Fact]
+    public async Task Download_AnotherEchoHasPutTheVersionInPlace_TakesItAsDownloaded()
+    {
+        // Arrange: the link leads to 2.0.2 already, as another Echo pointed it
+        IVersionFolders system = SystemFolders();
+
+        Latest("2.0.2");
+        Updater updater = await StartAsync();
+
+        Directory.Delete(_layout.Current);
+        Directory.CreateDirectory(_layout.VersionDirectory("2.0.2"));
+        system.PointTo(_layout.Current, _layout.VersionDirectory("2.0.2"));
+
+        // Act
+        updater.Download();
+        await updater.WhenIdleAsync();
+
+        // Assert: the folder is left as it is, and nothing is downloaded
+        Assert.Equal(new UpdateStatus(UpdateStage.Downloaded, "2.0.1", "2.0.2"), updater.Status);
+        Assert.Empty(Directory.EnumerateFileSystemEntries(_layout.VersionDirectory("2.0.2")));
+        Assert.Empty(_folders.Links);
+        Assert.Equal(0, _downloader.Calls);
+    }
+
+    [Fact]
+    public async Task Download_AnotherEchoIsChangingTheVersions_WaitsUntilItIsDone()
+    {
+        // Arrange
+        Latest("2.0.2");
+        Updater updater = await StartAsync();
+        using InstallLock held = InstallLock.TryTake(_layout)!;
+
+        // Act
+        updater.Download();
+        await Task.Delay(500);
+
+        UpdateStage stageWhileWaiting = updater.Status.Stage;
+        bool isMadeWhileWaiting = Directory.Exists(_layout.VersionDirectory("2.0.2"));
+
+        held.Dispose();
+        await updater.WhenIdleAsync();
+
+        // Assert
+        Assert.Equal(UpdateStage.Downloading, stageWhileWaiting);
+        Assert.False(isMadeWhileWaiting);
+        Assert.Equal(UpdateStage.Downloaded, updater.Status.Stage);
+    }
+
+    [Fact]
+    public async Task Start_AnotherEchoIsChangingTheVersions_LeavesThemAlone()
+    {
+        // Arrange: a version another Echo or the install script is putting in place
+        Directory.CreateDirectory(_layout.VersionDirectory("2.0.2"));
+        Latest("2.0.1");
+
+        // Act
+        using (InstallLock? held = InstallLock.TryTake(_layout))
+        {
+            Assert.NotNull(held);
+
+            await StartAsync();
+        }
+
+        // Assert
+        Assert.True(Directory.Exists(_layout.VersionDirectory("2.0.2")));
+    }
+
+    [Fact]
     public async Task Check_EvenNewerVersionAfterADownload_IsOfferedAgain()
     {
         // Arrange

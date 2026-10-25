@@ -45,7 +45,11 @@ if command -v curl > /dev/null 2>&1; then
 elif command -v wget > /dev/null 2>&1; then
     fetch() { wget -q --show-progress -O "$2" "$1"; }
     fetch_quietly() { wget -q -O "$2" "$1"; }
-    final_address() { wget -S --spider "$1" 2>&1 | sed -n 's/^ *[Ll]ocation: *//p' | tail -n 1 | tr -d '\r'; }
+    # wget shows every redirect as "Location: <address>", the server's own line, and adds " [following]" in its
+    # own; the address is the first word after "Location:"
+    final_address() {
+        LC_ALL=C wget -S --spider "$1" 2>&1 | sed -n 's/^ *[Ll]ocation: *\([^ ]*\).*/\1/p' | tail -n 1 | tr -d '\r'
+    }
 else
     fail "neither 'curl' nor 'wget' is there to download with."
 fi
@@ -71,6 +75,11 @@ if [ -z "$version" ]; then
     esac
 fi
 
+# The version goes into addresses and folder names, so it is digits and dots, such as 2.0.1, and nothing else
+case "$version" in
+    '' | *[!0-9.]*) fail "'$version' is not a version of Echo, such as 2.0.1." ;;
+esac
+
 download="$releases/download/v$version"
 temporary=$(mktemp -d)
 trap 'rm -rf "$temporary"' EXIT INT TERM
@@ -94,13 +103,32 @@ versions="$root/versions"
 target="$versions/$version"
 
 mkdir -p "$versions"
+
+# One Echo or one install script changes the versions at a time: an Echo that updates itself holds this lock too.
+# Without the flock program the script goes on without it
+if command -v flock > /dev/null 2>&1; then
+    exec 9>> "$root/versions.lock"
+
+    if ! flock -n 9; then
+        echo "Waiting while Echo updates itself..."
+        flock 9 || fail "$root/versions.lock could not be locked."
+    fi
+fi
+
 rm -rf "$target.part"
 mkdir "$target.part"
 tar -xzf "$temporary/$archive" -C "$target.part" || fail "the archive could not be unpacked."
 [ -x "$target.part/echooo" ] || fail "the archive of Echo $version has no echooo program."
 
-rm -rf "$target"
+# A version already there, as when it is installed again, is moved aside rather than deleted in place, so its
+# folder is never half empty: an Echo that runs from it finds the same files there right after
+if [ -e "$target" ]; then
+    rm -rf "$target.old"
+    mv "$target" "$target.old" || fail "$target could not be replaced."
+fi
+
 mv "$target.part" "$target"
+rm -rf "$target.old"
 
 # The new link is renamed over the old one in one step, so a running Echo never sees the link missing
 ln -sfn "versions/$version" "$root/current.new"

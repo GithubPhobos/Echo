@@ -6,12 +6,17 @@ public sealed class RemoteFileStreamTests
 {
     private static readonly Uri _address = new("https://example.test/v2.0.2/echooo-test.zip");
 
+    /// <summary>
+    ///     How long the server may send nothing, ample for a server that answers at once.
+    /// </summary>
+    private static readonly TimeSpan _patience = TimeSpan.FromSeconds(10);
+
     [Fact]
     public void Read_HereAndThere_GivesTheBytesOfThatPlace()
     {
         // Arrange
         byte[] content = Content(1_000_000);
-        using var stream = new RemoteFileStream(new HttpClient(new RangeServer(content)), _address, content.Length);
+        using var stream = new RemoteFileStream(new HttpClient(new RangeServer(content)), _address, content.Length, _patience);
         byte[] read = new byte[1000];
 
         // Act & Assert: the end first, then the start and the middle, back and forth, as a zip archive is read
@@ -30,7 +35,7 @@ public sealed class RemoteFileStreamTests
         // Arrange
         byte[] content = Content(20_000_000);
         var server = new RangeServer(content);
-        using var stream = new RemoteFileStream(new HttpClient(server), _address, content.Length);
+        using var stream = new RemoteFileStream(new HttpClient(server), _address, content.Length, _patience);
         var copy = new MemoryStream();
 
         // Act
@@ -50,7 +55,7 @@ public sealed class RemoteFileStreamTests
         // Arrange
         byte[] content = Content(1_000_000);
         var server = new RangeServer(content);
-        using var stream = new RemoteFileStream(new HttpClient(server), _address, content.Length);
+        using var stream = new RemoteFileStream(new HttpClient(server), _address, content.Length, _patience);
         byte[] read = new byte[100];
 
         stream.Position = 200_000;
@@ -71,7 +76,7 @@ public sealed class RemoteFileStreamTests
         // Arrange
         byte[] content = Content(1000);
         var server = new RangeServer(content);
-        using var stream = new RemoteFileStream(new HttpClient(server), _address, content.Length);
+        using var stream = new RemoteFileStream(new HttpClient(server), _address, content.Length, _patience);
         var copy = new MemoryStream();
 
         // Act
@@ -88,7 +93,7 @@ public sealed class RemoteFileStreamTests
         // Arrange
         byte[] content = Content(1_000_000);
         var server = new RangeServer(content) { IgnoresRanges = true };
-        using var stream = new RemoteFileStream(new HttpClient(server), _address, content.Length);
+        using var stream = new RemoteFileStream(new HttpClient(server), _address, content.Length, _patience);
 
         // Act
         var exc = Assert.Throws<HttpRequestException>(() => stream.ReadByte());
@@ -102,10 +107,41 @@ public sealed class RemoteFileStreamTests
     {
         // Arrange: the release says the archive is larger than it is
         byte[] content = Content(1_000_000);
-        using var stream = new RemoteFileStream(new HttpClient(new RangeServer(content)), _address, content.Length + 1);
+        using var stream = new RemoteFileStream(new HttpClient(new RangeServer(content)), _address, content.Length + 1, _patience);
 
         // Act & Assert
         Assert.Throws<HttpRequestException>(() => stream.ReadByte());
+    }
+
+    [Fact]
+    public void Read_ServerStopsSending_GivesUp()
+    {
+        // Arrange: the server sends half of the part and then nothing, keeping the connection open
+        byte[] content = Content(1_000_000);
+        var server = new RangeServer(content) { Stalls = true };
+        using var stream = new RemoteFileStream(new HttpClient(server), _address, content.Length, TimeSpan.FromMilliseconds(300));
+
+        // Act
+        var exc = Assert.Throws<TimeoutException>(() => stream.ReadByte());
+
+        // Assert
+        Assert.Contains("example.test sent nothing for", exc.Message);
+    }
+
+    [Fact]
+    public void Read_ServerSendsSlowlyButOn_WaitsForTheWholePart()
+    {
+        // Arrange: every piece comes well before the server would be given up on, the whole part later than that
+        byte[] content = Content(1000);
+        var server = new RangeServer(content) { Pause = TimeSpan.FromMilliseconds(250) };
+        using var stream = new RemoteFileStream(new HttpClient(server), _address, content.Length, TimeSpan.FromMilliseconds(700));
+        var copy = new MemoryStream();
+
+        // Act
+        stream.CopyTo(copy);
+
+        // Assert
+        Assert.Equal(content, copy.ToArray());
     }
 
     /// <summary>

@@ -22,6 +22,12 @@
     <ProjectReference Include="..\Echo\Echo.csproj" />
   </ItemGroup>
 
+  <!-- The install scripts, which the integration tests run against a server that plays GitHub -->
+  <ItemGroup>
+    <None Include="..\install\install.sh" Link="install\install.sh" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\install\install.ps1" Link="install\install.ps1" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>

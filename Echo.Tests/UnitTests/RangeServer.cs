@@ -23,6 +23,16 @@ internal sealed class RangeServer(byte[] content) : HttpMessageHandler
 
     public bool IgnoresRanges { get; set; }
 
+    /// <summary>
+    ///     The pause before each of the four pieces a part is sent in.
+    /// </summary>
+    public TimeSpan Pause { get; set; }
+
+    /// <summary>
+    ///     Whether the server sends half of a part and then nothing, keeping the connection open.
+    /// </summary>
+    public bool Stalls { get; set; }
+
     protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         if (IgnoresRanges || request.Headers.Range?.Ranges.Single() is not { From: { } from } range)
@@ -37,9 +47,11 @@ internal sealed class RangeServer(byte[] content) : HttpMessageHandler
         Requests.Add((from, to));
         BytesSent += to - from + 1;
 
+        byte[] part = _content[(int)from..(int)(to + 1)];
+
         var response = new HttpResponseMessage(HttpStatusCode.PartialContent)
         {
-            Content = new ByteArrayContent(_content, (int)from, (int)(to - from + 1))
+            Content = Stalls || Pause > TimeSpan.Zero ? new StreamContent(new SlowBody(part, Pause, Stalls)) : new ByteArrayContent(part)
         };
 
         response.Content.Headers.ContentRange = new ContentRangeHeaderValue(from, to, _content.Length);

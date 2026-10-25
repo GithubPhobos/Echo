@@ -55,6 +55,11 @@ function Install-Echo([string]$Version) {
         $Version = $Matches[1]
     }
 
+    # The version goes into addresses and folder names, so it is digits and dots, such as 2.0.1, and nothing else
+    if ($Version -notmatch '^[0-9.]+$') {
+        throw "'$Version' is not a version of Echo, such as 2.0.1."
+    }
+
     $download = "$releases/download/v$Version"
     $temporary = Join-Path ([IO.Path]::GetTempPath()) ('echooo-' + [Guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $temporary | Out-Null
@@ -100,40 +105,72 @@ function Install-Echo([string]$Version) {
 
         New-Item -ItemType Directory -Force -Path $versions | Out-Null
 
-        if (Test-Path -LiteralPath $partial) {
-            Remove-Item -LiteralPath $partial -Recurse -Force
-        }
+        # One Echo or one install script changes the versions at a time: an Echo that updates itself holds this lock too
+        $lock = Lock-Versions (Join-Path $root 'versions.lock')
 
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-        [IO.Compression.ZipFile]::ExtractToDirectory((Join-Path $temporary $archive), $partial)
+        try {
+            if (Test-Path -LiteralPath $partial) {
+                Remove-Item -LiteralPath $partial -Recurse -Force
+            }
 
-        if (-not (Test-Path -LiteralPath (Join-Path $partial 'echooo.exe'))) {
-            throw "the archive of Echo $Version has no echooo.exe."
-        }
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            [IO.Compression.ZipFile]::ExtractToDirectory((Join-Path $temporary $archive), $partial)
 
-        if (Test-Path -LiteralPath $target) {
+            if (-not (Test-Path -LiteralPath (Join-Path $partial 'echooo.exe'))) {
+                throw "the archive of Echo $Version has no echooo.exe."
+            }
+
+            # A version already there, as when it is installed again, is moved aside whole rather than deleted file
+            # by file, so a folder that cannot be moved stays as it was. A running Echo does not keep its folder from
+            # moving, and finds the same files there right after
+            $aside = $null
+
+            if (Test-Path -LiteralPath $target) {
+                $aside = "$target.old-$([Guid]::NewGuid().ToString('N'))"
+
+                try {
+                    [IO.Directory]::Move($target, $aside)
+                }
+                catch {
+                    Remove-Item -LiteralPath $partial -Recurse -Force -ErrorAction SilentlyContinue
+
+                    throw "a file in $target is in use. Close the programs that may hold it, such as Echo, and run this again."
+                }
+            }
+
             try {
-                Remove-Item -LiteralPath $target -Recurse -Force
+                [IO.Directory]::Move($partial, $target)
             }
             catch {
-                throw "Echo $Version is running from $target. Close it and run this again."
-            }
-        }
+                # The version that was there goes back to its place
+                if ($aside) {
+                    [IO.Directory]::Move($aside, $target)
+                }
 
-        Move-Item -LiteralPath $partial -Destination $target
-
-        # Only the junction itself is taken away: removing it with its contents would delete the version it leads to
-        $link = Get-Item -LiteralPath $current -Force -ErrorAction SilentlyContinue
-
-        if ($link) {
-            if (-not ($link.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
-                throw "$current is a folder, not a link, so it is left as it is."
+                throw
             }
 
-            [IO.Directory]::Delete($current)
-        }
+            # Only the junction itself is taken away: removing it with its contents would delete the version it leads to
+            $link = Get-Item -LiteralPath $current -Force -ErrorAction SilentlyContinue
 
-        New-Item -ItemType Junction -Path $current -Target $target | Out-Null
+            if ($link) {
+                if (-not ($link.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                    throw "$current is a folder, not a link, so it is left as it is."
+                }
+
+                [IO.Directory]::Delete($current)
+            }
+
+            New-Item -ItemType Junction -Path $current -Target $target | Out-Null
+
+            # Whatever a running Echo still holds of it goes at a later start of Echo
+            if ($aside) {
+                Remove-Item -LiteralPath $aside -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+        finally {
+            $lock.Close()
+        }
 
         Add-ToPath $current
 
@@ -141,6 +178,33 @@ function Install-Echo([string]$Version) {
     }
     finally {
         Remove-Item -LiteralPath $temporary -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# Opens the file without sharing, which is the lock Echo takes while it changes the versions; waits while it is taken
+function Lock-Versions([string]$file) {
+    $isWaiting = $false
+
+    while ($true) {
+        try {
+            return [IO.File]::Open($file, 'OpenOrCreate', 'ReadWrite', 'None')
+        }
+        catch {
+            # PowerShell wraps what the method threw. Only a file another program holds is waited for; anything else,
+            # such as a folder that cannot be written, is told
+            $problem = if ($_.Exception.InnerException) { $_.Exception.InnerException } else { $_.Exception }
+
+            if ($problem -isnot [IO.IOException]) {
+                throw
+            }
+
+            if (-not $isWaiting) {
+                Write-Host 'Waiting while Echo updates itself...'
+                $isWaiting = $true
+            }
+
+            Start-Sleep -Milliseconds 200
+        }
     }
 }
 

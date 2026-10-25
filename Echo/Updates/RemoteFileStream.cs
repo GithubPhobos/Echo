@@ -11,7 +11,8 @@ namespace Echo.Updates;
 /// <param name="httpClient">The client the parts are downloaded with.</param>
 /// <param name="address">Where the file is.</param>
 /// <param name="length">The size of the file in bytes.</param>
-internal sealed class RemoteFileStream(HttpClient httpClient, Uri address, long length) : Stream
+/// <param name="stallTimeout">How long the server may send nothing before the file is given up on.</param>
+internal sealed class RemoteFileStream(HttpClient httpClient, Uri address, long length, TimeSpan stallTimeout) : Stream
 {
     /// <summary>
     ///     The smallest part downloaded at once. As much is downloaded of the end of the file at the first read there:
@@ -24,6 +25,7 @@ internal sealed class RemoteFileStream(HttpClient httpClient, Uri address, long 
     private readonly HttpClient _httpClient = httpClient;
     private readonly Uri _address = address;
     private readonly long _length = length;
+    private readonly TimeSpan _stallTimeout = stallTimeout;
 
     /// <summary>
     ///     The part read last, and where it starts in the file.
@@ -66,6 +68,7 @@ internal sealed class RemoteFileStream(HttpClient httpClient, Uri address, long 
     /// <inheritdoc/>
     /// <exception cref="HttpRequestException">The server could not be reached, or did not give the part asked for.</exception>
     /// <exception cref="IOException">The connection was lost.</exception>
+    /// <exception cref="TimeoutException">The server stopped sending.</exception>
     public override int Read(Span<byte> buffer)
     {
         if (_position >= _length || buffer.IsEmpty)
@@ -145,26 +148,49 @@ internal sealed class RemoteFileStream(HttpClient httpClient, Uri address, long 
         using var request = new HttpRequestMessage(HttpMethod.Get, _address);
         request.Headers.Range = new RangeHeaderValue(start, start + count - 1);
 
-        using HttpResponseMessage response = _httpClient.Send(request, HttpCompletionOption.ResponseHeadersRead);
+        // A server that stops sending and keeps the connection open is given up on, as a lost connection is;
+        // the time counts anew with every piece that comes
+        using var stalled = new CancellationTokenSource(_stallTimeout);
 
-        // A server that does not give parts answers with the whole file, or with an error
-        if (response.StatusCode != HttpStatusCode.PartialContent
-            || response.Content.Headers.ContentRange is not { From: { } from } range
-            || from != start
-            || (range.Length is { } total && total != _length))
+        try
         {
-            throw new HttpRequestException(
-                $"{_address.Host} did not give bytes {start}-{start + count - 1} of {Path.GetFileName(_address.AbsolutePath)}: "
-                + $"it answered {(int)response.StatusCode}.");
+            using HttpResponseMessage response = _httpClient.Send(request, HttpCompletionOption.ResponseHeadersRead, stalled.Token);
+
+            // A server that does not give parts answers with the whole file, or with an error
+            if (response.StatusCode != HttpStatusCode.PartialContent
+                || response.Content.Headers.ContentRange is not { From: { } from } range
+                || from != start
+                || (range.Length is { } total && total != _length))
+            {
+                throw new HttpRequestException(
+                    $"{_address.Host} did not give bytes {start}-{start + count - 1} of {Path.GetFileName(_address.AbsolutePath)}: "
+                    + $"it answered {(int)response.StatusCode}.");
+            }
+
+            byte[] part = new byte[count];
+            int done = 0;
+
+            using Stream body = response.Content.ReadAsStream(stalled.Token);
+
+            while (done < count)
+            {
+                // Only an asynchronous read of the answer stops waiting when it is cancelled
+                int read = body.ReadAsync(part.AsMemory(done), stalled.Token).AsTask().GetAwaiter().GetResult();
+
+                if (read == 0)
+                    throw new EndOfStreamException($"{_address.Host} ended the connection after {done} of {count} bytes.");
+
+                done += read;
+                stalled.CancelAfter(_stallTimeout);
+            }
+
+            Downloaded += count;
+
+            return part;
         }
-
-        byte[] part = new byte[count];
-
-        using (Stream body = response.Content.ReadAsStream())
-            body.ReadExactly(part);
-
-        Downloaded += count;
-
-        return part;
+        catch (Exception exc) when ((exc is OperationCanceledException or IOException) && stalled.IsCancellationRequested)
+        {
+            throw new TimeoutException($"{_address.Host} sent nothing for {_stallTimeout.TotalSeconds} seconds.", exc);
+        }
     }
 }

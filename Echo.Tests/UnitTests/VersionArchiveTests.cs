@@ -107,7 +107,7 @@ public sealed class VersionArchiveTests : IDisposable
     }
 
     private VersionArchive Create(RangeServer server) =>
-        new(new HttpClient(server), _folders.Object);
+        new(new HttpClient(server), _folders.Object, TimeSpan.FromSeconds(10));
 
     private static ReleaseInfo Release(byte[] archive) => new(
         "2.0.2",
