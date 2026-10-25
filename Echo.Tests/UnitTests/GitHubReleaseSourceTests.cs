@@ -44,16 +44,49 @@ public sealed class GitHubReleaseSourceTests
     }
 
     [Fact]
-    public async Task LatestAsync_NoArchiveForThisSystem_IsNotARelease()
+    public async Task LatestAsync_NoArchiveForThisSystem_GivesTheVersionThatCannotBeInstalled()
     {
         // Arrange
         var source = new GitHubReleaseSource(new HttpClient(new FakeServer(Release("v2.0.2"))), _latest, "echooo-osx-arm64.tar.gz");
 
         // Act
-        InvalidDataException exception = await Assert.ThrowsAsync<InvalidDataException>(() => source.LatestAsync(CancellationToken.None));
+        ReleaseInfo release = await source.LatestAsync(CancellationToken.None);
 
         // Assert
-        Assert.Contains("echooo-osx-arm64.tar.gz", exception.Message);
+        Assert.Equal("2.0.2", release.Version);
+        Assert.Null(release.ArchiveUrl);
+        Assert.False(release.CanBeInstalled);
+    }
+
+    [Fact]
+    public async Task LatestAsync_ReleaseOfEcho1_GivesItsVersion()
+    {
+        // Arrange: how the releases of Echo 1.x look, tagged without the "v" and with an archive of another name
+        const string answer = """
+            {
+              "tag_name": "1.0.1",
+              "assets": [ { "name": "win-x64.zip", "size": 52000000, "browser_download_url": "https://example.test/1.0.1/win-x64.zip" } ]
+            }
+            """;
+
+        var source = new GitHubReleaseSource(new HttpClient(new FakeServer(answer)), _latest, "echooo-win-x64.zip");
+
+        // Act
+        ReleaseInfo release = await source.LatestAsync(CancellationToken.None);
+
+        // Assert
+        Assert.Equal("1.0.1", release.Version);
+        Assert.False(release.CanBeInstalled);
+    }
+
+    [Fact]
+    public async Task ChecksumAsync_ReleaseWithoutTheList_FailsAsUnreadable()
+    {
+        // Arrange
+        var source = new GitHubReleaseSource(new HttpClient(new FakeServer(string.Empty)), _latest, "echooo-win-x64.zip");
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidDataException>(() => source.ChecksumAsync(Info() with { ChecksumsUrl = null }, CancellationToken.None));
     }
 
     [Theory]

@@ -64,7 +64,10 @@ internal sealed class GitHubReleaseSource(HttpClient httpClient, Uri latestRelea
     /// <inheritdoc/>
     public async Task<string> ChecksumAsync(ReleaseInfo release, CancellationToken cancellationToken)
     {
-        string checksums = await _httpClient.GetStringAsync(release.ChecksumsUrl, cancellationToken);
+        if (release.ChecksumsUrl is not { } address)
+            throw new InvalidDataException($"Echo {release.Version} has no {ChecksumsName}.");
+
+        string checksums = await _httpClient.GetStringAsync(address, cancellationToken);
 
         foreach (string line in checksums.Split('\n'))
         {
@@ -80,7 +83,8 @@ internal sealed class GitHubReleaseSource(HttpClient httpClient, Uri latestRelea
 
     /// <summary>
     ///     The release a description of the GitHub API names: its version from the tag, its archive for this system
-    ///     and its list of checksums.
+    ///     and its list of checksums. A release may lack them, as the releases of Echo 1.x do: then it only tells
+    ///     whether a newer version is out.
     /// </summary>
     private ReleaseInfo Read(JsonElement release)
     {
@@ -102,19 +106,16 @@ internal sealed class GitHubReleaseSource(HttpClient httpClient, Uri latestRelea
                 checksums = asset;
         }
 
-        if (archive is not { } found)
-            throw new InvalidDataException($"Echo {version} has no {_archiveName}.");
-
-        if (checksums is not { } list)
-            throw new InvalidDataException($"Echo {version} has no {ChecksumsName}.");
-
         return new ReleaseInfo(
             version.ToString(3),
             _archiveName,
-            new Uri(found.GetProperty("browser_download_url").GetString()!),
-            found.GetProperty("size").GetInt64(),
-            new Uri(list.GetProperty("browser_download_url").GetString()!));
+            archive is { } found ? Address(found) : null,
+            archive?.GetProperty("size").GetInt64() ?? 0,
+            checksums is { } list ? Address(list) : null);
     }
+
+    private static Uri Address(JsonElement asset) =>
+        new(asset.GetProperty("browser_download_url").GetString()!);
 
     private static bool IsChecksum(string text) =>
         text.Length == 64 && text.All(Uri.IsHexDigit);

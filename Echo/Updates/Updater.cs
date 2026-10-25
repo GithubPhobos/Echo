@@ -187,6 +187,20 @@ internal sealed class Updater(IReleaseSource source,
         bool isAsked = TakeAsked();
         bool isNewer = ReleaseVersion.IsNewer(latest.Version, _installed);
 
+        // A newer release without the files of this system cannot be installed, so it counts as no answer.
+        // An older one, such as a release of Echo 1.x, still tells that the version in use is the latest
+        if (isNewer && !latest.CanBeInstalled)
+        {
+            string reason = $"Echo {latest.Version} is out, but has no {latest.ArchiveName} or no list of checksums.";
+
+            FileLog.Debug("Could not check for a newer Echo: {Reason}", reason);
+
+            if (isAsked)
+                Notify(new UpdateNotice(UpdateNoticeKind.CheckFailed, _installed, reason));
+
+            return;
+        }
+
         lock (_lock)
         {
             // What is being downloaded, or is downloaded already, is as new as what the check could find,
@@ -269,8 +283,9 @@ internal sealed class Updater(IReleaseSource source,
             string checksum = await _source.ChecksumAsync(release, CancellationToken.None);
             string archive = Path.Combine(partial, release.ArchiveName);
 
+            // Only a release that can be installed is ever offered, so its archive is there
             await _downloader.DownloadAsync(
-                new DownloadRequest(release.ArchiveUrl, release.ArchiveSize, checksum),
+                new DownloadRequest(release.ArchiveUrl!, release.ArchiveSize, checksum),
                 archive,
                 new InlineProgress<DownloadProgress>(Report),
                 CancellationToken.None);

@@ -92,6 +92,42 @@ public sealed class UpdaterTests : IDisposable
     }
 
     [Fact]
+    public async Task Start_LatestReleaseIsOlderAndHasNoArchive_IsTheLatest()
+    {
+        // Arrange: the latest release is still one of Echo 1.x, whose files Echo 2 cannot install
+        _source.Setup(source => source.LatestAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Release("1.0.1") with { ArchiveUrl = null, ChecksumsUrl = null });
+
+        // Act
+        Updater updater = await StartAsync();
+
+        // Assert
+        Assert.Equal(new UpdateStatus(UpdateStage.Latest, "2.0.1"), updater.Status);
+        Assert.Empty(_notices);
+    }
+
+    [Fact]
+    public async Task Download_NewerReleaseWithoutTheArchive_SaysWhyAndDownloadsNothing()
+    {
+        // Arrange
+        _source.Setup(source => source.LatestAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Release("2.0.2") with { ArchiveUrl = null });
+        Updater updater = await StartAsync();
+
+        // Act
+        UpdateStart start = updater.Download();
+        await updater.WhenIdleAsync();
+
+        // Assert: as if the releases had not answered
+        Assert.Equal(UpdateStage.Unknown, updater.Status.Stage);
+        Assert.Equal(UpdateStart.Checking, start);
+
+        UpdateNotice notice = Assert.Single(_notices);
+
+        Assert.Equal(UpdateNoticeKind.CheckFailed, notice.Kind);
+        Assert.Contains("Echo 2.0.2 is out, but has no echooo-test.zip", notice.Reason);
+        Assert.Equal(0, _downloader.Calls);
+    }
+
+    [Fact]
     public async Task Start_ReleasesCannotBeReached_SaysNothing()
     {
         // Arrange
