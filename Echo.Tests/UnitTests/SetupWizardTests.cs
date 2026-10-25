@@ -12,6 +12,7 @@ using Echo.UI;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 using Spectre.Console.Testing;
+using Whisper.net.LibraryLoader;
 
 namespace Echo.Tests.UnitTests;
 
@@ -40,6 +41,7 @@ public sealed partial class SetupWizardTests : IDisposable
     private readonly Mock<IDesktopAccess> _desktop = new();
 
     private HardwareInfo _hardware = new(Nvidia: null, IsVulkanAvailable: false, MemoryGb: 16, ProcessorCores: 8);
+    private RuntimeLibrary? _loadedRuntime;
 
     public SetupWizardTests()
     {
@@ -564,7 +566,8 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)                                                // silence level: measured, continue
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)
             .Press(ConsoleKey.UpArrow).Press(ConsoleKey.Enter)                      // additional settings: continue, round from the first setting
-            .Press(ConsoleKey.UpArrow).Press(ConsoleKey.UpArrow)                    // review: up to the key line
+            .Press(ConsoleKey.UpArrow).Press(ConsoleKey.UpArrow)
+            .Press(ConsoleKey.UpArrow)                                              // review: up to the key line
             .Press(ConsoleKey.Enter)
             .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 2)            // key: confirm the newly pressed one
             .Press(ConsoleKey.Enter);                                               // review: save
@@ -788,7 +791,7 @@ public sealed partial class SetupWizardTests : IDisposable
         string[] rows = [.. Regex.Matches(review, @"[○◉] (.+?)\s{2,}").Select(match => match.Groups[1].Value)];
 
         Assert.Equal(
-            ["Interface language", "Dictation language", "Hardware acceleration", "Model", "Push-to-talk key", "Microphone", "Save and start"],
+            ["Interface language", "Dictation language", "Hardware acceleration", "Model", "Push-to-talk key", "Microphone", "Additional settings", "Save and start"],
             rows);
     }
 
@@ -1021,6 +1024,84 @@ public sealed partial class SetupWizardTests : IDisposable
     }
 
     [Fact]
+    public async Task RunAsync_SetupCompleted_OpensOnTheReviewScreenAndRunsOnlyThePickedStep()
+    {
+        // Arrange
+        SaveCompletedSetup(AccelerationBackend.Cpu);
+        _hotkeys.Presses.Enqueue([new HotkeyChoice("VcF9", string.Empty)]);
+
+        _keys.Press(ConsoleKey.DownArrow).Press(ConsoleKey.DownArrow)
+            .Press(ConsoleKey.DownArrow).Press(ConsoleKey.DownArrow)                // review: down to the key line
+            .Press(ConsoleKey.Enter)
+            .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)            // key: confirm the newly pressed one
+            .Press(ConsoleKey.DownArrow).Press(ConsoleKey.DownArrow)
+            .Press(ConsoleKey.DownArrow)                                            // review: from the key line down to save
+            .Press(ConsoleKey.Enter);
+
+        // Act
+        SetupOutcome outcome = await CreateRunner().RunAsync(onlyNewSteps: false, CancellationToken.None);
+
+        // Assert
+        UserSettings saved = CreateStore().Load();
+
+        Assert.Equal(SetupOutcome.Completed, outcome);
+        Assert.Equal(0, _keys.Remaining);
+        Assert.Equal(["review", "step 4 of 6 · Hotkey", "review"], ScreensShown());
+        Assert.Equal("VcF9", saved.HotkeyKey);
+        Assert.Equal("ggml-small.en.bin", saved.ModelName);
+        Assert.Equal("USB Microphone", saved.MicrophoneName);
+        Assert.Contains("Choose what to change", _console.Output);
+    }
+
+    [Fact]
+    public async Task RunAsync_SetupCompletedAndLeftWithEscape_SavesNothing()
+    {
+        // Arrange
+        SaveCompletedSetup(AccelerationBackend.Cpu);
+        _hotkeys.Presses.Enqueue([new HotkeyChoice("VcF9", string.Empty)]);
+
+        _keys.Press(ConsoleKey.DownArrow).Press(ConsoleKey.DownArrow)
+            .Press(ConsoleKey.DownArrow).Press(ConsoleKey.DownArrow)                // review: down to the key line
+            .Press(ConsoleKey.Enter)
+            .PressWhen(ConsoleKey.Enter, () => _hotkeys.StartCount == 1)            // key: confirm the newly pressed one
+            .Press(ConsoleKey.Escape);                                              // review: leave
+
+        // Act
+        SetupOutcome outcome = await CreateRunner().RunAsync(onlyNewSteps: false, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(SetupOutcome.Cancelled, outcome);
+        Assert.Equal(0, _keys.Remaining);
+        Assert.Equal("VcF24", CreateStore().Load().HotkeyKey);
+        Assert.Contains("Esc leave without saving", _console.Output);
+    }
+
+    [Theory]
+    [InlineData(RuntimeLibrary.Cuda, true)]
+    [InlineData(RuntimeLibrary.Vulkan, false)]
+    [InlineData(null, false)]
+    public async Task RunAsync_VulkanHighlighted_WarnsOnlyWhenTheLoadedRuntimeCannotRunIt(RuntimeLibrary? loaded, bool isWarned)
+    {
+        // Arrange: the list opens on the processor, which any runtime can run on
+        _hardware = new HardwareInfo(_modernGpu, IsVulkanAvailable: true, MemoryGb: 32, ProcessorCores: 16);
+        _loadedRuntime = loaded;
+        SaveCompletedSetup(AccelerationBackend.Cpu);
+
+        _keys.Press(ConsoleKey.DownArrow).Press(ConsoleKey.DownArrow)               // review: down to the acceleration line
+            .Press(ConsoleKey.Enter)
+            .Press(ConsoleKey.UpArrow)                                              // hardware: from the processor up to Vulkan
+            .Press(ConsoleKey.Escape)                                               // hardware -> review
+            .Press(ConsoleKey.Escape);                                              // review: leave
+
+        // Act
+        await CreateRunner().RunAsync(onlyNewSteps: false, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(0, _keys.Remaining);
+        Assert.Equal(isWarned, _console.Output.Contains("Takes effect only after Echo restarts", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task RunAsync_SystemLacksAProgram_SaysWhatIsMissingAndLooksAgainOnRequest()
     {
         // Arrange: the clipboard program is missing at first and installed while the page is open
@@ -1215,18 +1296,37 @@ public sealed partial class SetupWizardTests : IDisposable
         var hardwareProbe = new Mock<IHardwareProbe>();
         hardwareProbe.Setup(probe => probe.DetectAsync(It.IsAny<CancellationToken>())).ReturnsAsync(() => _hardware);
 
+        var runtime = new Mock<IRecognitionRuntime>();
+        runtime.SetupGet(recognition => recognition.Loaded).Returns(() => _loadedRuntime);
+
         ISetupStep[] steps =
         [
             new LanguageStep(ui),
-            new AccelerationStep(ui, hardwareProbe.Object, _cuda.Object, _shell.Object, _requirements.Object),
+            new AccelerationStep(ui, hardwareProbe.Object, _cuda.Object, _shell.Object, _requirements.Object, runtime.Object),
             new ModelStep(ui, paths, _downloader.Object, _shell.Object),
             new HotkeyStep(ui, _hotkeys, _desktop.Object),
             new CheckStep(ui, _microphones, _dictation, timings, _microphones.Clock),
             new AdditionalSettingsStep(ui),
         ];
 
-        return new SetupRunner(steps, ui, new UserSettingsStore(paths));
+        return new SetupRunner(steps, ui, new UserSettingsStore(paths), hardwareProbe.Object);
     }
+
+    /// <summary>
+    ///     Stores the settings of a setup completed earlier, as the wizard would have saved them.
+    /// </summary>
+    private void SaveCompletedSetup(AccelerationBackend backend) =>
+        CreateStore().Save(new UserSettings
+        {
+            SetupVersion = SetupRunner.CurrentVersion,
+            UiLanguage = "en",
+            DictationLanguage = "en",
+            HardwareBackend = Acceleration.ToSetting(backend),
+            ModelName = "ggml-small.en.bin",
+            HotkeyKey = "VcF24",
+            HotkeyModifier = string.Empty,
+            MicrophoneName = "USB Microphone",
+        });
 
     /// <summary>
     ///     A keyboard that hands out keys in a fixed order. A key meant for a screen that redraws on its own
@@ -1489,7 +1589,7 @@ public sealed partial class SetupWizardTests : IDisposable
                 new DictationTestEvent(DictationTestEventKind.Recognized, "hello from the test", 420),
             ]);
 
-            public Whisper.net.LibraryLoader.RuntimeLibrary? Runtime => Whisper.net.LibraryLoader.RuntimeLibrary.Cpu;
+            public RuntimeLibrary? Runtime => RuntimeLibrary.Cpu;
 
             public bool IsDrained => _events.Count == 0;
 

@@ -18,5 +18,15 @@ internal sealed record SetupScreen(int StepIndex, IReadOnlyList<string> StepTitl
     /// </summary>
     public Func<int, string?>? StepValue { get; init; }
 
+    /// <summary>
+    ///     What Escape does, for the line of key hints, where it does more than go back; "back" when null.
+    /// </summary>
+    public string? EscapeHint { get; init; }
+
+    /// <summary>
+    ///     Whether the steps after this one are done as well, as they are for a step opened from the review screen.
+    /// </summary>
+    public bool AreLaterStepsDone { get; init; }
+
     public bool IsReview => StepIndex >= StepTitles.Count;
 }

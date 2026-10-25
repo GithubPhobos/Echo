@@ -49,9 +49,12 @@ internal sealed class SetupCommand(IAnsiConsole console, SetupRunner setupRunner
         if (!settings.NoBanner)
             await new StartupScreen(_console).PlayAsync(cancellationToken);
 
-        await _setupRunner.RunAsync(onlyNewSteps: false, cancellationToken);
+        SetupOutcome outcome = await _setupRunner.RunAsync(onlyNewSteps: false, cancellationToken);
 
-        _console.MarkupLine($"  [{Theme.Success}]{Markup.Escape(Strings.SetupSaved)}[/]");
+        if (outcome == SetupOutcome.Cancelled)
+            _console.MarkupLine($"  {Markup.Escape(Strings.SetupUnchanged)}");
+        else
+            _console.MarkupLine($"  [{Theme.Success}]{Markup.Escape(Strings.SetupSaved)}[/]");
         _console.WriteLine();
 
         return 0;

@@ -942,4 +942,19 @@
   <data name="RestartFailed" xml:space="preserve">
     <value>Не удалось запустить Echo заново: {0}. Запустите его сами: echooo</value>
   </data>
+  <data name="AccelerationRestartCaution" xml:space="preserve">
+    <value>Включится только после перезапуска Echo: /restart. До тех пор работает прежнее ускорение.</value>
+  </data>
+  <data name="ReviewChangeQuestion" xml:space="preserve">
+    <value>Выберите, что изменить</value>
+  </data>
+  <data name="ReviewChangeSave" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="HintLeaveUnsaved" xml:space="preserve">
+    <value>выйти без сохранения</value>
+  </data>
+  <data name="SetupUnchanged" xml:space="preserve">
+    <value>Настройки не изменены.</value>
+  </data>
 </root>

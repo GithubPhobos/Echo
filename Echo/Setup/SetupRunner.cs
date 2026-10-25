@@ -7,12 +7,17 @@ namespace Echo.Setup;
 
 /// <summary>
 ///     Shows the pages of the setup steps in order, lets the user move back and forth between them,
-///     shows the review screen and saves the result.
+///     shows the review screen and saves the result. A completed setup opens on its review screen instead,
+///     so that changing one choice does not take going through every step again.
 /// </summary>
 /// <param name="steps">The steps, in the order they were registered.</param>
 /// <param name="ui"><see cref="SetupUi"/></param>
 /// <param name="settingsStore"><see cref="IUserSettingsStore"/></param>
-internal sealed class SetupRunner(IEnumerable<ISetupStep> steps, SetupUi ui, IUserSettingsStore settingsStore)
+/// <param name="hardwareProbe"><see cref="IHardwareProbe"/></param>
+internal sealed class SetupRunner(IEnumerable<ISetupStep> steps,
+                                  SetupUi ui,
+                                  IUserSettingsStore settingsStore,
+                                  IHardwareProbe hardwareProbe)
 {
     /// <summary>
     ///     Raised whenever a release adds a step that existing users must go through.
@@ -27,6 +32,7 @@ internal sealed class SetupRunner(IEnumerable<ISetupStep> steps, SetupUi ui, IUs
     private readonly IReadOnlyList<ISetupStep> _steps = [.. steps];
     private readonly SetupUi _ui = ui;
     private readonly IUserSettingsStore _settingsStore = settingsStore;
+    private readonly IHardwareProbe _hardwareProbe = hardwareProbe;
 
     /// <summary>
     ///     The backend chosen in the last completed run, with "automatic" already resolved.
@@ -51,6 +57,9 @@ internal sealed class SetupRunner(IEnumerable<ISetupStep> steps, SetupUi ui, IUs
         UserSettings saved = _settingsStore.Load();
         SetupContext context = SetupContext.FromSettings(saved);
 
+        if (!onlyNewSteps && saved.SetupVersion >= CurrentVersion)
+            return await ChangeAsync(context, [.. _steps], cancellationToken);
+
         List<ISetupStep> steps = [.. _steps.Where(step => !onlyNewSteps || step.Version > saved.SetupVersion)];
         if (steps.Count == 0)
             return SetupOutcome.NothingToDo;
@@ -66,7 +75,7 @@ internal sealed class SetupRunner(IEnumerable<ISetupStep> steps, SetupUi ui, IUs
         {
             while (current < pages.Count)
             {
-                SetupStepResult result = await ShowAsync(pages[current], steps, context, history.Count > 0, cancellationToken);
+                SetupStepResult result = await ShowAsync(pages[current], steps, context, history.Count > 0, isFromReview: false, cancellationToken);
 
                 ApplyLanguage(context);
 
@@ -81,12 +90,12 @@ internal sealed class SetupRunner(IEnumerable<ISetupStep> steps, SetupUi ui, IUs
                 }
             }
 
-            int? edited = await ReviewAsync(context, steps, cancellationToken);
+            // Opens on the last row, the one that saves: everything has just been chosen
+            int? edited = await ReviewAsync(context, steps, isChange: false, new ListPosition(int.MaxValue), cancellationToken);
 
             if (edited == SaveChoice)
             {
-                _settingsStore.Save(context.ToSettings(CurrentVersion));
-                ChosenBackend = context.RequestedBackend;
+                Save(context);
 
                 return SetupOutcome.Completed;
             }
@@ -105,6 +114,49 @@ internal sealed class SetupRunner(IEnumerable<ISetupStep> steps, SetupUi ui, IUs
     }
 
     /// <summary>
+    ///     Shows the review screen of a completed setup. A row picked there runs the pages of its step alone
+    ///     and comes back; Escape leaves without saving anything.
+    /// </summary>
+    private async Task<SetupOutcome> ChangeAsync(SetupContext context, List<ISetupStep> steps, CancellationToken cancellationToken)
+    {
+        // Found out first, as the acceleration step does in a full run: the steps after it, the model and
+        // the test dictation, count on it, and so does the review row of the automatic acceleration
+        context.UseDetected(await _ui.WaitAsync(
+            ReviewScreen(steps, context, isChange: true),
+            Markup.Escape(Strings.HardwareChecking),
+            () => _hardwareProbe.DetectAsync(cancellationToken),
+            cancellationToken));
+
+        // Coming back from a step, the row that led to it is still highlighted
+        var position = new ListPosition(0);
+
+        while (true)
+        {
+            int? edited = await ReviewAsync(context, steps, isChange: true, position, cancellationToken);
+
+            if (edited is null)
+                return SetupOutcome.Cancelled;
+
+            if (edited == SaveChoice)
+            {
+                Save(context);
+
+                return SetupOutcome.Completed;
+            }
+
+            await RunStepAloneAsync(steps, edited.Value, context, cancellationToken);
+
+            ApplyLanguage(context);
+        }
+    }
+
+    private void Save(SetupContext context)
+    {
+        _settingsStore.Save(context.ToSettings(CurrentVersion));
+        ChosenBackend = context.RequestedBackend;
+    }
+
+    /// <summary>
     ///     Runs the pages of one step, as picked on the review screen. Going back from its first page,
     ///     or forward from its last, returns to the review screen.
     /// </summary>
@@ -120,7 +172,7 @@ internal sealed class SetupRunner(IEnumerable<ISetupStep> steps, SetupUi ui, IUs
 
         while (current < pages.Count)
         {
-            SetupStepResult result = await ShowAsync(pages[current], steps, context, canGoBack: true, cancellationToken);
+            SetupStepResult result = await ShowAsync(pages[current], steps, context, canGoBack: true, isFromReview: true, cancellationToken);
 
             ApplyLanguage(context);
 
@@ -144,12 +196,14 @@ internal sealed class SetupRunner(IEnumerable<ISetupStep> steps, SetupUi ui, IUs
                                                    List<ISetupStep> steps,
                                                    SetupContext context,
                                                    bool canGoBack,
+                                                   bool isFromReview,
                                                    CancellationToken cancellationToken)
     {
         // Titles are read again for every page: the first one may have changed the language
         var screen = new SetupScreen(page.StepIndex, Titles(steps), canGoBack, page.Page.SubTitle?.Invoke())
         {
-            StepValue = index => steps[index].Brief(context)
+            StepValue = index => steps[index].Brief(context),
+            AreLaterStepsDone = isFromReview
         };
 
         return page.Page.ShowAsync(context, screen, cancellationToken);
@@ -191,25 +245,48 @@ internal sealed class SetupRunner(IEnumerable<ISetupStep> steps, SetupUi ui, IUs
     ///     Shows every choice made. Returns the index of the step to run again, <see cref="SaveChoice"/> to save,
     ///     or null to go back.
     /// </summary>
-    private async Task<int?> ReviewAsync(SetupContext context, List<ISetupStep> steps, CancellationToken cancellationToken)
+    /// <param name="context">The choices.</param>
+    /// <param name="steps">The steps the choices belong to.</param>
+    /// <param name="isChange">
+    ///     Whether a completed setup is being changed: the screen then asks what to change, and Escape leaves it.
+    /// </param>
+    /// <param name="position">The highlighted row, kept when the screen closes.</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    private async Task<int?> ReviewAsync(SetupContext context,
+                                         List<ISetupStep> steps,
+                                         bool isChange,
+                                         ListPosition position,
+                                         CancellationToken cancellationToken)
     {
         List<Choice<int>> choices =
         [
             .. steps.SelectMany((step, stepIndex) => step.Summarize(context)
                 .Select(row => new Choice<int>(stepIndex, row.Label, Summary: Markup.Escape(row.Value)))),
-            new(SaveChoice, Strings.ReviewSave, Summary: SetupUi.Recommended(Markup.Escape(Strings.ReviewSaveHint))),
+            isChange
+                ? new(SaveChoice, Strings.ReviewChangeSave)
+                : new(SaveChoice, Strings.ReviewSave, Summary: SetupUi.Recommended(Markup.Escape(Strings.ReviewSaveHint))),
         ];
 
-        UiResult<int> picked = await _ui.SelectAsync(
-            new SetupScreen(steps.Count, Titles(steps), CanGoBack: true) { StepValue = index => steps[index].Brief(context) },
-            Strings.ReviewQuestion,
+        ListKey[] confirm = [new(ConsoleKey.Enter, Strings.HintConfirm)];
+
+        UiResult<(int Value, ConsoleKey Key)> picked = await _ui.SelectAsync(
+            ReviewScreen(steps, context, isChange),
+            isChange ? Strings.ReviewChangeQuestion : Strings.ReviewQuestion,
             choices,
-            selectedIndex: choices.Count - 1,
-            [SetupUi.Dim(Markup.Escape(Strings.ReviewNote))],
+            position,
+            isChange ? null : [SetupUi.Dim(Markup.Escape(Strings.ReviewNote))],
+            _ => confirm,
             cancellationToken);
 
-        return picked.IsBack ? null : picked.Value;
+        return picked.IsBack ? null : picked.Value.Value;
     }
+
+    private static SetupScreen ReviewScreen(List<ISetupStep> steps, SetupContext context, bool isChange) =>
+        new(steps.Count, Titles(steps), CanGoBack: true)
+        {
+            StepValue = index => steps[index].Brief(context),
+            EscapeHint = isChange ? Strings.HintLeaveUnsaved : null
+        };
 
     private static List<string> Titles(List<ISetupStep> steps) =>
         [.. steps.Select(step => step.Title)];

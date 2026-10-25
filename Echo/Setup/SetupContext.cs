@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using Echo.Setup.Audio;
 using Echo.Setup.Hardware;
 using Echo.Setup.Hotkeys;
@@ -80,6 +81,17 @@ internal sealed class SetupContext
     public AccelerationBackend RequestedBackend =>
         Acceleration.Parse(HardwareBackend)
         ?? (Hardware is null ? AccelerationBackend.Cpu : Acceleration.Best(Hardware));
+
+    /// <summary>
+    ///     Keeps what the hardware probe found. A card picked in an earlier setup stays picked, as long as it is still there.
+    /// </summary>
+    [MemberNotNull(nameof(Hardware))]
+    public void UseDetected(HardwareInfo detected)
+    {
+        NvidiaGpu? remembered = detected.NvidiaCards.FirstOrDefault(card => card.Index == GraphicsCardIndex);
+
+        Hardware = remembered is null ? detected : detected with { Nvidia = remembered };
+    }
 
     public static SetupContext FromSettings(UserSettings settings) => new()
     {

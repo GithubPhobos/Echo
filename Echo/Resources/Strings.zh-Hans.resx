@@ -942,4 +942,19 @@
   <data name="RestartFailed" xml:space="preserve">
     <value>无法重新启动 Echo：{0}。请手动运行：echooo</value>
   </data>
+  <data name="AccelerationRestartCaution" xml:space="preserve">
+    <value>只有在 Echo 重启后才会生效：/restart。在此之前仍使用当前的加速方式。</value>
+  </data>
+  <data name="ReviewChangeQuestion" xml:space="preserve">
+    <value>选择要更改的内容</value>
+  </data>
+  <data name="ReviewChangeSave" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="HintLeaveUnsaved" xml:space="preserve">
+    <value>不保存退出</value>
+  </data>
+  <data name="SetupUnchanged" xml:space="preserve">
+    <value>设置未更改。</value>
+  </data>
 </root>

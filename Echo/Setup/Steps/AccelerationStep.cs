@@ -28,6 +28,7 @@ internal sealed class AccelerationStep : ISetupStep
     private readonly ICudaRuntime _cudaRuntime;
     private readonly ISystemShell _shell;
     private readonly ISystemRequirements _system;
+    private readonly IRecognitionRuntime _runtime;
 
     /// <summary>
     ///     What the system lacks, found when the wizard first gets here and again whenever the user asks.
@@ -39,13 +40,20 @@ internal sealed class AccelerationStep : ISetupStep
     /// <param name="cudaRuntime"><see cref="ICudaRuntime"/></param>
     /// <param name="shell"><see cref="ISystemShell"/></param>
     /// <param name="system">What Echo needs from this system besides itself.</param>
-    public AccelerationStep(SetupUi ui, IHardwareProbe hardwareProbe, ICudaRuntime cudaRuntime, ISystemShell shell, ISystemRequirements system)
+    /// <param name="runtime"><see cref="IRecognitionRuntime"/></param>
+    public AccelerationStep(SetupUi ui,
+                            IHardwareProbe hardwareProbe,
+                            ICudaRuntime cudaRuntime,
+                            ISystemShell shell,
+                            ISystemRequirements system,
+                            IRecognitionRuntime runtime)
     {
         _ui = ui;
         _hardwareProbe = hardwareProbe;
         _cudaRuntime = cudaRuntime;
         _shell = shell;
         _system = system;
+        _runtime = runtime;
 
         Pages =
         [
@@ -198,16 +206,11 @@ internal sealed class AccelerationStep : ISetupStep
     {
         if (context.Hardware is null)
         {
-            HardwareInfo detected = await _ui.WaitAsync(
+            context.UseDetected(await _ui.WaitAsync(
                 screen,
                 Markup.Escape(Strings.HardwareChecking),
                 () => _hardwareProbe.DetectAsync(cancellationToken),
-                cancellationToken);
-
-            // A card picked in an earlier setup stays picked, as long as it is still there
-            NvidiaGpu? remembered = detected.NvidiaCards.FirstOrDefault(card => card.Index == context.GraphicsCardIndex);
-
-            context.Hardware = remembered is null ? detected : detected with { Nvidia = remembered };
+                cancellationToken));
         }
 
         List<Choice<string>> choices = BuildChoices(context.Hardware);
@@ -471,8 +474,20 @@ internal sealed class AccelerationStep : ISetupStep
 
         choices.Add(new(Acceleration.ToSetting(AccelerationBackend.Cpu), Strings.AccelerationCpu, Hint: Strings.AccelerationCpuHint));
 
-        return choices;
+        // A backend the loaded runtime cannot switch to says so while it is highlighted, before it is picked
+        return
+        [
+            .. choices.Select(choice => NeedsRestart(choice.Value, hardware)
+                ? choice with { Caution = Strings.AccelerationRestartCaution }
+                : choice),
+        ];
     }
+
+    /// <summary>
+    ///     Whether the backend of a row of the list would take effect only in a fresh start of Echo.
+    /// </summary>
+    private bool NeedsRestart(string setting, HardwareInfo hardware) =>
+        Acceleration.NeedsRestart(Acceleration.Parse(setting) ?? Acceleration.Best(hardware), _runtime.Loaded);
 
     private static List<string> DescribeHardware(HardwareInfo hardware)
     {

@@ -166,11 +166,13 @@ internal sealed class ListenCommand(
             if (outcome != ListenOutcome.Setup)
                 return 0;
 
-            await _setupRunner.RunAsync(onlyNewSteps: false, cancellationToken);
+            SetupOutcome setup = await _setupRunner.RunAsync(onlyNewSteps: false, cancellationToken);
 
             Languages.Apply(new UserSettingsStore(_paths).Load().UiLanguage);
 
-            if (IsRestartNeeded())
+            if (setup == SetupOutcome.Cancelled)
+                log.Add(EntryKind.Answer, Strings.SetupUnchanged);
+            else if (IsRestartNeeded())
                 log.Add(EntryKind.Warning, Strings.SetupRestartNeeded);
             else
                 log.Add(EntryKind.Answer, Strings.ListenSetupDone);

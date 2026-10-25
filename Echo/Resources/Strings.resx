@@ -942,4 +942,19 @@
   <data name="RestartFailed" xml:space="preserve">
     <value>Could not start Echo again: {0}. Start it yourself with: echooo</value>
   </data>
+  <data name="AccelerationRestartCaution" xml:space="preserve">
+    <value>Takes effect only after Echo restarts: /restart. Until then the current acceleration stays in use.</value>
+  </data>
+  <data name="ReviewChangeQuestion" xml:space="preserve">
+    <value>Choose what to change</value>
+  </data>
+  <data name="ReviewChangeSave" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="HintLeaveUnsaved" xml:space="preserve">
+    <value>leave without saving</value>
+  </data>
+  <data name="SetupUnchanged" xml:space="preserve">
+    <value>Settings left unchanged.</value>
+  </data>
 </root>

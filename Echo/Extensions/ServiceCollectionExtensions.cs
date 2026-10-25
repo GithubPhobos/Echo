@@ -101,6 +101,7 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<ISystemShell, SystemShell>();
         services.AddSingleton<IProcessRunner, ProcessRunner>();
         services.AddSingleton<IHardwareProbe, HardwareProbe>();
+        services.AddSingleton<IRecognitionRuntime, RecognitionRuntime>();
         services.AddSingleton<IFileDownloader>(_ => new FileDownloader(CreateDownloadClient()));
         services.AddSingleton<ICudaRuntime, CudaRuntime>();
         services.AddSingleton<IHotkeyCaptureFactory, HotkeyCaptureFactory>();

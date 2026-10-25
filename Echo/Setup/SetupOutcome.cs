@@ -6,5 +6,10 @@
 internal enum SetupOutcome
 {
     Completed,
-    NothingToDo
+    NothingToDo,
+
+    /// <summary>
+    ///     The review screen of a completed setup was left without saving.
+    /// </summary>
+    Cancelled
 }

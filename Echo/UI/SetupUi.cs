@@ -644,7 +644,7 @@ internal sealed class SetupUi(IAnsiConsole console, Theme theme, TimeSpan tick)
 
         List<string> allHints = [.. hints];
         if (screen.CanGoBack)
-            allHints.Add($"Esc {escapeHint ?? Strings.HintBack}");
+            allHints.Add($"Esc {escapeHint ?? screen.EscapeHint ?? Strings.HintBack}");
 
         IRenderable[] air = isCompact ? [] : [new Markup(" ")];
 
@@ -696,11 +696,13 @@ internal sealed class SetupUi(IAnsiConsole console, Theme theme, TimeSpan tick)
     {
         string text = Markup.Escape($"{index + 1} {screen.StepTitles[index]}");
 
+        bool isAhead = index > screen.StepIndex && !screen.AreLaterStepsDone;
+
         // What lies ahead has no choice to show yet, whatever it starts out with
-        string? chosen = index <= screen.StepIndex ? screen.StepValue?.Invoke(index) : null;
+        string? chosen = isAhead ? null : screen.StepValue?.Invoke(index);
         string value = string.IsNullOrEmpty(chosen) ? string.Empty : Markup.Escape($" ({chosen})");
 
-        if (index < screen.StepIndex)
+        if (index != screen.StepIndex && !isAhead)
             return $"[{Theme.Accent}]{Theme.Good} {text}{value}[/]";
 
         return index > screen.StepIndex

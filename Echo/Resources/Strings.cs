@@ -648,4 +648,14 @@ internal static class Strings
     public static string AdditionalAutoUpdateHint => Get(nameof(AdditionalAutoUpdateHint));
 
     public static string RestartFailed => Get(nameof(RestartFailed));
+
+    public static string AccelerationRestartCaution => Get(nameof(AccelerationRestartCaution));
+
+    public static string ReviewChangeQuestion => Get(nameof(ReviewChangeQuestion));
+
+    public static string ReviewChangeSave => Get(nameof(ReviewChangeSave));
+
+    public static string HintLeaveUnsaved => Get(nameof(HintLeaveUnsaved));
+
+    public static string SetupUnchanged => Get(nameof(SetupUnchanged));
 }

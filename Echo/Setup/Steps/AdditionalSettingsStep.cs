@@ -38,9 +38,12 @@ internal sealed class AdditionalSettingsStep : ISetupStep
 
     /// <inheritdoc/>
     /// <remarks>
-    ///     Nothing: the review shows the choices nobody can do without, and these are one Escape away from it.
+    ///     One row that leads to them all: the review lists only the choices nobody can do without.
     /// </remarks>
-    public IEnumerable<(string Label, string Value)> Summarize(SetupContext context) => [];
+    public IEnumerable<(string Label, string Value)> Summarize(SetupContext context)
+    {
+        yield return (Strings.StepAdditional, string.Empty);
+    }
 
     /// <inheritdoc/>
     public string? Brief(SetupContext context) => null;
