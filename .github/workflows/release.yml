@@ -1,6 +1,8 @@
 # Publishes a release of Echo when a tag such as v2.0.1 is pushed. The tag must match <Version> in Echo/Echo.csproj.
-# The release carries an archive for each system and SHA256SUMS with their checksums. The archives have no version
+# The release carries the archives of each system and SHA256SUMS with their checksums. The archives have no version
 # in their names, so .../releases/latest/download/echooo-linux-x64.tar.gz always leads to the latest release.
+# Echo updates itself from the zip archive of its system: a zip archive lists every file with its checksum at its end,
+# and any one file can be read from it alone, so an update downloads only the files that changed.
 
 name: Release
 
@@ -76,14 +78,20 @@ jobs:
         New-Item -ItemType Directory dist | Out-Null
         Compress-Archive -Path out/* -DestinationPath dist/echooo-win-x64.zip
 
-    # A tar archive keeps the permission to run the program
+    # The install script unpacks the tar archive, since every system has tar; Echo updates itself from the zip one.
+    # Both keep the permission to run the program
     - name: Pack for Linux
       if: runner.os == 'Linux'
       run: |
+        if ! command -v zip > /dev/null; then
+          sudo apt-get update
+          sudo apt-get install -y zip
+        fi
         mkdir dist
         tar -C out -czf dist/echooo-linux-x64.tar.gz .
+        (cd out && zip -qrX ../dist/echooo-linux-x64.zip .)
 
-    - name: Keep the archive
+    - name: Keep the archives
       uses: actions/upload-artifact@v4
       with:
         name: echooo-${{ matrix.runtime }}
@@ -105,7 +113,7 @@ jobs:
 
     - name: Write the checksums
       working-directory: dist
-      run: sha256sum echooo-win-x64.zip echooo-linux-x64.tar.gz > SHA256SUMS
+      run: sha256sum echooo-win-x64.zip echooo-linux-x64.tar.gz echooo-linux-x64.zip > SHA256SUMS
 
     - name: Publish the release
       env:

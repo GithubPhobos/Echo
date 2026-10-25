@@ -1,5 +1,4 @@
-﻿using System.Formats.Tar;
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -20,8 +19,17 @@ internal sealed class LinuxVersionFolders : IVersionFolders
     /// </summary>
     private const string Processes = "/proc";
 
+    /// <summary>
+    ///     The permissions of a file: to read, write and run it, for its owner, its group and everyone else.
+    /// </summary>
+    private const int PermissionBits = 0x1FF;
+
     /// <inheritdoc/>
-    public string ArchiveName => "echooo-linux-x64.tar.gz";
+    /// <remarks>
+    ///     The install script takes the tar.gz archive of the release instead, since every system has tar and not every
+    ///     one has unzip. Echo takes the zip archive, whose files can be read one by one, for updates.
+    /// </remarks>
+    public string ArchiveName => "echooo-linux-x64.zip";
 
     /// <inheritdoc/>
     public string ExecutableName => ApplicationInfo.CommandName;
@@ -30,15 +38,16 @@ internal sealed class LinuxVersionFolders : IVersionFolders
     public string InstallCommand => "curl -fsSL https://githubphobos.github.io/Echo/install.sh | sh";
 
     /// <inheritdoc/>
-    /// <remarks>A tar archive keeps the permission to run a file, which a zip archive does not.</remarks>
-    public void Unpack(string archive, string directory)
+    /// <remarks>
+    ///     The zip program of Linux keeps the permissions of a file in the upper half of its attributes. An archive made
+    ///     on Windows has nothing there, and its files keep the permissions they were created with.
+    /// </remarks>
+    public void ApplyAttributes(ZipArchiveEntry entry, string file)
     {
-        Directory.CreateDirectory(directory);
+        var mode = (UnixFileMode)((entry.ExternalAttributes >> 16) & PermissionBits);
 
-        using FileStream file = File.OpenRead(archive);
-        using var unzipped = new GZipStream(file, CompressionMode.Decompress);
-
-        TarFile.ExtractToDirectory(unzipped, directory, overwriteFiles: false);
+        if (mode != UnixFileMode.None)
+            File.SetUnixFileMode(file, mode);
     }
 
     /// <inheritdoc/>

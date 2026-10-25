@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Formats.Tar;
 using System.IO.Compression;
 using System.Runtime.Versioning;
 using Echo.Platform.Linux;
@@ -103,27 +102,47 @@ public sealed class LinuxVersionFoldersTests : IDisposable
     }
 
     [LinuxFact]
-    public void Unpack_TarGz_KeepsThePermissionToRun()
+    public void ApplyAttributes_ArchiveMadeOnLinux_GivesThePermissionToRun()
     {
-        // Arrange
-        string source = Version("2.0.2");
-        File.SetUnixFileMode(Path.Combine(source, "echooo"), UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-
-        string archive = Path.Combine(_root, "echooo-linux-x64.tar.gz");
-
-        using (FileStream file = File.Create(archive))
-        using (var zipped = new GZipStream(file, CompressionLevel.Fastest))
-            TarFile.CreateFromDirectory(source, zipped, includeBaseDirectory: false);
-
-        string target = Path.Combine(_root, "unpacked");
+        // Arrange: the zip program keeps "rwxr-xr-x" in the upper half of the attributes
+        string file = Path.Combine(Version("2.0.2"), "echooo");
+        ZipArchiveEntry entry = Entry(0b111_101_101 << 16);
 
         // Act
-        _folders.Unpack(archive, target);
+        _folders.ApplyAttributes(entry, file);
 
         // Assert
-        Assert.Equal("2.0.2", File.ReadAllText(Path.Combine(target, "echooo")));
-        Assert.True(File.GetUnixFileMode(Path.Combine(target, "echooo")).HasFlag(UnixFileMode.UserExecute));
-        Assert.Equal("{}", File.ReadAllText(Path.Combine(target, "Assets", "sound.wav")));
+        Assert.Equal(
+            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
+            | UnixFileMode.GroupRead | UnixFileMode.GroupExecute
+            | UnixFileMode.OtherRead | UnixFileMode.OtherExecute,
+            File.GetUnixFileMode(file));
+    }
+
+    [LinuxFact]
+    public void ApplyAttributes_ArchiveMadeOnWindows_LeavesThePermissions()
+    {
+        // Arrange: Windows keeps only such marks as "archive" in the lower half
+        string file = Path.Combine(Version("2.0.2"), "echooo");
+        UnixFileMode before = File.GetUnixFileMode(file);
+
+        // Act
+        _folders.ApplyAttributes(Entry(0x20), file);
+
+        // Assert
+        Assert.Equal(before, File.GetUnixFileMode(file));
+    }
+
+    /// <summary>
+    ///     An entry of a zip archive with these attributes.
+    /// </summary>
+    private static ZipArchiveEntry Entry(int attributes)
+    {
+        var archive = new ZipArchive(new MemoryStream(), ZipArchiveMode.Create);
+        ZipArchiveEntry entry = archive.CreateEntry("echooo");
+        entry.ExternalAttributes = attributes;
+
+        return entry;
     }
 
     /// <summary>

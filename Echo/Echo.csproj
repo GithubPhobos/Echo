@@ -26,6 +26,7 @@
 		<PackageReference Include="SharpHook" Version="7.1.1" />
 		<PackageReference Include="Spectre.Console" Version="0.57.2" />
 		<PackageReference Include="Spectre.Console.Cli" Version="0.57.2" />
+		<PackageReference Include="System.IO.Hashing" Version="10.0.7" />
 		<PackageReference Include="TextCopy" Version="6.2.1" />
 		<PackageReference Include="Tmds.DBus.Protocol" Version="0.95.1" />
 		<PackageReference Include="Whisper.net" Version="1.9.0" />

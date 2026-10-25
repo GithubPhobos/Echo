@@ -123,9 +123,14 @@ internal static class ServiceCollectionExtensions
             GitHubReleaseSource.Address(Environment.GetEnvironmentVariable),
             provider.GetRequiredService<IVersionFolders>().ArchiveName));
 
+        services.AddSingleton<IVersionArchive>(provider => new VersionArchive(
+            CreateDownloadClient(),
+            provider.GetRequiredService<IVersionFolders>()));
+
         services.AddSingleton<IUpdater>(provider => new Updater(
             provider.GetRequiredService<IReleaseSource>(),
             provider.GetRequiredService<IFileDownloader>(),
+            provider.GetRequiredService<IVersionArchive>(),
             provider.GetRequiredService<IVersionFolders>(),
             provider.GetRequiredService<IUserSettingsStore>(),
             provider.GetRequiredService<TimeProvider>(),

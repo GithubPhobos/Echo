@@ -1,4 +1,5 @@
-﻿using Echo.Platform.Linux;
+﻿using System.IO.Compression;
+using Echo.Platform.Linux;
 using Echo.Platform.Windows;
 using Echo.Setup;
 using Echo.Setup.Downloads;
@@ -12,6 +13,7 @@ public sealed class UpdaterTests : IDisposable
     private readonly InstallLayout _layout;
     private readonly Mock<IReleaseSource> _source = new();
     private readonly FakeDownloader _downloader = new();
+    private readonly FakeArchive _archive = new();
     private readonly FakeFolders _folders = new();
     private readonly ManualTime _time = new();
     private readonly List<UpdateNotice> _notices = [];
@@ -73,6 +75,67 @@ public sealed class UpdaterTests : IDisposable
         // The archive was checked against the checksum of the release, and nothing of the download is left
         Assert.Equal(new string('a', 64), _downloader.LastRequest!.Sha256);
         Assert.False(Directory.Exists(_layout.PartialDirectory("2.0.2")));
+    }
+
+    [Fact]
+    public async Task Download_ServerGivesParts_DownloadsOnlyTheChangedFiles()
+    {
+        // Arrange
+        _archive.GivesParts = true;
+        Latest("2.0.2");
+        Updater updater = await StartAsync();
+
+        // Act
+        updater.Download();
+        await updater.WhenIdleAsync();
+
+        // Assert: the new version is made from the folder of this one, without the whole archive
+        Assert.Equal(new UpdateStatus(UpdateStage.Downloaded, "2.0.1", "2.0.2"), updater.Status);
+        Assert.Equal(_layout.VersionDirectory("2.0.1") + Path.DirectorySeparatorChar, _archive.SameFrom);
+        Assert.Equal("changes", File.ReadAllText(Path.Combine(_layout.VersionDirectory("2.0.2"), _folders.ExecutableName)));
+        Assert.Equal([(_layout.Current, _layout.VersionDirectory("2.0.2"))], _folders.Links);
+        Assert.Equal(0, _downloader.Calls);
+    }
+
+    [Fact]
+    public async Task Download_ServerGivesNoParts_DownloadsTheWholeArchive()
+    {
+        // Arrange: what was made of the parts before the server refused is not kept
+        Latest("2.0.2");
+        Updater updater = await StartAsync();
+
+        // Act
+        updater.Download();
+        await updater.WhenIdleAsync();
+
+        // Assert
+        string target = _layout.VersionDirectory("2.0.2");
+
+        Assert.Equal(UpdateStage.Downloaded, updater.Status.Stage);
+        Assert.Equal([UpdateNoticeKind.Downloaded], _notices.Select(notice => notice.Kind));
+        Assert.Equal(1, _downloader.Calls);
+        Assert.Equal("archive", File.ReadAllText(Path.Combine(target, _folders.ExecutableName)));
+        Assert.False(File.Exists(Path.Combine(target, "half")));
+    }
+
+    [Fact]
+    public async Task Download_ChangedFilesUnderWay_ShowsHowFarItHasGot()
+    {
+        // Arrange
+        _archive.GivesParts = true;
+        _archive.Gate = new TaskCompletionSource();
+        Latest("2.0.2");
+        Updater updater = await StartAsync();
+
+        // Act
+        updater.Download();
+        await _archive.Reported.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        // Assert
+        Assert.Equal(new UpdateStatus(UpdateStage.Downloading, "2.0.1", "2.0.2", 0.25), updater.Status);
+
+        _archive.Gate.SetResult();
+        await updater.WhenIdleAsync();
     }
 
     [Theory]
@@ -339,7 +402,7 @@ public sealed class UpdaterTests : IDisposable
     {
         // Arrange
         Latest("2.0.2");
-        _folders.IsArchiveEmpty = true;
+        _archive.IsEmpty = true;
         Updater updater = await StartAsync();
 
         // Act
@@ -448,6 +511,7 @@ public sealed class UpdaterTests : IDisposable
         var updater = new Updater(
             _source.Object,
             _downloader,
+            _archive,
             _folders,
             settingsStore.Object,
             _time,
@@ -514,7 +578,56 @@ public sealed class UpdaterTests : IDisposable
     }
 
     /// <summary>
-    ///     Unpacks by writing the program file, and records where the link was pointed.
+    ///     Unpacks by writing the program file: from the downloaded archive, or "changes" when the server is set to
+    ///     give parts of the archive. A server that gives none refuses after a file has been written.
+    /// </summary>
+    private sealed class FakeArchive : IVersionArchive
+    {
+        public bool GivesParts { get; set; }
+
+        public bool IsEmpty { get; set; }
+
+        /// <summary>
+        ///     The folder the files that stayed the same were taken from.
+        /// </summary>
+        public string? SameFrom { get; private set; }
+
+        /// <summary>
+        ///     Holds the changed files in the middle until it is set.
+        /// </summary>
+        public TaskCompletionSource? Gate { get; set; }
+
+        public TaskCompletionSource Reported { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void Unpack(string archive, string directory)
+        {
+            Directory.CreateDirectory(directory);
+
+            if (!IsEmpty)
+                File.WriteAllText(Path.Combine(directory, "echooo"), File.ReadAllText(archive));
+        }
+
+        public void UnpackChanges(ReleaseInfo release, string sameFrom, string directory, IProgress<DownloadProgress> progress)
+        {
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(Path.Combine(directory, "half"), string.Empty);
+
+            if (!GivesParts)
+                throw new HttpRequestException("example.test did not give bytes 0-65535 of echooo-test.zip: it answered 200.");
+
+            SameFrom = sameFrom;
+
+            progress.Report(new DownloadProgress(250, 1000, 0, IsVerifying: false));
+            Reported.TrySetResult();
+            Gate?.Task.Wait();
+
+            File.Delete(Path.Combine(directory, "half"));
+            File.WriteAllText(Path.Combine(directory, "echooo"), "changes");
+        }
+    }
+
+    /// <summary>
+    ///     Records where the link was pointed.
     /// </summary>
     private sealed class FakeFolders : IVersionFolders
     {
@@ -525,20 +638,14 @@ public sealed class UpdaterTests : IDisposable
         /// </summary>
         public List<string> Running { get; } = [];
 
-        public bool IsArchiveEmpty { get; set; }
-
         public string ArchiveName => "echooo-test.zip";
 
         public string ExecutableName => "echooo";
 
         public string InstallCommand => "install";
 
-        public void Unpack(string archive, string directory)
+        public void ApplyAttributes(ZipArchiveEntry entry, string file)
         {
-            Directory.CreateDirectory(directory);
-
-            if (!IsArchiveEmpty)
-                File.WriteAllText(Path.Combine(directory, ExecutableName), File.ReadAllText(archive));
         }
 
         public void PointTo(string link, string directory) => Links.Add((link, directory));

@@ -14,15 +14,15 @@ public sealed class GitHubReleaseSourceTests
     {
         // Arrange
         var server = new FakeServer(Release("v2.0.2"));
-        var source = new GitHubReleaseSource(new HttpClient(server), _latest, "echooo-linux-x64.tar.gz");
+        var source = new GitHubReleaseSource(new HttpClient(server), _latest, "echooo-linux-x64.zip");
 
         // Act
         ReleaseInfo release = await source.LatestAsync(CancellationToken.None);
 
-        // Assert: the archive of this system, not of the other one
+        // Assert: the zip archive of this system, not the one of the other system or the one for the install script
         Assert.Equal("2.0.2", release.Version);
-        Assert.Equal("echooo-linux-x64.tar.gz", release.ArchiveName);
-        Assert.Equal(new Uri("https://example.test/v2.0.2/echooo-linux-x64.tar.gz"), release.ArchiveUrl);
+        Assert.Equal("echooo-linux-x64.zip", release.ArchiveName);
+        Assert.Equal(new Uri("https://example.test/v2.0.2/echooo-linux-x64.zip"), release.ArchiveUrl);
         Assert.Equal(116_000_000, release.ArchiveSize);
         Assert.Equal(new Uri("https://example.test/v2.0.2/SHA256SUMS"), release.ChecksumsUrl);
 
@@ -115,7 +115,7 @@ public sealed class GitHubReleaseSourceTests
     [Theory]
     [InlineData($"{Checksum}  echooo-win-x64.zip\n")]
     [InlineData($"{Checksum} *echooo-win-x64.zip\r\n")]
-    [InlineData($"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff  echooo-linux-x64.tar.gz\n{Checksum}  echooo-win-x64.zip")]
+    [InlineData($"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff  echooo-linux-x64.zip\n{Checksum}  echooo-win-x64.zip")]
     public async Task ChecksumAsync_ListNamingTheArchive_GivesItsChecksum(string checksums)
     {
         // Arrange
@@ -130,7 +130,7 @@ public sealed class GitHubReleaseSourceTests
 
     [Theory]
     [InlineData("")]
-    [InlineData($"{Checksum}  echooo-linux-x64.tar.gz\n")]
+    [InlineData($"{Checksum}  echooo-linux-x64.zip\n")]
     [InlineData("12345  echooo-win-x64.zip\n")]
     public async Task ChecksumAsync_ListWithoutTheArchive_FailsAsUnreadable(string checksums)
     {
@@ -171,7 +171,8 @@ public sealed class GitHubReleaseSourceTests
           "name": "Echo {{tag}}",
           "assets": [
             { "name": "echooo-win-x64.zip", "size": 118000000, "browser_download_url": "https://example.test/{{tag}}/echooo-win-x64.zip" },
-            { "name": "echooo-linux-x64.tar.gz", "size": 116000000, "browser_download_url": "https://example.test/{{tag}}/echooo-linux-x64.tar.gz" },
+            { "name": "echooo-linux-x64.tar.gz", "size": 111000000, "browser_download_url": "https://example.test/{{tag}}/echooo-linux-x64.tar.gz" },
+            { "name": "echooo-linux-x64.zip", "size": 116000000, "browser_download_url": "https://example.test/{{tag}}/echooo-linux-x64.zip" },
             { "name": "SHA256SUMS", "size": 180, "browser_download_url": "https://example.test/{{tag}}/SHA256SUMS" }
           ]
         }

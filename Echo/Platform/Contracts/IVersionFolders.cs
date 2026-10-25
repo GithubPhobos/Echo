@@ -1,4 +1,6 @@
-﻿namespace Echo.Platform.Contracts;
+﻿using System.IO.Compression;
+
+namespace Echo.Platform.Contracts;
 
 /// <summary>
 ///     How this system keeps the installed versions of Echo: the archive a version comes in, the link to the version
@@ -7,7 +9,7 @@
 internal interface IVersionFolders
 {
     /// <summary>
-    ///     The name of the archive of this system in every release, such as "echooo-linux-x64.tar.gz".
+    ///     The name of the zip archive of this system in every release, such as "echooo-linux-x64.zip".
     /// </summary>
     string ArchiveName { get; }
 
@@ -22,9 +24,10 @@ internal interface IVersionFolders
     string InstallCommand { get; }
 
     /// <summary>
-    ///     Unpacks the archive of a version into <paramref name="directory"/>, keeping what makes the program runnable.
+    ///     Gives a file unpacked from the archive of a version what the archive keeps about it besides its contents,
+    ///     such as the permission to run it.
     /// </summary>
-    void Unpack(string archive, string directory);
+    void ApplyAttributes(ZipArchiveEntry entry, string file);
 
     /// <summary>
     ///     Points <paramref name="link"/> at <paramref name="directory"/>, creating the link where there is none:

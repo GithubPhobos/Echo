@@ -6,7 +6,8 @@ namespace Echo.Updates;
 
 /// <inheritdoc cref="IUpdater"/>
 /// <param name="source">Where the releases are.</param>
-/// <param name="downloader">Downloads the archive and verifies its checksum.</param>
+/// <param name="downloader">Downloads the whole archive and verifies its checksum.</param>
+/// <param name="archive">Unpacks the archive, or makes the new version from the files that changed alone.</param>
 /// <param name="folders">How this system keeps the versions.</param>
 /// <param name="settingsStore">Holds the user's choice to download new versions by themselves.</param>
 /// <param name="time">Times the daily check.</param>
@@ -15,6 +16,7 @@ namespace Echo.Updates;
 /// <param name="ownDirectory">The folder this Echo runs from, which is never removed.</param>
 internal sealed class Updater(IReleaseSource source,
                               IFileDownloader downloader,
+                              IVersionArchive archive,
                               IVersionFolders folders,
                               IUserSettingsStore settingsStore,
                               TimeProvider time,
@@ -29,6 +31,7 @@ internal sealed class Updater(IReleaseSource source,
 
     private readonly IReleaseSource _source = source;
     private readonly IFileDownloader _downloader = downloader;
+    private readonly IVersionArchive _archive = archive;
     private readonly IVersionFolders _folders = folders;
     private readonly IUserSettingsStore _settingsStore = settingsStore;
     private readonly TimeProvider _time = time;
@@ -280,21 +283,12 @@ internal sealed class Updater(IReleaseSource source,
 
             RemoveDirectory(partial);
 
-            string checksum = await _source.ChecksumAsync(release, CancellationToken.None);
-            string archive = Path.Combine(partial, release.ArchiveName);
-
-            // Only a release that can be installed is ever offered, so its archive is there
-            await _downloader.DownloadAsync(
-                new DownloadRequest(release.ArchiveUrl!, release.ArchiveSize, checksum),
-                archive,
-                new InlineProgress<DownloadProgress>(Report),
-                CancellationToken.None);
-
-            // A folder of the version left by an earlier attempt may be incomplete, so it is unpacked anew;
+            // A folder of the version left by an earlier attempt may be incomplete, so it is made anew;
             // one that an Echo runs from cannot be removed, and is whole
             if (!Directory.Exists(target) || _folders.TryRemove(target))
             {
-                _folders.Unpack(archive, target);
+                if (!TryUnpackChanges(release, target))
+                    await DownloadWholeAsync(release, partial, target);
 
                 if (!File.Exists(Path.Combine(target, _folders.ExecutableName)))
                     throw new InvalidDataException($"The archive of Echo {release.Version} has no {_folders.ExecutableName}.");
@@ -324,6 +318,51 @@ internal sealed class Updater(IReleaseSource source,
 
             Notify(new UpdateNotice(UpdateNoticeKind.DownloadFailed, release.Version, exc.Message));
         }
+    }
+
+    /// <summary>
+    ///     Makes the folder of the new version from the files of this one that stayed the same and the changed files
+    ///     alone, read from the archive on the server. Returns false when that could not be done, as with a server
+    ///     that does not give parts of a file: the folder is removed then, for the whole archive.
+    /// </summary>
+    private bool TryUnpackChanges(ReleaseInfo release, string target)
+    {
+        try
+        {
+            _archive.UnpackChanges(release, _ownDirectory, target, new InlineProgress<DownloadProgress>(Report));
+
+            return true;
+        }
+        catch (Exception exc) when (exc is not OutOfMemoryException)
+        {
+            FileLog.Information(
+                "Could not download only the changed files of Echo {Version}, so the whole archive is downloaded: {Reason}",
+                release.Version,
+                exc.Message);
+
+            RemoveDirectory(target);
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    ///     Downloads the whole archive of the release into <paramref name="partial"/>, checks it against the checksum
+    ///     the release gives, and unpacks it into <paramref name="target"/>.
+    /// </summary>
+    private async Task DownloadWholeAsync(ReleaseInfo release, string partial, string target)
+    {
+        string checksum = await _source.ChecksumAsync(release, CancellationToken.None);
+        string archive = Path.Combine(partial, release.ArchiveName);
+
+        // Only a release that can be installed is ever offered, so its archive is there
+        await _downloader.DownloadAsync(
+            new DownloadRequest(release.ArchiveUrl!, release.ArchiveSize, checksum),
+            archive,
+            new InlineProgress<DownloadProgress>(Report),
+            CancellationToken.None);
+
+        _archive.Unpack(archive, target);
     }
 
     private void Report(DownloadProgress progress)

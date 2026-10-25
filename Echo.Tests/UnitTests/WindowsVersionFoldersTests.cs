@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.IO.Compression;
 using System.Runtime.Versioning;
 using Echo.Platform.Windows;
 
@@ -107,24 +106,6 @@ public sealed class WindowsVersionFoldersTests : IDisposable
             running.Kill();
             running.WaitForExit();
         }
-    }
-
-    [WindowsFact]
-    public void Unpack_Zip_PutsItsFilesIntoTheFolder()
-    {
-        // Arrange
-        string source = Version("2.0.2");
-        string archive = Path.Combine(_root, "echooo-win-x64.zip");
-        ZipFile.CreateFromDirectory(source, archive);
-
-        string target = Path.Combine(_root, "unpacked");
-
-        // Act
-        _folders.Unpack(archive, target);
-
-        // Assert
-        Assert.Equal("2.0.2", File.ReadAllText(Path.Combine(target, "echooo.exe")));
-        Assert.Equal("{}", File.ReadAllText(Path.Combine(target, "Assets", "sound.wav")));
     }
 
     /// <summary>

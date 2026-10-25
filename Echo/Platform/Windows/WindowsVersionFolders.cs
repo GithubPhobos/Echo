@@ -40,8 +40,10 @@ internal sealed class WindowsVersionFolders : IVersionFolders
     public string InstallCommand => "irm https://githubphobos.github.io/Echo/install.ps1 | iex";
 
     /// <inheritdoc/>
-    public void Unpack(string archive, string directory) =>
-        ZipFile.ExtractToDirectory(archive, directory);
+    /// <remarks>Windows runs a program by its name, not by a permission, so a file needs nothing besides its contents.</remarks>
+    public void ApplyAttributes(ZipArchiveEntry entry, string file)
+    {
+    }
 
     /// <inheritdoc/>
     public void PointTo(string link, string directory)
