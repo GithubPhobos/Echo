@@ -280,7 +280,7 @@
     <value>This run had already loaded {0}, so {1} was not used. It will be after Echo is restarted.</value>
   </data>
   <data name="SetupRestartNeeded" xml:space="preserve">
-    <value>Settings saved. Start Echo again: the chosen hardware acceleration takes effect after a restart.</value>
+    <value>Settings saved. The chosen hardware acceleration takes effect after a restart: /restart. Until then Echo goes on as before.</value>
   </data>
   <data name="TestSlow" xml:space="preserve">
     <value>That was slow. A smaller model will answer faster: press Esc to go back and pick one.</value>

@@ -280,7 +280,7 @@
     <value>Dieser Lauf hatte bereits {0} geladen, daher wurde {1} nicht verwendet. Nach einem Neustart von Echo wird es verwendet.</value>
   </data>
   <data name="SetupRestartNeeded" xml:space="preserve">
-    <value>Einstellungen gespeichert. Starte Echo erneut: Die gewählte Hardwarebeschleunigung gilt nach einem Neustart.</value>
+    <value>Einstellungen gespeichert. Die gewählte Hardwarebeschleunigung wirkt nach einem Neustart: /restart. Bis dahin arbeitet Echo wie bisher.</value>
   </data>
   <data name="TestSlow" xml:space="preserve">
     <value>Das war langsam. Ein kleineres Modell antwortet schneller: Drücke Esc, um zurückzugehen und eines zu wählen.</value>

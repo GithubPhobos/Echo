@@ -280,7 +280,7 @@
     <value>Esta ejecución ya había cargado {0}, así que no se usó {1}. Se usará tras reiniciar Echo.</value>
   </data>
   <data name="SetupRestartNeeded" xml:space="preserve">
-    <value>Configuración guardada. Inicia Echo de nuevo: la aceleración por hardware elegida se aplica tras reiniciar.</value>
+    <value>Configuración guardada. La aceleración por hardware elegida se aplicará tras reiniciar: /restart. Hasta entonces, Echo sigue como antes.</value>
   </data>
   <data name="TestSlow" xml:space="preserve">
     <value>Ha ido lento. Un modelo más pequeño responderá antes: pulsa Esc para volver y elegir uno.</value>

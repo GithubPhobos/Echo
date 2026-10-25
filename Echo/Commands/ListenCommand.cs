@@ -113,15 +113,6 @@ internal sealed class ListenCommand(
             await _setupRunner.RunAsync(onlyNewSteps: true, cancellationToken);
 
             Languages.Apply(new UserSettingsStore(_paths).Load().UiLanguage);
-
-            // The test dictation may have loaded a runtime that the final choice does not use
-            if (_setupRunner.ChosenBackend is { } backend && Acceleration.NeedsRestart(backend, RuntimeOptions.LoadedLibrary))
-            {
-                _console.MarkupLine($"  [{Theme.Highlight}]{Markup.Escape(Strings.SetupRestartNeeded)}[/]");
-                _console.WriteLine();
-
-                return 0;
-            }
         }
 
         // Without a terminal to draw on, the log is simply written out, as in earlier versions
@@ -135,6 +126,10 @@ internal sealed class ListenCommand(
 
         if (isJustUpdated)
             log.Add(EntryKind.Answer, Strings.Format(nameof(Strings.UpdateApplied), settings.UpdatedFrom, ApplicationInfo.Version));
+
+        // The test dictation of the setup wizard may have loaded a runtime that the final choice does not use
+        if (IsRestartNeeded())
+            log.Add(EntryKind.Warning, Strings.SetupRestartNeeded);
 
         void Tell(object? sender, UpdateNotice notice) => ListenCommands.Tell(log, notice);
 
@@ -175,18 +170,19 @@ internal sealed class ListenCommand(
 
             Languages.Apply(new UserSettingsStore(_paths).Load().UiLanguage);
 
-            // A runtime is loaded once per process: another backend needs a fresh start
-            if (_setupRunner.ChosenBackend is { } backend && Acceleration.NeedsRestart(backend, RuntimeOptions.LoadedLibrary))
-            {
-                _console.MarkupLine($"  [{Theme.Highlight}]{Markup.Escape(Strings.SetupRestartNeeded)}[/]");
-                _console.WriteLine();
-
-                return 0;
-            }
-
-            log.Add(EntryKind.Answer, Strings.ListenSetupDone);
+            if (IsRestartNeeded())
+                log.Add(EntryKind.Warning, Strings.SetupRestartNeeded);
+            else
+                log.Add(EntryKind.Answer, Strings.ListenSetupDone);
         }
     }
+
+    /// <summary>
+    ///     Whether the acceleration chosen in the setup wizard takes effect only in a fresh start: the recognition
+    ///     runtime is loaded once per process. Until then Echo goes on with the one it has, and the log says so.
+    /// </summary>
+    private bool IsRestartNeeded() =>
+        _setupRunner.ChosenBackend is { } backend && Acceleration.NeedsRestart(backend, RuntimeOptions.LoadedLibrary);
 
     /// <summary>
     ///     Runs dictation with the working screen until the user leaves it. The model loads while the screen

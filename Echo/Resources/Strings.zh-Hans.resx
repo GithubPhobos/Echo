@@ -280,7 +280,7 @@
     <value>本次运行已加载 {0}，因此未使用 {1}。重启 Echo 后将使用它。</value>
   </data>
   <data name="SetupRestartNeeded" xml:space="preserve">
-    <value>设置已保存。请重新启动 Echo：所选的硬件加速在重启后生效。</value>
+    <value>设置已保存。所选的硬件加速将在重启后生效：/restart。在此之前，Echo 照常运行。</value>
   </data>
   <data name="TestSlow" xml:space="preserve">
     <value>速度偏慢。较小的模型响应更快：按 Esc 返回并重新选择。</value>
