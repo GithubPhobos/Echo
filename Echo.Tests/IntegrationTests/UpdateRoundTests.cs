@@ -1,0 +1,311 @@
+﻿using System.Diagnostics;
+using System.IO.Compression;
+using System.Text;
+using Echo.Platform.Linux;
+using Echo.Platform.Windows;
+using Echo.Setup.Downloads;
+using Echo.Tests.UnitTests;
+using Echo.Updates;
+
+namespace Echo.Tests.IntegrationTests;
+
+/// <summary>
+///     The whole round of an update with the parts Echo runs with: the releases over HTTP, the folders of the
+///     versions, the link "current" of this system and its permissions. Only GitHub is played, by a server on this
+///     computer.
+/// </summary>
+public sealed class UpdateRoundTests : IDisposable
+{
+    private const UnixFileMode Runnable = (UnixFileMode)0b111_101_101;
+    private const UnixFileMode Readable = (UnixFileMode)0b110_100_100;
+
+    /// <summary>
+    ///     What the attributes of a zip entry say about a regular file, besides its permissions.
+    /// </summary>
+    private const uint RegularFile = 0x8000;
+
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "echooo-tests", Guid.NewGuid().ToString("N"));
+    private readonly InstallLayout _layout;
+    private readonly IVersionFolders _folders = SystemFolders();
+    private readonly ReleaseServer _server = new();
+    private readonly HttpClient _client = new();
+    private readonly List<UpdateNotice> _notices = [];
+
+    /// <summary>
+    ///     A library every version has the same: large, and as large in the archive, so downloading it would show.
+    /// </summary>
+    private readonly byte[] _library = new byte[3_000_000];
+
+    public UpdateRoundTests()
+    {
+        _layout = new InstallLayout(_root);
+        new Random(1).NextBytes(_library);
+
+        // Echo 2.0.0, as the install script puts it
+        string installed = _layout.VersionDirectory("2.0.0");
+
+        foreach ((string name, (byte[] contents, UnixFileMode mode)) in Files("2.0.0"))
+        {
+            string file = Path.Combine(installed, name);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            File.WriteAllBytes(file, contents);
+
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(file, mode);
+        }
+
+        _folders.PointTo(_layout.Current, installed);
+    }
+
+    public void Dispose()
+    {
+        _server.Dispose();
+        _client.Dispose();
+
+        // .NET cannot delete a junction inside a folder it deletes whole, so on Windows the link goes first
+        if (OperatingSystem.IsWindows() && new DirectoryInfo(_layout.Current).LinkTarget is not null)
+            Directory.Delete(_layout.Current);
+
+        Directory.Delete(_root, recursive: true);
+    }
+
+    [Fact]
+    public async Task Round_ServerGivesParts_DownloadsOnlyTheChangedFilesAndTheNextStartRemovesTheOldVersion()
+    {
+        // Arrange
+        _server.Publish("2.0.1", Release("2.0.1"));
+
+        // Act & Assert: Echo 2.0.0 finds 2.0.1, and /update brings it
+        using (Updater running = Create("2.0.0"))
+        {
+            running.Start(isJustUpdated: false, Task.CompletedTask);
+            await running.WhenIdleAsync();
+
+            Assert.Equal(new UpdateStatus(UpdateStage.Available, "2.0.0", "2.0.1"), running.Status);
+
+            running.Download();
+            await running.WhenIdleAsync();
+
+            Assert.Equal(new UpdateStatus(UpdateStage.Downloaded, "2.0.0", "2.0.1"), running.Status);
+        }
+
+        Assert.Equal([new UpdateNotice(UpdateNoticeKind.Downloaded, "2.0.1")], _notices);
+        AssertVersion("2.0.1", _layout.VersionDirectory("2.0.1"));
+        AssertVersion("2.0.1", _layout.Current);
+        AssertVersion("2.0.0", _layout.VersionDirectory("2.0.0"));
+
+        // The library of 3 MB stayed where it was: the end of the archive and a part for the changed files came
+        Assert.InRange(_server.BytesSent, 1, _library.Length / 10);
+
+        // The next start runs 2.0.1, which removes the folder of 2.0.0
+        using (Updater next = Create("2.0.1"))
+        {
+            next.Start(isJustUpdated: true, Task.CompletedTask);
+            await next.WhenIdleAsync();
+
+            Assert.Equal(new UpdateStatus(UpdateStage.Latest, "2.0.1"), next.Status);
+        }
+
+        Assert.Equal(["2.0.1"], Directory.EnumerateDirectories(_layout.Versions).Select(entry => Path.GetFileName(entry)));
+    }
+
+    [LinuxFact("sh")]
+    public async Task Round_OnLinux_TheNewProgramRunsThroughTheLink()
+    {
+        // Arrange: the program of every version is a script that tells its version
+        _server.Publish("2.0.1", Release("2.0.1"));
+
+        using (Updater running = Create("2.0.0"))
+        {
+            running.Start(isJustUpdated: false, Task.CompletedTask);
+            await running.WhenIdleAsync();
+            running.Download();
+            await running.WhenIdleAsync();
+        }
+
+        // Act: started as ~/.local/bin/echooo starts it, through "current"
+        using var program = Process.Start(new ProcessStartInfo(Path.Combine(_layout.Current, _folders.ExecutableName))
+        {
+            RedirectStandardOutput = true
+        })!;
+
+        string output = await program.StandardOutput.ReadToEndAsync();
+        await program.WaitForExitAsync();
+
+        // Assert
+        Assert.Equal("2.0.1", output.Trim());
+    }
+
+    [Fact]
+    public async Task Round_ServerGivesNoParts_DownloadsTheWholeArchive()
+    {
+        // Arrange
+        byte[] archive = Archive("2.0.1");
+
+        _server.Publish("2.0.1", new Dictionary<string, byte[]> { [_folders.ArchiveName] = archive });
+        _server.IgnoresRanges = true;
+
+        // Act
+        using (Updater running = Create("2.0.0"))
+        {
+            running.Start(isJustUpdated: false, Task.CompletedTask);
+            await running.WhenIdleAsync();
+            running.Download();
+            await running.WhenIdleAsync();
+
+            Assert.Equal(UpdateStage.Downloaded, running.Status.Stage);
+        }
+
+        // Assert
+        AssertVersion("2.0.1", _layout.Current);
+        Assert.True(_server.BytesSent >= archive.Length);
+        Assert.False(Directory.Exists(_layout.PartialDirectory("2.0.1")));
+    }
+
+    [Fact]
+    public async Task Round_ArchiveDamagedOnTheWay_KeepsTheVersionInUse()
+    {
+        // Arrange: the table of contents gives the code another checksum than what it holds, and the whole
+        // archive no longer matches the checksum of the release; the checksum of an entry lies 30 bytes before its
+        // name in the table of contents, which is at the end
+        byte[] archive = Archive("2.0.1");
+        int name = archive.AsSpan().LastIndexOf("echooo.dll"u8);
+
+        _server.Publish("2.0.1", new Dictionary<string, byte[]> { [_folders.ArchiveName] = archive });
+        _server.Damage(_folders.ArchiveName, name - 30);
+
+        // Act
+        using (Updater running = Create("2.0.0"))
+        {
+            running.Start(isJustUpdated: false, Task.CompletedTask);
+            await running.WhenIdleAsync();
+            running.Download();
+            await running.WhenIdleAsync();
+
+            Assert.Equal(new UpdateStatus(UpdateStage.Available, "2.0.0", "2.0.1"), running.Status);
+        }
+
+        // Assert: the changed files failed their checksum, so the whole archive came, and failed its own
+        UpdateNotice notice = Assert.Single(_notices);
+
+        Assert.Equal(UpdateNoticeKind.DownloadFailed, notice.Kind);
+        Assert.Contains("checksum mismatch", notice.Reason);
+        AssertVersion("2.0.0", _layout.Current);
+        Assert.Equal(["2.0.0"], Directory.EnumerateFileSystemEntries(_layout.Versions).Select(entry => Path.GetFileName(entry)));
+    }
+
+    private Updater Create(string installed)
+    {
+        var updater = new Updater(
+            new GitHubReleaseSource(_client, _server.LatestRelease, _folders.ArchiveName),
+            new FileDownloader(_client),
+            new VersionArchive(_client, _folders),
+            _folders,
+            new MemorySettings(),
+            TimeProvider.System,
+            _layout,
+            installed,
+            _layout.VersionDirectory(installed));
+
+        updater.Noticed += (_, notice) =>
+        {
+            lock (_notices)
+                _notices.Add(notice);
+        };
+
+        return updater;
+    }
+
+    /// <summary>
+    ///     The files of a version, by their names in the archive, with the permissions they have on Linux. From 2.0.0
+    ///     to 2.0.1 the program and the code change, the library and the sound stay, one file goes and one comes.
+    /// </summary>
+    private Dictionary<string, (byte[] Contents, UnixFileMode Mode)> Files(string version)
+    {
+        var files = new Dictionary<string, (byte[] Contents, UnixFileMode Mode)>
+        {
+            [_folders.ExecutableName] = (Text($"#!/bin/sh\necho {version}\n"), Runnable),
+            ["echooo.dll"] = (Text($"the code of Echo {version}"), Readable),
+            ["library.dll"] = (_library, Readable),
+            ["Assets/start-recording.wav"] = (Text("a sound"), Readable)
+        };
+
+        if (version == "2.0.0")
+            files["old.dll"] = (Text("gone in 2.0.1"), Readable);
+        else
+            files["de/echooo.resources.dll"] = (Text($"Echo {version} auf Deutsch"), Readable);
+
+        return files;
+    }
+
+    /// <summary>
+    ///     The release's archive of this system, as the release builds it.
+    /// </summary>
+    private byte[] Archive(string version)
+    {
+        var archive = new MemoryStream();
+
+        using (var zip = new ZipArchive(archive, ZipArchiveMode.Create))
+        {
+            foreach ((string name, (byte[] contents, UnixFileMode mode)) in Files(version))
+            {
+                ZipArchiveEntry entry = zip.CreateEntry(name);
+
+                // The zip program of Linux keeps the permissions of a file in the upper half of its attributes
+                if (OperatingSystem.IsLinux())
+                    entry.ExternalAttributes = (int)((RegularFile | (uint)mode) << 16);
+
+                using Stream stream = entry.Open();
+                stream.Write(contents);
+            }
+        }
+
+        return archive.ToArray();
+    }
+
+    private Dictionary<string, byte[]> Release(string version) =>
+        new() { [_folders.ArchiveName] = Archive(version) };
+
+    /// <summary>
+    ///     Checks that <paramref name="directory"/> holds the files of the version, no more and no fewer, each as it is
+    ///     in the archive, and on Linux with its permissions.
+    /// </summary>
+    private void AssertVersion(string version, string directory)
+    {
+        Dictionary<string, (byte[] Contents, UnixFileMode Mode)> expected = Files(version);
+
+        Assert.Equal(
+            expected.Keys.Order(),
+            Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)
+                .Select(file => Path.GetRelativePath(directory, file).Replace('\\', '/'))
+                .Order());
+
+        foreach ((string name, (byte[] contents, UnixFileMode mode)) in expected)
+        {
+            string file = Path.Combine(directory, name);
+
+            Assert.Equal(contents, File.ReadAllBytes(file));
+
+            if (!OperatingSystem.IsWindows())
+                Assert.Equal(mode, File.GetUnixFileMode(file));
+        }
+    }
+
+    private static byte[] Text(string text) =>
+        Encoding.UTF8.GetBytes(text);
+
+    /// <summary>
+    ///     The way the system the tests run on keeps versions.
+    /// </summary>
+    private static IVersionFolders SystemFolders()
+    {
+        if (OperatingSystem.IsWindows())
+            return new WindowsVersionFolders();
+
+        if (OperatingSystem.IsLinux())
+            return new LinuxVersionFolders();
+
+        throw new PlatformNotSupportedException();
+    }
+}
