@@ -144,7 +144,10 @@ public sealed partial class SetupWizardTests : IDisposable
         Assert.Contains("Do you want to measure the silence level?", _console.Output);
         Assert.Contains("◉ Measure", _console.Output);
         Assert.Contains("○ Set it by hand", _console.Output);
-        Assert.Contains("○ Skip", _console.Output);
+
+        // Skipping is a key, as on every step, not a row of the list
+        Assert.DoesNotContain("○ Skip", _console.Output);
+        Assert.Contains("Enter confirm  ·  S skip  ·  Esc back", _console.Output);
         Assert.Contains("Measuring the silence level", _console.Output);
         Assert.Contains("Stay quiet, measuring the room: 1", _console.Output);
         Assert.Contains("Now speak at your normal volume: 1", _console.Output);
@@ -396,7 +399,7 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.Enter)                                                // silence level: measure
             .Press(ConsoleKey.Escape)                                               // the result -> the measurement itself
             .PressWhen(ConsoleKey.Escape, () => _microphones.IsListeningTo(1))      // the measurement -> the question
-            .Press(ConsoleKey.UpArrow).Press(ConsoleKey.Enter)                      // silence level: skip, the measured one stays
+            .Press(ConsoleKey.S)                                                    // silence level: skip, the measured one stays
             .PressWhen(ConsoleKey.Enter, () => _dictation.StartCount == 2 && _dictation.IsPhraseDelivered)  // test: finish
             .Press(ConsoleKey.Escape)                                               // additional settings -> test dictation
             .PressWhen(ConsoleKey.Enter, () => _dictation.StartCount == 3 && _dictation.IsPhraseDelivered)  // test: finish
@@ -809,7 +812,7 @@ public sealed partial class SetupWizardTests : IDisposable
 
                 return _microphones.IsEveryDeviceHeard;
             })
-            .Press(ConsoleKey.UpArrow).Press(ConsoleKey.Enter)                      // silence level: skip
+            .Press(ConsoleKey.S)                                                    // silence level: skip
             .PressWhen(ConsoleKey.Enter, () => _dictation.IsPhraseDelivered)
             .Press(ConsoleKey.UpArrow).Press(ConsoleKey.Enter)                      // additional settings: continue
             .Press(ConsoleKey.Enter);                                               // review: save

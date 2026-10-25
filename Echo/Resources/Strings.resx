@@ -867,12 +867,6 @@
   <data name="CalibrationManualHint" xml:space="preserve">
     <value>Type the level as a number from 0 to 1: the larger it is, the louder a sound must be for Echo to start recording.</value>
   </data>
-  <data name="CalibrationSkip" xml:space="preserve">
-    <value>Skip</value>
-  </data>
-  <data name="CalibrationSkipHint" xml:space="preserve">
-    <value>The silence level stays as it is: {0}.</value>
-  </data>
   <data name="MicrophoneUnavailable" xml:space="preserve">
     <value>unavailable</value>
   </data>

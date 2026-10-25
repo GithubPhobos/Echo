@@ -597,9 +597,7 @@ internal static class Strings
 
     public static string CalibrationManualHint => Get(nameof(CalibrationManualHint));
 
-    public static string CalibrationSkip => Get(nameof(CalibrationSkip));
 
-    public static string CalibrationSkipHint => Get(nameof(CalibrationSkipHint));
 
     public static string MicrophoneUnavailable => Get(nameof(MicrophoneUnavailable));
 

@@ -867,12 +867,6 @@
   <data name="CalibrationManualHint" xml:space="preserve">
     <value>Escribe el nivel como un número de 0 a 1: cuanto mayor sea, más fuerte debe ser el sonido para que Echo empiece a grabar.</value>
   </data>
-  <data name="CalibrationSkip" xml:space="preserve">
-    <value>Omitir</value>
-  </data>
-  <data name="CalibrationSkipHint" xml:space="preserve">
-    <value>El nivel de silencio se queda como está: {0}.</value>
-  </data>
   <data name="MicrophoneUnavailable" xml:space="preserve">
     <value>no disponible</value>
   </data>

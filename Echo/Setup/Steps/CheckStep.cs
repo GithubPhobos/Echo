@@ -51,8 +51,7 @@ internal sealed class CheckStep : ISetupStep
     private enum Calibrating
     {
         Measure,
-        Manual,
-        Skip
+        Manual
     }
 
     private enum TestState
@@ -228,20 +227,22 @@ internal sealed class CheckStep : ISetupStep
                 [
                     new Choice<Calibrating>(Calibrating.Measure, Strings.CalibrationMeasure, Hint: Strings.CalibrationHow),
                     new Choice<Calibrating>(Calibrating.Manual, Strings.CalibrationManual, Hint: Strings.CalibrationManualHint),
-                    new Choice<Calibrating>(Calibrating.Skip, Strings.CalibrationSkip, Hint: Strings.Format(nameof(Strings.CalibrationSkipHint), current)),
                 ],
                 position,
                 [SetupUi.Dim(Markup.Escape(Strings.CalibrationWhy)), string.Empty, SetupUi.Dim(SetupUi.Fill(Strings.CalibrationCurrent, current))],
-                _ => [new ListKey(ConsoleKey.Enter, Strings.HintConfirm)],
+                _ => [new ListKey(ConsoleKey.Enter, Strings.HintConfirm), new ListKey(ConsoleKey.S, Strings.HintSkip)],
                 cancellationToken);
 
             if (picked.IsBack)
                 return SetupStepResult.Back;
 
+            // Skipped, as on every step: the silence level stays as it is
+            if (picked.Value.Key == ConsoleKey.S)
+                return SetupStepResult.Next;
+
             // The same setting as among the additional settings, typed the same way
             bool isDone = picked.Value.Value switch
             {
-                Calibrating.Skip => true,
                 Calibrating.Manual => await AdditionalSettingsStep.EditAsync(_ui, context, screen, AdditionalSettings.SilenceThreshold, cancellationToken),
                 _ => await MeasureAsync(context, screen, cancellationToken)
             };

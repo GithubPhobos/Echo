@@ -867,12 +867,6 @@
   <data name="CalibrationManualHint" xml:space="preserve">
     <value>Введите порог числом от 0 до 1: чем оно больше, тем громче должен быть звук, чтобы Echo начал запись.</value>
   </data>
-  <data name="CalibrationSkip" xml:space="preserve">
-    <value>Пропустить</value>
-  </data>
-  <data name="CalibrationSkipHint" xml:space="preserve">
-    <value>Порог тишины останется прежним: {0}.</value>
-  </data>
   <data name="MicrophoneUnavailable" xml:space="preserve">
     <value>недоступно</value>
   </data>
