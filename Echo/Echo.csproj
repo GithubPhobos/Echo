@@ -7,6 +7,9 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Version>2.0.0</Version>
+
+		<!-- The languages of the interface: the libraries bring translations of their own words into others too -->
+		<SatelliteResourceLanguages>en;ru;zh-Hans;es;de</SatelliteResourceLanguages>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -57,13 +60,15 @@
 
 	<!--
 		The recognition packages copy their libraries for every system they support, such as macOS, ARM and the other
-		of the two systems Echo runs on; only the libraries of the system the build is for are kept. They are added by
-		the packages after this file is read, so they are taken away just before they are copied.
+		of the two systems Echo runs on; only the libraries of the system the build is for are kept, and not the shader
+		of the Metal graphics of macOS. They are added by the packages after this file is read, so they are taken away
+		just before they are copied.
 	-->
 	<Target Name="KeepOnlyOwnRecognitionLibraries" BeforeTargets="AssignTargetPaths">
 		<ItemGroup>
 			<_ForeignRecognitionLibrary Include="@(None)"
 										Condition="$([System.String]::Copy('%(None.TargetPath)').Replace('\','/').StartsWith('runtimes/')) and !$([System.String]::Copy('%(None.TargetPath)').Replace('\','/').Contains('/$(TargetSystem)/'))" />
+			<_ForeignRecognitionLibrary Include="@(None)" Condition="'%(None.TargetPath)' == 'ggml-metal.metal'" />
 			<None Remove="@(_ForeignRecognitionLibrary)" />
 		</ItemGroup>
 	</Target>
