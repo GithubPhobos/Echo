@@ -202,6 +202,7 @@ internal sealed class ListenScreen(IAnsiConsole console,
         {
             SilenceLevel = _info.SilenceLevel,
             Update = _update?.Invoke(),
+            IsStarting = !_activity.Started.IsCompleted,
         };
 
         (int Width, int Height) size = (_console.Profile.Width, _console.Profile.Height);
@@ -243,6 +244,13 @@ internal sealed class ListenScreen(IAnsiConsole console,
     {
         if (key.Key == ConsoleKey.C && key.Modifiers.HasFlag(ConsoleModifiers.Control))
             return ListenOutcome.Quit;
+
+        // Until Echo is ready, or could not start, the command line takes nothing: only the log moves
+        if (!_activity.Started.IsCompleted
+            && key.Key is not (ConsoleKey.UpArrow or ConsoleKey.DownArrow or ConsoleKey.PageUp or ConsoleKey.PageDown or ConsoleKey.End))
+        {
+            return ListenOutcome.Continue;
+        }
 
         IReadOnlyList<PanelRow> panel = Panel;
 

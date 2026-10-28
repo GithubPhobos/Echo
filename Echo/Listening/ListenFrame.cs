@@ -70,6 +70,19 @@ internal sealed class ListenFrame(Theme theme)
     private const string TreeLines = "#484f58";
 
     /// <summary>
+    ///     How long the light round the command box takes to move on by one cell while Echo starts.
+    /// </summary>
+    private static readonly TimeSpan LightStep = TimeSpan.FromMilliseconds(22);
+
+    /// <summary>
+    ///     The light round the command box and its tail, from the head back: the orange of "starting", fading into the
+    ///     color of the dark frame.
+    /// </summary>
+    private static readonly string[] LightTail = Enumerable.Range(0, 16)
+        .Select(behind => Mix(Theme.Warning, IdleDots, behind / 16.0))
+        .ToArray();
+
+    /// <summary>
     ///     The most rows the panel under the command line shows.
     /// </summary>
     public const int MaxPanelRows = 8;
@@ -152,7 +165,7 @@ internal sealed class ListenFrame(Theme theme)
 
         lines.AddRange(log);
         lines.Add(string.Empty);
-        lines.AddRange(BuildInput(view.Input, inner));
+        lines.AddRange(view.IsStarting ? BuildStartingInput(view.Clock, inner) : BuildInput(view.Input, inner));
 
         if (shownPanel > 0)
         {
@@ -162,7 +175,7 @@ internal sealed class ListenFrame(Theme theme)
             lines.Add(string.Empty);
         }
 
-        lines.Add(BuildKeys(isPanelOpen: shownPanel > 0, offersUpdate: view.Update?.Stage == UpdateStage.Available, inner));
+        lines.Add(BuildKeys(isPanelOpen: shownPanel > 0, offersUpdate: view.Update?.Stage == UpdateStage.Available, view.IsStarting, inner));
 
         return new ListenFrameResult(lines, logRows, scroll);
     }
@@ -207,7 +220,7 @@ internal sealed class ListenFrame(Theme theme)
             ListenState.Transcribing => (_theme.Spinner(view.Clock), Strings.ListenTranscribing, Theme.Highlight),
             ListenState.Paused => (IsAscii ? "||" : "‖", Strings.ListenPaused, Theme.Warning),
             ListenState.Failed => (_theme.Bad, Strings.ListenFailed, Theme.Failure),
-            _ => (IsAscii ? "o" : "○", Strings.ListenStarting, Muted)
+            _ => (_theme.Spinner(view.Clock), Strings.ListenStarting, Theme.Warning)
         };
 
         string[] all =
@@ -408,6 +421,19 @@ internal sealed class ListenFrame(Theme theme)
             (int)Math.Round(background + (from + (to - from) * share - background) * brightness);
 
         return $"#{Mix(r1, r2, r0):x2}{Mix(g1, g2, g0):x2}{Mix(b1, b2, b0):x2}";
+    }
+
+    /// <summary>
+    ///     A color <paramref name="share"/> of the way from one "#rrggbb" color to another.
+    /// </summary>
+    private static string Mix(string from, string to, double share)
+    {
+        int Channel(string color, int index) => Convert.ToInt32(color.Substring(1 + 2 * index, 2), 16);
+
+        int Between(int index) =>
+            (int)Math.Round(Channel(from, index) + (Channel(to, index) - Channel(from, index)) * share);
+
+        return $"#{Between(0):x2}{Between(1):x2}{Between(2):x2}";
     }
 
     private string BuildRule(bool isScrolled, int width)
@@ -750,13 +776,57 @@ internal sealed class ListenFrame(Theme theme)
     }
 
     /// <summary>
-    ///     The keys and commands that work now. While a newer version waits to be downloaded, /update stands among them,
-    ///     in the color of commands.
+    ///     The command box while Echo starts: it takes nothing yet, so it is empty and its frame is dark, and a light
+    ///     runs round the frame with a fading tail, to show that Echo is getting ready.
     /// </summary>
-    private string BuildKeys(bool isPanelOpen, bool offersUpdate, int width)
+    private List<string> BuildStartingInput(TimeSpan clock, int width)
+    {
+        (string topLeft, string topRight, string bottomLeft, string bottomRight, string horizontal, string vertical) =
+            _theme == Theme.Full ? ("╭", "╮", "╰", "╯", "─", "│")
+            : IsAscii ? ("+", "+", "+", "+", "-", "|")
+            : ("┌", "┐", "└", "┘", "─", "│");
+
+        // The cells of the frame clockwise from the top left corner: the top row, the right side,
+        // the bottom row from the right, the left side
+        int across = width;
+        int perimeter = 2 * across + 2;
+        int head = (int)(clock / LightStep % perimeter);
+
+        string Cell(string symbol, int index)
+        {
+            int behind = (head - index + perimeter) % perimeter;
+            string color = behind < LightTail.Length ? LightTail[behind] : IdleDots;
+
+            return $"[{color}]{Markup.Escape(symbol)}[/]";
+        }
+
+        var top = new StringBuilder();
+        var bottom = new StringBuilder();
+
+        for (int x = 0; x < across; x++)
+        {
+            top.Append(Cell(x == 0 ? topLeft : x == across - 1 ? topRight : horizontal, x));
+            bottom.Append(Cell(x == 0 ? bottomLeft : x == across - 1 ? bottomRight : horizontal, across + 1 + (across - 1 - x)));
+        }
+
+        return
+        [
+            top.ToString(),
+            Cell(vertical, perimeter - 1) + new string(' ', Math.Max(0, across - 2)) + Cell(vertical, across),
+            bottom.ToString(),
+        ];
+    }
+
+    /// <summary>
+    ///     The keys and commands that work now. While a newer version waits to be downloaded, /update stands among them,
+    ///     in the color of commands. While Echo starts, only the log and the way out.
+    /// </summary>
+    private string BuildKeys(bool isPanelOpen, bool offersUpdate, bool isStarting, int width)
     {
         // Each with how much it matters: on a narrow terminal the ones that matter least go first
-        List<(string Text, string Style, int Rank)> keys = isPanelOpen
+        List<(string Text, string Style, int Rank)> keys = isStarting
+            ? [($"{_theme.Arrows} PgUp PgDn {Strings.ListenHintLog}", Muted, 0), ($"Ctrl+C {Strings.ListenHintQuit}", Muted, 3)]
+            : isPanelOpen
             ? [($"Enter {Strings.ListenHintPick}", Muted, 1), ($"{_theme.Arrows} {Strings.HintSelect}", Muted, 0), ($"Esc {Strings.ListenHintClose}", Muted, 3)]
             : [($"Enter {Strings.ListenHintRun}", Muted, 1), ($"{_theme.Arrows} PgUp PgDn {Strings.ListenHintLog}", Muted, 0), ($"Ctrl+C {Strings.ListenHintQuit}", Muted, 3)];
 

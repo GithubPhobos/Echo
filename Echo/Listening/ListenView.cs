@@ -38,4 +38,9 @@ internal sealed record ListenView(
     ///     The version in use and what there is about a newer one; null leaves the version out.
     /// </summary>
     public UpdateStatus? Update { get; init; }
+
+    /// <summary>
+    ///     Whether Echo is still starting: the command line takes nothing until it is ready or could not start.
+    /// </summary>
+    public bool IsStarting { get; init; }
 }

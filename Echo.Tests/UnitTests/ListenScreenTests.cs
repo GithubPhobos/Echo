@@ -147,6 +147,63 @@ public sealed class ListenScreenTests : IDisposable
         Assert.Contains("line 50", console.Output[drawn..]);
     }
 
+    [Fact]
+    public void Handle_TypingWhileEchoStarts_TakesNothingUntilItIsReady()
+    {
+        // Arrange: the model is still loading
+        ListenCommands commands = Commands(out ListenActivity activity, out _, isStarted: false);
+        (ListenScreen screen, _) = Screen(activity, commands);
+
+        // Act
+        ListenOutcome whileStarting = Type(screen, "/quit");
+
+        activity.SetState(ListenState.Listening);
+
+        ListenOutcome whenReady = Type(screen, "/quit");
+
+        // Assert: nothing typed early is left over to spoil the command typed later
+        Assert.Equal(ListenOutcome.Continue, whileStarting);
+        Assert.Equal(ListenOutcome.Quit, whenReady);
+    }
+
+    [Fact]
+    public void Handle_EchoCouldNotStart_TakesCommands()
+    {
+        // Arrange: /setup has to be typed to put things right
+        ListenCommands commands = Commands(out ListenActivity activity, out _, isStarted: false);
+        (ListenScreen screen, _) = Screen(activity, commands);
+
+        activity.SetState(ListenState.Failed);
+
+        // Act
+        ListenOutcome outcome = Type(screen, "/quit");
+
+        // Assert
+        Assert.Equal(ListenOutcome.Quit, outcome);
+    }
+
+    [Fact]
+    public void Handle_LogAndCtrlCWhileEchoStarts_StillWork()
+    {
+        // Arrange
+        ListenCommands commands = Commands(out ListenActivity activity, out _, isStarted: false);
+
+        for (int index = 1; index <= 80; index++)
+            activity.Log.Add(EntryKind.Message, $"line {index}");
+
+        (ListenScreen screen, TestConsole console) = Screen(activity, commands);
+
+        // Act
+        screen.Handle(new ConsoleKeyInfo('\0', ConsoleKey.PageUp, shift: false, alt: false, control: false));
+        screen.Draw();
+
+        ListenOutcome outcome = screen.Handle(new ConsoleKeyInfo('\u0003', ConsoleKey.C, shift: false, alt: false, control: true));
+
+        // Assert
+        Assert.Contains("End to the very bottom", console.Output);
+        Assert.Equal(ListenOutcome.Quit, outcome);
+    }
+
     [Theory]
     [InlineData(ConsoleKey.Backspace, '\b')]
     [InlineData(ConsoleKey.W, '\u0017')]
@@ -168,12 +225,27 @@ public sealed class ListenScreenTests : IDisposable
         Assert.DoesNotContain("debug", console.Output);
     }
 
-    private static ListenCommands Commands(out ListenActivity activity, out LoggingLevelSwitch levelSwitch)
+    /// <param name="isStarted">Whether Echo is ready, so that the command line takes what is typed.</param>
+    private static ListenCommands Commands(out ListenActivity activity, out LoggingLevelSwitch levelSwitch, bool isStarted = true)
     {
         activity = new ListenActivity(new ScreenLog(), () => false);
         levelSwitch = new LoggingLevelSwitch(LogEventLevel.Debug);
 
+        if (isStarted)
+            activity.SetState(ListenState.Listening);
+
         return new ListenCommands(activity, levelSwitch, Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), () => Mock.Of<ITextInsertionService>(), () => [("Model", "ggml-tiny.bin"), ("Microphone", "Desk microphone")]);
+    }
+
+    /// <summary>
+    ///     Types the text into the command line and presses Enter, and gives what that led to.
+    /// </summary>
+    private static ListenOutcome Type(ListenScreen screen, string text)
+    {
+        foreach (char typed in text)
+            screen.Handle(new ConsoleKeyInfo(typed, ConsoleKey.NoName, shift: false, alt: false, control: false));
+
+        return screen.Handle(new ConsoleKeyInfo('\r', ConsoleKey.Enter, shift: false, alt: false, control: false));
     }
 
     private static (ListenScreen Screen, TestConsole Console) Screen(ListenActivity activity, ListenCommands commands)

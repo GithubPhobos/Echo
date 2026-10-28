@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text.RegularExpressions;
 using Echo.Listening;
 using Echo.UI;
 using Echo.Updates;
@@ -500,6 +501,54 @@ public sealed class ListenFrameTests : IDisposable
         Assert.EndsWith("|  + 2.0.1", Line(latest));
     }
 
+    [Fact]
+    public void Build_Starting_ShowsTheStateInOrangeWithItsMarkGoingRound()
+    {
+        // Act
+        string[] states =
+        [
+            .. new[] { 0, 100 }.Select(milliseconds => new ListenFrame(Theme.Full)
+                .Build(View(ListenState.Starting) with { Clock = TimeSpan.FromMilliseconds(milliseconds), IsStarting = true }, 100, 30)
+                .Lines[0]),
+        ];
+
+        // Assert
+        Assert.Contains($"[bold {Theme.Warning}]⠋ starting[/]", states[0]);
+        Assert.Contains($"[bold {Theme.Warning}]⠙ starting[/]", states[1]);
+    }
+
+    [Fact]
+    public void Build_WhileStarting_TheCommandBoxIsEmptyAndALightRunsRoundItsFrame()
+    {
+        // Arrange
+        ListenView view = View(ListenState.Starting) with { IsStarting = true };
+
+        // Act: at the start, and five steps of the light later
+        IReadOnlyList<string> first = new ListenFrame(Theme.Full).Build(view, 80, 20).Lines;
+        IReadOnlyList<string> later = new ListenFrame(Theme.Full).Build(view with { Clock = TimeSpan.FromMilliseconds(5 * 22) }, 80, 20).Lines;
+
+        int top = first.Count - 4;
+
+        // Assert: the box keeps its place and shape, with nothing inside, not even the cursor
+        Assert.Equal("╭" + new string('─', 77) + "╮", Markup.Remove(first[top]));
+        Assert.Equal("│" + new string(' ', 77) + "│", Markup.Remove(first[top + 1]));
+        Assert.Equal("╰" + new string('─', 77) + "╯", Markup.Remove(first[top + 2]));
+
+        // The light, in the orange of "starting", stands in the corner first and has moved on five cells after
+        Assert.Equal(0, Colors(first[top]).IndexOf(Theme.Warning));
+        Assert.Equal(5, Colors(later[top]).IndexOf(Theme.Warning));
+    }
+
+    [Fact]
+    public void Build_WhileStarting_TheKeysAreOnlyTheLogAndTheWayOut()
+    {
+        // Act
+        string keys = Render(View(ListenState.Starting) with { IsStarting = true }, width: 100, height: 30)[^1].Trim();
+
+        // Assert
+        Assert.Equal("↑↓ PgUp PgDn log  ┊  Ctrl+C quit", keys);
+    }
+
     private static ListenView View(ListenState state) => new(
         state,
         TimeSpan.Zero,
@@ -520,6 +569,12 @@ public sealed class ListenFrameTests : IDisposable
 
         return new ListenCommands(activity, levelSwitch, Mock.Of<IUserSettingsStore>(store => store.Load() == new UserSettings()), () => Mock.Of<ITextInsertionService>(), () => [("Model", "ggml-tiny.bin"), ("Microphone", "Desk microphone")]);
     }
+
+    /// <summary>
+    ///     The color of every cell of a row drawn a cell at a time, such as the frame of the command box.
+    /// </summary>
+    private static List<string> Colors(string row) =>
+        [.. Regex.Matches(row, @"\[(#[0-9a-f]{6})\]").Select(match => match.Groups[1].Value)];
 
     /// <summary>
     ///     The screen as plain text, one string per row.
