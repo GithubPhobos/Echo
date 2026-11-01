@@ -1,19 +1,26 @@
-﻿using Whisper.net;
-using Whisper.net.LibraryLoader;
-using Whisper.net.Logger;
+﻿using Whisper.net.Logger;
 
 namespace Echo.Services;
 
 /// <inheritdoc cref="IWhisperInferenceService"/>
-/// <param name="assetsProvider"><see cref="IAssetsProvider"/></param>
+/// <param name="paths"><see cref="IAppPaths"/></param>
+/// <param name="cudaLibraries">Finds the NVIDIA libraries the CUDA runtime needs, the way this system does.</param>
+/// <param name="systemLibraries">Finds the libraries of the system recognition needs.</param>
+/// <param name="vulkan">Whether the automatic setting may load Vulkan on this system.</param>
 /// <param name="logger"><see cref="ILogger{WhisperInferenceService}"/></param>
 /// <param name="whisperSettingsOptions"><see cref="IOptions{WhisperSettings}"/></param>
 internal sealed class WhisperInferenceService(
-    IAssetsProvider assetsProvider,
+    IAppPaths paths,
+    ICudaLibraries cudaLibraries,
+    ISystemLibraries systemLibraries,
+    IVulkanSupport vulkan,
     ILogger<WhisperInferenceService> logger,
     IOptions<WhisperSettings> whisperSettingsOptions) : IWhisperInferenceService
 {
-    private readonly IAssetsProvider _assetsProvider = assetsProvider;
+    private readonly IAppPaths _paths = paths;
+    private readonly ICudaLibraries _cudaLibraries = cudaLibraries;
+    private readonly ISystemLibraries _systemLibraries = systemLibraries;
+    private readonly IVulkanSupport _vulkan = vulkan;
     private readonly ILogger<WhisperInferenceService> _logger = logger;
     private readonly WhisperSettings _whisperSettings = whisperSettingsOptions.Value;
 
@@ -30,18 +37,50 @@ internal sealed class WhisperInferenceService(
             _logger.LogDebug("{Tab}{LoadingEmoji} Loading Whisper model...",
                 LoggerConstants.Tab, LoggerConstants.LoadingEmoji);
 
+            // Without them the recognition library does not fail, it takes the whole process down
+            if (_systemLibraries.FindMissing() is { Count: > 0 } missingLibraries)
+            {
+                throw new Exception(
+                    $"{LoggerConstants.Tab}{LoggerConstants.WarningEmoji} Speech recognition needs these libraries of the system: " +
+                    $"{string.Join(", ", missingLibraries)}. Run '{ApplicationInfo.CommandName} {Commands.SetupCommand.Name}' to see how to install them.");
+            }
+
+            // The NVIDIA libraries live in the user's folder, not next to the executable
+            _cudaLibraries.PrepareForLoading(_paths.CudaDirectory);
+
+            // The card number in the settings follows the order of the driver tool, so CUDA must count the same way
+            if (Environment.GetEnvironmentVariable(CudaRequirements.DeviceOrderVariable) is null)
+                Environment.SetEnvironmentVariable(CudaRequirements.DeviceOrderVariable, CudaRequirements.DeviceOrderByBus);
+
+            IReadOnlyList<string> missingCudaLibraries = _cudaLibraries.FindMissing(_paths.CudaDirectory);
+
+            if (missingCudaLibraries.Count > 0 && Acceleration.Parse(_whisperSettings.HardwareBackend) == AccelerationBackend.Cuda)
+            {
+                _logger.LogWarning("{Tab}{WarningEmoji} CUDA is selected, but these NVIDIA libraries are missing: {Libraries}. Falling back to the processor.",
+                    LoggerConstants.Tab, LoggerConstants.WarningEmoji, string.Join(", ", missingCudaLibraries));
+            }
+
+            RuntimeOptions.RuntimeLibraryOrder = Acceleration.LibraryOrder(
+                _whisperSettings.HardwareBackend,
+                isCudaInstalled: missingCudaLibraries.Count == 0,
+                isVulkanChosenAutomatically: _vulkan.IsChosenAutomatically,
+                RuntimeOptions.RuntimeLibraryOrder);
+
             _logger.LogDebug("{Tab}{InfoEmoji} Loading order: {Libraries}",
                 LoggerConstants.Tab,
                 LoggerConstants.InfoEmoji,
                 RuntimeOptions.RuntimeLibraryOrder.Select(
                     lib => Enum.GetName(lib)));
 
-            string modelPath = _assetsProvider.GetFilePath(
-                NormalizeModelFileName(_whisperSettings.ModelName));
+            string modelPath = ResolveModelPath();
 
             LogProvider.AddLogger(OnWhisperLog);
 
-            _whisperFactory = WhisperFactory.FromPath(modelPath);
+            _whisperFactory = WhisperFactory.FromPath(modelPath, new WhisperFactoryOptions
+            {
+                UseGpu = Acceleration.UsesGpu(_whisperSettings.HardwareBackend),
+                GpuDevice = _whisperSettings.GpuDeviceIndex
+            });
 
             _processor = BuildWhisperProcessor(_whisperFactory, _whisperSettings);
 
@@ -70,9 +109,6 @@ internal sealed class WhisperInferenceService(
 
             return null;
         }
-
-        _logger.LogDebug("{LoadingEmoji} Starting audio recognition...",
-            LoggerConstants.LoadingEmoji);
 
         Stopwatch stopwatch = Stopwatch.StartNew();
 
@@ -108,6 +144,25 @@ internal sealed class WhisperInferenceService(
             whisperProcessorBuilder.Build();
     }
 
+    /// <summary>
+    ///     Finds the model file in the user's models folder.
+    /// </summary>
+    private string ResolveModelPath()
+    {
+        // Only the file name is used, so the setting cannot point outside the models folder
+        string fileName = Path.GetFileName(NormalizeModelFileName(_whisperSettings.ModelName));
+        string modelPath = Path.Combine(_paths.ModelsDirectory, fileName);
+
+        if (!File.Exists(modelPath))
+        {
+            throw new FileNotFoundException(
+                $"{LoggerConstants.Tab}{LoggerConstants.WarningEmoji} Model '{fileName}' was not found in '{_paths.ModelsDirectory}'. " +
+                $"Run '{ApplicationInfo.CommandName} {Commands.SetupCommand.Name}' to download a model.");
+        }
+
+        return modelPath;
+    }
+
     private static string NormalizeModelFileName(string modelName)
     {
         const string BinExtension = ".bin";
@@ -126,6 +181,9 @@ internal sealed class WhisperInferenceService(
 
         if (arg1 is WhisperLogLevel.Info or WhisperLogLevel.Error)
         {
+            // Lines such as "whisper_backend_init_gpu: ..." are for whoever looks into a problem: the screen dims them
+            using IDisposable fromLibrary = Serilog.Context.LogContext.PushProperty(Echo.Listening.ScreenLogSink.LibraryProperty, true);
+
             _logger.LogDebug("{Tab}{Message}", LoggerConstants.Tab, arg2.Trim());
 
             return;
@@ -192,17 +250,12 @@ internal sealed class WhisperInferenceService(
 
     private void LogRecognitionResults(Stopwatch stopwatch, string finalResult)
     {
-        _logger.LogDebug("{CheckedEmoji} Audio processed:", LoggerConstants.CheckedEmoji);
+        // The working screen shows the recognized phrase in a line of its own; this line is for the file
+        using IDisposable hidden = Serilog.Context.LogContext.PushProperty(Echo.Listening.ScreenLogSink.HiddenProperty, true);
 
-        _logger.LogDebug("{Tab}{RobotEmoji} Model used: {ModelName}.",
-            LoggerConstants.Tab, LoggerConstants.RobotEmoji, _whisperSettings.ModelName);
-
-        _logger.LogDebug("{Tab}{TimerEmoji} Recognition time: {Elapsed} ms.",
-            LoggerConstants.Tab, LoggerConstants.TimerEmoji, stopwatch.ElapsedMilliseconds);
-
-        _logger.LogDebug("{Tab}{TextEmoji} Final result: {FinalResult}",
-            LoggerConstants.Tab, LoggerConstants.TextEmoji, finalResult);
-
-        _logger.LogDebug("========================================================================");
+        _logger.LogDebug("{TextEmoji} Recognized in {Seconds} s: {FinalResult}",
+            LoggerConstants.TextEmoji,
+            stopwatch.Elapsed.TotalSeconds.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+            finalResult);
     }
 }

@@ -1,0 +1,131 @@
+# Publishes a release of Echo when a tag such as v2.0.1 is pushed. The tag must match <Version> in Echo/Echo.csproj.
+# The release carries the archives of each system and SHA256SUMS with their checksums. The archives have no version
+# in their names, so .../releases/latest/download/echooo-linux-x64.tar.gz always leads to the latest release.
+# Echo updates itself from the zip archive of its system: a zip archive lists every file with its checksum at its end,
+# and any one file can be read from it alone, so an update downloads only the files that changed.
+
+name: Release
+
+on:
+  push:
+    tags: [ "v*" ]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ windows-latest, ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Check that the tag is the version of the project
+      shell: bash
+      run: |
+        version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Echo/Echo.csproj)
+        if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+          echo "::error::The tag $GITHUB_REF_NAME is not the version of Echo/Echo.csproj, which is $version."
+          exit 1
+        fi
+        test -s "docs/changelog/$version.md" || { echo "::error::Missing release notes for $version"; exit 1; }
+
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    # The tests of the desktop's permission windows talk to a message bus of their own
+    - name: Install the message bus for the Linux tests
+      if: runner.os == 'Linux'
+      run: |
+        if [ ! -x /usr/bin/dbus-daemon ]; then
+          sudo apt-get update
+          sudo apt-get install -y dbus
+        fi
+
+    - name: Run tests
+      run: dotnet test Echo.sln --configuration Release
+
+  publish:
+    needs: test
+    strategy:
+      matrix:
+        include:
+        - os: windows-latest
+          runtime: win-x64
+        - os: ubuntu-latest
+          runtime: linux-x64
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Build
+      run: dotnet publish Echo/Echo.csproj --configuration Release --runtime ${{ matrix.runtime }} --self-contained --output out
+
+    # The files lie at the top of the archive, as the install script and Echo itself unpack them
+    - name: Pack for Windows
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory dist | Out-Null
+        Compress-Archive -Path out/* -DestinationPath dist/echooo-win-x64.zip
+
+    # The install script unpacks the tar archive, since every system has tar; Echo updates itself from the zip one.
+    # Both keep the permission to run the program
+    - name: Pack for Linux
+      if: runner.os == 'Linux'
+      run: |
+        if ! command -v zip > /dev/null; then
+          sudo apt-get update
+          sudo apt-get install -y zip
+        fi
+        mkdir dist
+        tar -C out -czf dist/echooo-linux-x64.tar.gz .
+        (cd out && zip -qrX ../dist/echooo-linux-x64.zip .)
+
+    - name: Keep the archives
+      uses: actions/upload-artifact@v4
+      with:
+        name: echooo-${{ matrix.runtime }}
+        path: dist/*
+        if-no-files-found: error
+
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout release notes
+      uses: actions/checkout@v4
+
+    - name: Collect the archives
+      uses: actions/download-artifact@v4
+      with:
+        path: dist
+        merge-multiple: true
+
+    - name: Write the checksums
+      working-directory: dist
+      run: sha256sum echooo-win-x64.zip echooo-linux-x64.tar.gz echooo-linux-x64.zip > SHA256SUMS
+
+    - name: Publish the release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: >
+        gh release create "$GITHUB_REF_NAME" dist/*
+        --repo "$GITHUB_REPOSITORY"
+        --title "Echo ${GITHUB_REF_NAME#v}"
+        --notes-file "docs/changelog/${GITHUB_REF_NAME#v}.md"
+        --latest
+        --verify-tag

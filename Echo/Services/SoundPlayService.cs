@@ -1,27 +1,34 @@
-﻿using NAudio.CoreAudioApi;
-using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
+﻿using NAudio.Wave.SampleProviders;
 
 namespace Echo.Services;
 
 /// <inheritdoc cref="ISoundPlayService"/>
+/// <param name="soundOutput">The loudspeakers of the system.</param>
 /// <param name="assetsProvider"><see cref="IAssetsProvider"/></param>
 /// <param name="logger"><see cref="ILogge{SoundPlayService}"/></param>
 /// <param name="pushToTalkSettingsOptions"><see cref="IOptions<PushToTalkSettings>"/></param>
 internal sealed class SoundPlayService(
+    ISoundOutput soundOutput,
     IAssetsProvider assetsProvider,
     ILogger<SoundPlayService> logger,
     IOptions<PushToTalkSettings> pushToTalkSettingsOptions) : ISoundPlayService
 {
+    private readonly ISoundOutput _soundOutput = soundOutput;
     private readonly IAssetsProvider _assetsProvider = assetsProvider;
     private readonly ILogger<SoundPlayService> _logger = logger;
     private readonly PushToTalkSettings _pushToTalkSettings = pushToTalkSettingsOptions.Value;
 
+    /// <summary>
+    ///     Guards opening and closing the loudspeakers.
+    /// </summary>
+    private readonly object _outputLock = new();
+
     private float? _volume;
     private bool _canPlaySounds;
+    private bool _isClosed;
     private CachedSound? _onSound;
     private CachedSound? _offSound;
-    private WasapiOut? _outputDevice;
+    private IDisposable? _outputDevice;
     private MixingSampleProvider? _mixer;
 
     /// <inheritdoc/>
@@ -32,10 +39,6 @@ internal sealed class SoundPlayService(
 
         if (!_pushToTalkSettings.PlaySound)
             return;
-
-        _logger.LogDebug("{NoteEmoji} Sounds:", LoggerConstants.NoteEmoji);
-        _logger.LogDebug("{Tab}{LoadingEmoji} Searching and loading required files into memory...",
-            LoggerConstants.Tab, LoggerConstants.LoadingEmoji);
 
         string? errorMessage = null;
         try
@@ -67,9 +70,7 @@ internal sealed class SoundPlayService(
                 _onSound = new CachedSound(startRecordingFilePath, mixerFormat);
                 _offSound = new CachedSound(stopRecordingFilePath, mixerFormat);
 
-                _outputDevice = new WasapiOut(AudioClientShareMode.Shared, 50);
-                _outputDevice.Init(_mixer);
-                _outputDevice.Play();
+                _outputDevice = _soundOutput.Play(_mixer);
 
                 _canPlaySounds = true;
             }
@@ -80,17 +81,55 @@ internal sealed class SoundPlayService(
             _canPlaySounds = false;
         }
 
+        // One line either way: the sounds are a detail next to the microphone, the model and the key
         if (!_canPlaySounds)
         {
-            _logger.LogDebug("{Tab}{WarningEmoji} Cannot play sounds: {ErrorMessage}",
-                LoggerConstants.Tab, LoggerConstants.WarningEmoji, errorMessage);
+            _logger.LogDebug("{NoteEmoji} Sounds: cannot play them: {ErrorMessage}",
+                LoggerConstants.NoteEmoji, errorMessage);
         }
         else
         {
-            _logger.LogDebug("{Tab}{CheckedEmoji} Audio Engine started and files cached.",
-                LoggerConstants.Tab, LoggerConstants.CheckedEmoji);
-            _logger.LogDebug("{Tab}{InfoEmoji} Volume is set to: {Volume}",
-                LoggerConstants.Tab, LoggerConstants.InfoEmoji, _volume);
+            _logger.LogDebug("{NoteEmoji} Sounds: on, volume {Volume}%.",
+                LoggerConstants.NoteEmoji, (int)Math.Round((_volume ?? 0f) * 100));
+        }
+    }
+
+    /// <inheritdoc/>
+    public void ReopenSounds()
+    {
+        lock (_outputLock)
+        {
+            // Without the sounds, or closed with Echo, there is nothing to open
+            if (_isClosed || _mixer is null)
+                return;
+
+            _canPlaySounds = false;
+
+            try
+            {
+                _outputDevice?.Dispose();
+            }
+            catch (Exception exc)
+            {
+                _logger.LogDebug("{NoteEmoji} Sounds: closing the loudspeakers failed: {ErrorMessage}",
+                    LoggerConstants.NoteEmoji, exc.Message);
+            }
+
+            _outputDevice = null;
+
+            // The sounds of the presses made while the loudspeakers were closed would all play at once
+            _mixer.RemoveAllMixerInputs();
+
+            try
+            {
+                _outputDevice = _soundOutput.Play(_mixer);
+                _canPlaySounds = true;
+            }
+            catch (Exception exc)
+            {
+                _logger.LogWarning("{WarningEmoji} Sounds: cannot open the loudspeakers again: {ErrorMessage}",
+                    LoggerConstants.WarningEmoji, exc.Message);
+            }
         }
     }
 
@@ -113,8 +152,11 @@ internal sealed class SoundPlayService(
     /// <inheritdoc/>
     public void Dispose()
     {
-        _outputDevice?.Stop();
-        _outputDevice?.Dispose();
+        lock (_outputLock)
+        {
+            _isClosed = true;
+            _outputDevice?.Dispose();
+        }
     }
 
     /// <summary>

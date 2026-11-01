@@ -482,3 +482,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Specs are kept by the owner, not published
+docs/spec-*.md

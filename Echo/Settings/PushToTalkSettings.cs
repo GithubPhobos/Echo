@@ -16,6 +16,12 @@ internal sealed class PushToTalkSettings
     public string? Modifier { get; init; }
 
     /// <summary>
+    ///     On desktops that assign the key themselves (Wayland): how the desktop names the key it assigned.
+    ///     Only shown to the user; the key itself is kept by the desktop.
+    /// </summary>
+    public string? DesktopShortcut { get; init; }
+
+    /// <summary>
     ///     Indicates whether sound will be played on push to talk key presses.
     /// </summary>
     public bool PlaySound { get; init; }

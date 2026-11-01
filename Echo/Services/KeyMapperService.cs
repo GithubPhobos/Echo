@@ -1,6 +1,4 @@
-﻿using SharpHook.Data;
-
-namespace Echo.Services;
+﻿namespace Echo.Services;
 
 /// <summary>
 ///     Provides utility methods to map human-readable string representations of keyboard keys 

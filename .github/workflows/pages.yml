@@ -1,0 +1,41 @@
+# Puts the install scripts on GitHub Pages, at https://githubphobos.github.io/Echo/install.sh and install.ps1,
+# whenever they change on master. GitHub lets only the default branch publish Pages, not a tag, so this is apart
+# from the release. The source of Pages in the settings of the repository is "GitHub Actions".
+
+name: Install scripts
+
+on:
+  push:
+    branches: [ "master" ]
+    paths: [ "install/**" ]
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Configure Pages
+      uses: actions/configure-pages@v5
+
+    - name: Upload the scripts
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: install
+
+    - name: Deploy
+      id: deployment
+      uses: actions/deploy-pages@v4

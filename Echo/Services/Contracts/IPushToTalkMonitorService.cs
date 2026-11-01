@@ -17,6 +17,12 @@ internal interface IPushToTalkMonitorService : IDisposable
     event EventHandler? OnRecordingTriggered;
 
     /// <summary>
+    ///     Fired when the key stopped reaching Echo while it was held: the phrase under way is to be dropped,
+    ///     since the key will not come up.
+    /// </summary>
+    event EventHandler? OnRecordingCancelled;
+
+    /// <summary>
     ///     Parses the user-configured Push-To-Talk keys (main key and optional modifier).
     /// </summary>
     /// <exception cref="Exception">Thrown if the main key cannot be parsed from the configuration.</exception>
@@ -28,5 +34,12 @@ internal interface IPushToTalkMonitorService : IDisposable
     /// <remarks>
     ///     This method runs asynchronously and listens to system-wide input events.
     /// </remarks>
-    Task StartListeningAsync();
+    /// <param name="cancellationToken">Stops waiting, as when Echo stops while the desktop still asks the user.</param>
+    Task StartListeningAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    ///     Stops taking the key: from now on it does what it does without Echo, as when Echo could not start
+    ///     after the key was already its own. A recording under way is dropped through <see cref="OnRecordingCancelled"/>.
+    /// </summary>
+    Task ReleaseAsync();
 }

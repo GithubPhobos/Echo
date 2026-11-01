@@ -1,0 +1,966 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="HintSelect" xml:space="preserve">
+    <value>select</value>
+  </data>
+  <data name="HintConfirm" xml:space="preserve">
+    <value>confirm</value>
+  </data>
+  <data name="HintBack" xml:space="preserve">
+    <value>back</value>
+  </data>
+  <data name="HintCancel" xml:space="preserve">
+    <value>cancel</value>
+  </data>
+  <data name="HintTryAgain" xml:space="preserve">
+    <value>try again</value>
+  </data>
+  <data name="HintCheckAgain" xml:space="preserve">
+    <value>check again</value>
+  </data>
+  <data name="HintOpenFolder" xml:space="preserve">
+    <value>open folder</value>
+  </data>
+  <data name="HintContinue" xml:space="preserve">
+    <value>continue</value>
+  </data>
+  <data name="HintSkip" xml:space="preserve">
+    <value>skip</value>
+  </data>
+  <data name="HintFinish" xml:space="preserve">
+    <value>finish</value>
+  </data>
+  <data name="SetupTitle" xml:space="preserve">
+    <value>Setup</value>
+  </data>
+  <data name="SetupReview" xml:space="preserve">
+    <value>review</value>
+  </data>
+  <data name="SetupStepOf" xml:space="preserve">
+    <value>step {0} of {1}</value>
+  </data>
+  <data name="SetupNeedsTerminal" xml:space="preserve">
+    <value>Echo is not set up yet. Run 'echooo setup' in a terminal to choose a model, a microphone and a key.</value>
+  </data>
+  <data name="SetupSaved" xml:space="preserve">
+    <value>Settings saved.</value>
+  </data>
+  <data name="StepLanguages" xml:space="preserve">
+    <value>Languages</value>
+  </data>
+  <data name="StepAcceleration" xml:space="preserve">
+    <value>Hardware acceleration</value>
+  </data>
+  <data name="StepModel" xml:space="preserve">
+    <value>Model</value>
+  </data>
+  <data name="StepHotkey" xml:space="preserve">
+    <value>Hotkey</value>
+  </data>
+  <data name="StepCheck" xml:space="preserve">
+    <value>Sound</value>
+  </data>
+  <data name="DownloadVerifying" xml:space="preserve">
+    <value>Verifying the download…</value>
+  </data>
+  <data name="DownloadDetails" xml:space="preserve">
+    <value>{0} of {1} · {2}/s</value>
+  </data>
+  <data name="DownloadFailed" xml:space="preserve">
+    <value>The download did not finish.</value>
+  </data>
+  <data name="DiskSpaceLow" xml:space="preserve">
+    <value>Not enough free disk space: {0} needed, {1} free.</value>
+  </data>
+  <data name="LanguageInterfaceQuestion" xml:space="preserve">
+    <value>Choose the interface language</value>
+  </data>
+  <data name="LanguageDictationQuestion" xml:space="preserve">
+    <value>Choose the language you will dictate in</value>
+  </data>
+  <data name="LanguageDictationNote" xml:space="preserve">
+    <value>Any other language the model knows can be set in the settings file later.</value>
+  </data>
+  <data name="DictationAuto" xml:space="preserve">
+    <value>Detect automatically (slower)</value>
+  </data>
+  <data name="DictationAutoHint" xml:space="preserve">
+    <value>The model works out the language of every phrase itself. Handy when you speak several languages.</value>
+  </data>
+  <data name="SummaryInterfaceLanguage" xml:space="preserve">
+    <value>Interface language</value>
+  </data>
+  <data name="SummaryDictationLanguage" xml:space="preserve">
+    <value>Dictation language</value>
+  </data>
+  <data name="SummaryAcceleration" xml:space="preserve">
+    <value>Hardware acceleration</value>
+  </data>
+  <data name="SummaryModel" xml:space="preserve">
+    <value>Model</value>
+  </data>
+  <data name="SummaryHotkey" xml:space="preserve">
+    <value>Push-to-talk key</value>
+  </data>
+  <data name="SummaryMicrophone" xml:space="preserve">
+    <value>Microphone</value>
+  </data>
+  <data name="HardwareChecking" xml:space="preserve">
+    <value>Looking at your hardware</value>
+  </data>
+  <data name="HardwareNoNvidia" xml:space="preserve">
+    <value>No NVIDIA graphics card was found.</value>
+  </data>
+  <data name="HardwareGpu" xml:space="preserve">
+    <value>Detected your graphics card: {0}, {1}, driver {2}</value>
+  </data>
+  <data name="AccelerationQuestion" xml:space="preserve">
+    <value>What should the model run on?</value>
+  </data>
+  <data name="AccelerationAuto" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+  <data name="AccelerationAutoHint" xml:space="preserve">
+    <value>Recommended. Echo picks the fastest option this computer supports: right now that is {0}.</value>
+  </data>
+  <data name="AccelerationCudaHint" xml:space="preserve">
+    <value>The whole model runs on an NVIDIA graphics card through CUDA and cuBLAS. The fastest option. Requires an RTX 20 / GTX 16 series card or newer, driver {0} or newer and three NVIDIA libraries (about {1}).</value>
+  </data>
+  <data name="AccelerationVulkanHint" xml:space="preserve">
+    <value>The model runs on a graphics card through the Vulkan graphics interface: works with AMD, Intel and NVIDIA cards, integrated ones included. Usually faster than the processor but slower than CUDA. Vulkan comes with the graphics driver and is already on this computer.</value>
+  </data>
+  <data name="AccelerationCpu" xml:space="preserve">
+    <value>Processor</value>
+  </data>
+  <data name="AccelerationCpuHint" xml:space="preserve">
+    <value>The model runs on the processor cores; the graphics card is not used. Works on any computer but is slower than the other options: with models larger than small the delay becomes noticeable.</value>
+  </data>
+  <data name="CudaGpuTooOld" xml:space="preserve">
+    <value>CUDA is not offered: it needs an RTX 20 or GTX 16 series card or newer.</value>
+  </data>
+  <data name="CudaDriverTooOld" xml:space="preserve">
+    <value>CUDA is not offered: it needs NVIDIA driver {0} or newer. Update the driver and run setup again.</value>
+  </data>
+  <data name="CudaLibrariesQuestion" xml:space="preserve">
+    <value>CUDA needs three NVIDIA libraries (they are not part of the graphics driver and are not shipped with Echo):</value>
+  </data>
+  <data name="CudaDownload" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="CudaDownloadHint" xml:space="preserve">
+    <value>Echo downloads {0} from nvidia.com and puts the files in place.</value>
+  </data>
+  <data name="CudaAlreadyHave" xml:space="preserve">
+    <value>I already have them</value>
+  </data>
+  <data name="CudaAlreadyHaveHint" xml:space="preserve">
+    <value>Point to where they are: a file chooser opens, and Echo copies the files into its own folder.</value>
+  </data>
+  <data name="CudaDownloading" xml:space="preserve">
+    <value>Downloading the NVIDIA libraries</value>
+  </data>
+  <data name="ModelQuestion" xml:space="preserve">
+    <value>Which model should Echo use?</value>
+  </data>
+  <data name="ModelRecommended" xml:space="preserve">
+    <value>Recommended for this computer</value>
+  </data>
+  <data name="ModelDownloaded" xml:space="preserve">
+    <value>Already downloaded</value>
+  </data>
+  <data name="ModelAlreadyHave" xml:space="preserve">
+    <value>I already have downloaded models</value>
+  </data>
+  <data name="ModelAlreadyHaveHint" xml:space="preserve">
+    <value>A file chooser opens: pick one or several model files, and Echo copies them to where it keeps its models.</value>
+  </data>
+  <data name="ModelTinyHint" xml:space="preserve">
+    <value>The fastest, but makes the most mistakes. Takes about 300 MB of memory. Not recommended: on a modern computer small is fast too and makes several times fewer mistakes.</value>
+  </data>
+  <data name="ModelBaseHint" xml:space="preserve">
+    <value>Very fast, but makes noticeably more mistakes than small. Takes about 400 MB of memory. Not recommended: on a modern computer small is fast too.</value>
+  </data>
+  <data name="ModelSmallHint" xml:space="preserve">
+    <value>Fast with good accuracy. Takes about 900 MB of memory. Suits the processor as well as a graphics card with 2 GB or more.</value>
+  </data>
+  <data name="ModelMediumHint" xml:space="preserve">
+    <value>Very good accuracy, noticeably slower than small. Takes about 2 GB of memory: needs a graphics card with 4 GB or more; slow on the processor.</value>
+  </data>
+  <data name="ModelTurboHint" xml:space="preserve">
+    <value>Accuracy close to large-v3 at several times its speed. Needs a graphics card with 6 GB or more.</value>
+  </data>
+  <data name="ModelTurboNoTranslateHint" xml:space="preserve">
+    <value>Fast and accurate, but cannot translate into English: pick another model for translation.</value>
+  </data>
+  <data name="ModelLargeHint" xml:space="preserve">
+    <value>The best accuracy, copes with difficult vocabulary. Takes about 4 GB of memory: needs a graphics card with 6 GB or more; very slow on the processor.</value>
+  </data>
+  <data name="ModelDownloading" xml:space="preserve">
+    <value>Downloading {0}</value>
+  </data>
+  <data name="ModelCopyQuestion" xml:space="preserve">
+    <value>Put a Whisper model file (ggml, .bin) into this folder:</value>
+  </data>
+  <data name="HotkeyQuestion" xml:space="preserve">
+    <value>Choose the push-to-talk key</value>
+  </data>
+  <data name="HotkeyCurrent" xml:space="preserve">
+    <value>Key:</value>
+  </data>
+  <data name="HotkeyChangeNote" xml:space="preserve">
+    <value>Press another key to change it.</value>
+  </data>
+  <data name="HotkeySuppressedNote" xml:space="preserve">
+    <value>Warning: while Echo is running, this key does nothing else. It will not type its character and no other program will see it, so pick a key you rarely use.</value>
+  </data>
+  <data name="MicrophoneQuestion" xml:space="preserve">
+    <value>Choose the input device</value>
+  </data>
+  <data name="MicrophoneNone" xml:space="preserve">
+    <value>No microphone was found.</value>
+  </data>
+  <data name="MicrophoneNoneHelp" xml:space="preserve">
+    <value>Plug one in, or allow desktop apps to use the microphone in the system privacy settings.</value>
+  </data>
+  <data name="MicrophoneFailed" xml:space="preserve">
+    <value>The microphone could not be opened.</value>
+  </data>
+  <data name="MicrophoneNoResponse" xml:space="preserve">
+    <value>It did not respond. Another program may be holding it; close that program or pick another microphone.</value>
+  </data>
+  <data name="CalibrationQuiet" xml:space="preserve">
+    <value>Stay quiet, measuring the room: {0}</value>
+  </data>
+  <data name="CalibrationSpeak" xml:space="preserve">
+    <value>Now speak at your normal volume: {0}</value>
+  </data>
+  <data name="CalibrationNotHeard" xml:space="preserve">
+    <value>I could barely hear you.</value>
+  </data>
+  <data name="CalibrationNotHeardHelp" xml:space="preserve">
+    <value>Move closer to the microphone, raise its level in the system settings, or pick another one.</value>
+  </data>
+  <data name="TestLoading" xml:space="preserve">
+    <value>Starting speech recognition</value>
+  </data>
+  <data name="TestStartFailed" xml:space="preserve">
+    <value>Dictation could not be started with these settings.</value>
+  </data>
+  <data name="TestStartFailedHelp" xml:space="preserve">
+    <value>Press Esc to go back and change the microphone, the model or the hardware acceleration.</value>
+  </data>
+  <data name="TestQuestion" xml:space="preserve">
+    <value>Hold {0} and say something</value>
+  </data>
+  <data name="TestWaiting" xml:space="preserve">
+    <value>Waiting for you to hold the key…</value>
+  </data>
+  <data name="TestTranscribing" xml:space="preserve">
+    <value>Recognizing</value>
+  </data>
+  <data name="TestNothingHeard" xml:space="preserve">
+    <value>Nothing was recognized. Hold the key a little longer and speak up.</value>
+  </data>
+  <data name="TestSeconds" xml:space="preserve">
+    <value>{0} s</value>
+  </data>
+  <data name="TestRestartNeeded" xml:space="preserve">
+    <value>This run had already loaded {0}, so {1} was not used. It will be after Echo is restarted.</value>
+  </data>
+  <data name="SetupRestartNeeded" xml:space="preserve">
+    <value>Settings saved. The chosen hardware acceleration takes effect after a restart: /restart. Until then Echo goes on as before.</value>
+  </data>
+  <data name="TestSlow" xml:space="preserve">
+    <value>That was slow. A smaller model will answer faster: press Esc to go back and pick one.</value>
+  </data>
+  <data name="ReviewQuestion" xml:space="preserve">
+    <value>Is everything right?</value>
+  </data>
+  <data name="ReviewNote" xml:space="preserve">
+    <value>Pick a line to change it.</value>
+  </data>
+  <data name="ReviewSave" xml:space="preserve">
+    <value>Save and start</value>
+  </data>
+  <data name="ReviewSaveHint" xml:space="preserve">
+    <value>Everything is right</value>
+  </data>
+  <data name="SubDictation" xml:space="preserve">
+    <value>Dictation language</value>
+  </data>
+  <data name="SubCudaLibraries" xml:space="preserve">
+    <value>NVIDIA libraries</value>
+  </data>
+  <data name="SubCalibration" xml:space="preserve">
+    <value>Silence level</value>
+  </data>
+  <data name="SubDictationTest" xml:space="preserve">
+    <value>Test dictation</value>
+  </data>
+  <data name="UnitMb" xml:space="preserve">
+    <value>MB</value>
+  </data>
+  <data name="UnitGb" xml:space="preserve">
+    <value>GB</value>
+  </data>
+  <data name="DictationAutoName" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+  <data name="TagRecommended" xml:space="preserve">
+    <value>Recommended</value>
+  </data>
+  <data name="HardwareGpus" xml:space="preserve">
+    <value>Detected your NVIDIA graphics cards (driver {0}):</value>
+  </data>
+  <data name="SubGraphicsCard" xml:space="preserve">
+    <value>Graphics card</value>
+  </data>
+  <data name="GraphicsCardQuestion" xml:space="preserve">
+    <value>Which graphics card should the model run on?</value>
+  </data>
+  <data name="GraphicsCardHint" xml:space="preserve">
+    <value>{0} of video memory. More memory lets Echo run a larger, more accurate model.</value>
+  </data>
+  <data name="ModelOwnFileHint" xml:space="preserve">
+    <value>A model file that is already in Echo's models folder.</value>
+  </data>
+  <data name="ModelPickFilesTitle" xml:space="preserve">
+    <value>Choose Whisper model files (ggml, .bin)</value>
+  </data>
+  <data name="ModelNotAModel" xml:space="preserve">
+    <value>This does not look like a Whisper model and was skipped: {0}</value>
+  </data>
+  <data name="HotkeyNote" xml:space="preserve">
+    <value>Echo will record your voice for as long as you hold it.</value>
+  </data>
+  <data name="MicrophoneLevel" xml:space="preserve">
+    <value>Level:</value>
+  </data>
+  <data name="MicrophoneOpening" xml:space="preserve">
+    <value>Opening the microphone</value>
+  </data>
+  <data name="CudaSourceQuestion" xml:space="preserve">
+    <value>Where do they come from?</value>
+  </data>
+  <data name="CudaPickFilesTitle" xml:space="preserve">
+    <value>Choose the NVIDIA libraries</value>
+  </data>
+  <data name="CudaNotALibrary" xml:space="preserve">
+    <value>This is not one of the needed libraries and was skipped: {0}</value>
+  </data>
+  <data name="ModelRecommendationNote" xml:space="preserve">
+    <value>The recommendation is based on your system.</value>
+  </data>
+  <data name="FileCopyFailed" xml:space="preserve">
+    <value>The file could not be copied.</value>
+  </data>
+  <data name="CudaAlreadyHaveSummary" xml:space="preserve">
+    <value>Specify the path</value>
+  </data>
+  <data name="StepAdditional" xml:space="preserve">
+    <value>Additional settings</value>
+  </data>
+  <data name="AdditionalQuestion" xml:space="preserve">
+    <value>Choose a setting to change</value>
+  </data>
+  <data name="AdditionalNote" xml:space="preserve">
+    <value>None of these is required: Echo works well without them.</value>
+  </data>
+  <data name="AdditionalTranslate" xml:space="preserve">
+    <value>Translation into English</value>
+  </data>
+  <data name="AdditionalTranslateHint" xml:space="preserve">
+    <value>Echo will type an English translation of what you said instead of the original text.</value>
+  </data>
+  <data name="AdditionalTranslateWarning" xml:space="preserve">
+    <value>The chosen model, {0}, cannot translate. You can change the model on the next screen.</value>
+  </data>
+  <data name="AdditionalAutoInsert" xml:space="preserve">
+    <value>Automatic text insertion</value>
+  </data>
+  <data name="AdditionalAutoInsertHint" xml:space="preserve">
+    <value>The recognized text is typed right where the cursor is. When off, it is only copied to the clipboard, and you paste it yourself with Ctrl+V.</value>
+  </data>
+  <data name="AdditionalContinue" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="AdditionalContinueHint" xml:space="preserve">
+    <value>Go on to the summary of everything you chose.</value>
+  </data>
+  <data name="ValueOn" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="ValueOff" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="CalibrationQuestion" xml:space="preserve">
+    <value>Do you want to measure the silence level?</value>
+  </data>
+  <data name="CalibrationWhy" xml:space="preserve">
+    <value>Echo starts recording only when the sound gets louder than the silence level. That keeps the background out of the recording: a fan, the keyboard, the street. With the level too low Echo records noise; with it too high it cuts off the quiet beginning of a phrase.</value>
+  </data>
+  <data name="CalibrationHow" xml:space="preserve">
+    <value>Echo will listen to the room and then to your voice, and put the level between them: stay quiet first, then speak. A countdown shows how many seconds are left.</value>
+  </data>
+  <data name="CalibrationCurrent" xml:space="preserve">
+    <value>Silence level now: {0}</value>
+  </data>
+  <data name="CalibrationDone" xml:space="preserve">
+    <value>The silence level is measured: {0}</value>
+  </data>
+  <data name="CalibrationDoneDetails" xml:space="preserve">
+    <value>The room: {0}, your voice: {1}. Echo will not record anything quieter than the silence level.</value>
+  </data>
+  <data name="GroupRecording" xml:space="preserve">
+    <value>Recording</value>
+  </data>
+  <data name="GroupGeneral" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="ValueAuto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="ValueNotSet" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+  <data name="InputEmptyNote" xml:space="preserve">
+    <value>Leave it empty to return to the value Echo ships with.</value>
+  </data>
+  <data name="InputWholeError" xml:space="preserve">
+    <value>Enter a whole number from {0} to {1}</value>
+  </data>
+  <data name="InputFractionError" xml:space="preserve">
+    <value>Enter a number from {0} to {1}, for example 0.2</value>
+  </data>
+  <data name="AdditionalPrompt" xml:space="preserve">
+    <value>Vocabulary: names and terms</value>
+  </data>
+  <data name="AdditionalPromptHint" xml:space="preserve">
+    <value>Words Echo gets wrong: names, product names, terms. Type them separated by commas, for example: Kubernetes, PostgreSQL, Ivanov. The model treats them as already said before your phrase and spells them the same way.</value>
+  </data>
+  <data name="AdditionalCarryInitialPrompt" xml:space="preserve">
+    <value>Vocabulary in long recordings</value>
+  </data>
+  <data name="AdditionalCarryInitialPromptHint" xml:space="preserve">
+    <value>The model works through a recording in pieces of 30 seconds, and the vocabulary affects only the first piece. Turn it on if you dictate for longer than 30 seconds at a stretch and the words of the vocabulary come out wrong further on. Changes nothing while the vocabulary is empty.</value>
+  </data>
+  <data name="AdditionalNoContext" xml:space="preserve">
+    <value>Ignore earlier text</value>
+  </data>
+  <data name="AdditionalNoContextHint" xml:space="preserve">
+    <value>The model leans on the text it has already recognized, which keeps words and style consistent. Turn it on if the model starts repeating one and the same phrase; recognition also gets slightly faster.</value>
+  </data>
+  <data name="AdditionalSingleSegment" xml:space="preserve">
+    <value>Single segment</value>
+  </data>
+  <data name="AdditionalSingleSegmentHint" xml:space="preserve">
+    <value>The model returns the text of a recording in one piece instead of in parts split at pauses. No effect on phrases shorter than 30 seconds. In a longer recording the upside is predictability: the model moves in even steps of 30 seconds and never gets stuck in one place. The downside: a word on the border of two steps may be lost.</value>
+  </data>
+  <data name="AdditionalSuppressBlank" xml:space="preserve">
+    <value>Never return an empty result</value>
+  </data>
+  <data name="AdditionalSuppressBlankHint" xml:space="preserve">
+    <value>The model has to begin its answer with a word, not with nothing. On: a quiet or very short phrase is not lost. Off: the model may write nothing when it could not make out any speech, so it invents less text where there were no words.</value>
+  </data>
+  <data name="AdditionalTemperature" xml:space="preserve">
+    <value>Temperature</value>
+  </data>
+  <data name="AdditionalTemperatureHint" xml:space="preserve">
+    <value>How freely the model picks words, from 0 to 1. At 0 it always takes the most likely words, which is the most accurate. Higher values make the text more varied and raise the risk of invented words. Auto: 0, and higher only when recognition has failed.</value>
+  </data>
+  <data name="AdditionalThreads" xml:space="preserve">
+    <value>Processor threads</value>
+  </data>
+  <data name="AdditionalThreadsHint" xml:space="preserve">
+    <value>How many processor threads recognition takes. Matters when the model runs on the processor rather than on the graphics card: more threads are faster, but other programs slow down meanwhile. Auto: no more than four.</value>
+  </data>
+  <data name="AdditionalSuppressRegex" xml:space="preserve">
+    <value>Forbidden text (pattern)</value>
+  </data>
+  <data name="AdditionalSuppressRegexHint" xml:space="preserve">
+    <value>For those who know regular expressions. The model cannot write the pieces of words that match the pattern as a whole: this is how digits are forbidden, for example, so that numbers come out as words. Not set: nothing is forbidden.</value>
+  </data>
+  <data name="AdditionalBufferMs" xml:space="preserve">
+    <value>Audio buffer, ms</value>
+  </data>
+  <data name="AdditionalBufferMsHint" xml:space="preserve">
+    <value>How often the microphone hands sound over to Echo, in milliseconds. A lower value means less delay but slightly more processor load.</value>
+  </data>
+  <data name="AdditionalNumberOfBuffers" xml:space="preserve">
+    <value>Audio buffers</value>
+  </data>
+  <data name="AdditionalNumberOfBuffersHint" xml:space="preserve">
+    <value>How many buffers are set aside for recording. Raise it to 4 or 5 if the recording stutters or drops out on a slow computer.</value>
+  </data>
+  <data name="AdditionalMicrophoneLevelOutput" xml:space="preserve">
+    <value>Print the microphone level</value>
+  </data>
+  <data name="AdditionalMicrophoneLevelOutputHint" xml:space="preserve">
+    <value>While Echo waits for speech during a recording, it prints the microphone level in its window. Helps to pick the silence level by hand. Shown only with the log detail set to Debug or Verbose.</value>
+  </data>
+  <data name="AdditionalPlaySound" xml:space="preserve">
+    <value>Recording sound</value>
+  </data>
+  <data name="AdditionalPlaySoundHint" xml:space="preserve">
+    <value>A short sound when recording starts and when it stops, so you can hear that Echo is listening.</value>
+  </data>
+  <data name="AdditionalVolume" xml:space="preserve">
+    <value>Sound volume</value>
+  </data>
+  <data name="AdditionalVolumeHint" xml:space="preserve">
+    <value>How loud the recording sound is, from 0 to 100 percent.</value>
+  </data>
+  <data name="KeySpace" xml:space="preserve">
+    <value>Space</value>
+  </data>
+  <data name="HintSwitch" xml:space="preserve">
+    <value>switch</value>
+  </data>
+  <data name="HintType" xml:space="preserve">
+    <value>type a value</value>
+  </data>
+  <data name="GroupRecognition" xml:space="preserve">
+    <value>Speech recognition</value>
+  </data>
+  <data name="AdditionalTranslateCaution" xml:space="preserve">
+    <value>The large-v3-turbo model cannot translate: pick another model for translation.</value>
+  </data>
+  <data name="AdditionalLogLevel" xml:space="preserve">
+    <value>Log detail</value>
+  </data>
+  <data name="AdditionalLogLevelHint" xml:space="preserve">
+    <value>How much Echo writes about its work in its window. Debug: everything, from loading the model and the devices to the recognition time and the recognized text. Information: only the start and the end of each recording. Warning and Error: only problems.</value>
+  </data>
+  <data name="ListenStarting" xml:space="preserve">
+    <value>starting</value>
+  </data>
+  <data name="ListenListening" xml:space="preserve">
+    <value>ready</value>
+  </data>
+  <data name="ListenRecording" xml:space="preserve">
+    <value>recording</value>
+  </data>
+  <data name="ListenTranscribing" xml:space="preserve">
+    <value>recognizing</value>
+  </data>
+  <data name="ListenPaused" xml:space="preserve">
+    <value>paused</value>
+  </data>
+  <data name="ListenFailed" xml:space="preserve">
+    <value>error</value>
+  </data>
+  <data name="ListenScrolled" xml:space="preserve">
+    <value>End to the very bottom</value>
+  </data>
+  <data name="ListenPlaceholder" xml:space="preserve">
+    <value>type / for commands</value>
+  </data>
+  <data name="ListenTooSmall" xml:space="preserve">
+    <value>Window too small: make it larger</value>
+  </data>
+  <data name="ListenHintRun" xml:space="preserve">
+    <value>run</value>
+  </data>
+  <data name="ListenHintLog" xml:space="preserve">
+    <value>log</value>
+  </data>
+  <data name="ListenHintQuit" xml:space="preserve">
+    <value>quit</value>
+  </data>
+  <data name="ListenSetupDone" xml:space="preserve">
+    <value>Settings saved. Echo works with them now.</value>
+  </data>
+  <data name="ListenFailedHint" xml:space="preserve">
+    <value>Echo could not start: the reason is above. /setup to change the settings, /quit to leave.</value>
+  </data>
+  <data name="CommandSetup" xml:space="preserve">
+    <value>go through the setup again</value>
+  </data>
+  <data name="CommandPause" xml:space="preserve">
+    <value>stop listening to the key</value>
+  </data>
+  <data name="CommandResume" xml:space="preserve">
+    <value>listen to the key again</value>
+  </data>
+  <data name="CommandLog" xml:space="preserve">
+    <value>change the log detail</value>
+  </data>
+  <data name="CommandLogArgument" xml:space="preserve">
+    <value>&lt;level&gt;</value>
+  </data>
+  <data name="CommandHelp" xml:space="preserve">
+    <value>list of commands</value>
+  </data>
+  <data name="CommandQuit" xml:space="preserve">
+    <value>quit Echo</value>
+  </data>
+  <data name="ResponseNotACommand" xml:space="preserve">
+    <value>Commands start with /. /help lists them.</value>
+  </data>
+  <data name="ResponseUnknownCommand" xml:space="preserve">
+    <value>No such command: {0}. /help lists them.</value>
+  </data>
+  <data name="ResponsePaused" xml:space="preserve">
+    <value>Echo no longer listens to the key. /resume to continue.</value>
+  </data>
+  <data name="ResponseResumed" xml:space="preserve">
+    <value>Echo listens to the key again.</value>
+  </data>
+  <data name="ResponseHelpTitle" xml:space="preserve">
+    <value>Commands:</value>
+  </data>
+  <data name="ResponseLogLevelNow" xml:space="preserve">
+    <value>Log detail now: {0}. Levels: {1}.</value>
+  </data>
+  <data name="ResponseUnknownLevel" xml:space="preserve">
+    <value>No such level: {0}. Levels: {1}.</value>
+  </data>
+  <data name="ResponseLogLevel" xml:space="preserve">
+    <value>Log detail: {0}.</value>
+  </data>
+  <data name="ResponseLogLevelNotSaved" xml:space="preserve">
+    <value>Log detail: {0}, but it could not be saved, so it lasts only until Echo is restarted: {1}</value>
+  </data>
+  <data name="ListenHintPick" xml:space="preserve">
+    <value>choose</value>
+  </data>
+  <data name="ListenHintClose" xml:space="preserve">
+    <value>close</value>
+  </data>
+  <data name="CommandInfo" xml:space="preserve">
+    <value>summary of the main settings</value>
+  </data>
+  <data name="ResponseInfoTitle" xml:space="preserve">
+    <value>Settings:</value>
+  </data>
+  <data name="InfoSettingsFile" xml:space="preserve">
+    <value>Settings file</value>
+  </data>
+  <data name="InfoLogsFolder" xml:space="preserve">
+    <value>Log files</value>
+  </data>
+  <data name="LevelVerbose" xml:space="preserve">
+    <value>everything, down to the smallest detail</value>
+  </data>
+  <data name="LevelDebug" xml:space="preserve">
+    <value>loading, devices, recognized text</value>
+  </data>
+  <data name="LevelInformation" xml:space="preserve">
+    <value>start and end of each recording</value>
+  </data>
+  <data name="LevelWarning" xml:space="preserve">
+    <value>warnings and errors only</value>
+  </data>
+  <data name="LevelError" xml:space="preserve">
+    <value>errors only</value>
+  </data>
+  <data name="LevelFatal" xml:space="preserve">
+    <value>only failures that stop Echo</value>
+  </data>
+  <data name="LevelCurrent" xml:space="preserve">
+    <value>current</value>
+  </data>
+  <data name="ProcessorUnsupported" xml:space="preserve">
+    <value>This processor lacks instructions speech recognition needs: {0}.</value>
+  </data>
+  <data name="ProcessorUnsupportedHint" xml:space="preserve">
+    <value>Echo cannot work on this computer: recognition needs a processor from about 2013 or newer (Intel Core 4th generation, AMD from 2015, every Ryzen).</value>
+  </data>
+  <data name="SubSystemCheck" xml:space="preserve">
+    <value>What this system needs</value>
+  </data>
+  <data name="SystemCheckQuestion" xml:space="preserve">
+    <value>Echo checked what it needs on this computer</value>
+  </data>
+  <data name="SystemCheckNote" xml:space="preserve">
+    <value>Install what is missing and press R to check again, or go on without it.</value>
+  </data>
+  <data name="SystemChecking" xml:space="preserve">
+    <value>Checking the system</value>
+  </data>
+  <data name="RequireDesktop" xml:space="preserve">
+    <value>Desktop session (X11 or Wayland)</value>
+  </data>
+  <data name="RequireDesktopWithout" xml:space="preserve">
+    <value>Without it there is no push-to-talk key and no pasting. Run Echo in a terminal of the desktop.</value>
+  </data>
+  <data name="RequireSound" xml:space="preserve">
+    <value>Sound server (PulseAudio or PipeWire)</value>
+  </data>
+  <data name="RequireSoundWithout" xml:space="preserve">
+    <value>Without its library Echo cannot hear the microphone.</value>
+  </data>
+  <data name="RequireMicrophone" xml:space="preserve">
+    <value>Microphone</value>
+  </data>
+  <data name="RequireMicrophoneWithout" xml:space="preserve">
+    <value>The sound server lists no microphone.</value>
+  </data>
+  <data name="RequireMicrophoneFix" xml:space="preserve">
+    <value>Plug one in, or check the sound settings of the desktop.</value>
+  </data>
+  <data name="RequireClipboard" xml:space="preserve">
+    <value>Clipboard program ({0})</value>
+  </data>
+  <data name="RequireClipboardWithout" xml:space="preserve">
+    <value>Without it the text cannot be put into the clipboard, nor pasted.</value>
+  </data>
+  <data name="RequireShortcuts" xml:space="preserve">
+    <value>Keys for programs (desktop permission "global shortcuts")</value>
+  </data>
+  <data name="RequireShortcutsWithout" xml:space="preserve">
+    <value>Without it this desktop gives Echo no push-to-talk key. GNOME 48 or newer and KDE Plasma have it.</value>
+  </data>
+  <data name="RequirePaste" xml:space="preserve">
+    <value>Pressing keys for programs (desktop permission "remote control")</value>
+  </data>
+  <data name="RequirePasteWithout" xml:space="preserve">
+    <value>Without it the text is copied, and you paste it yourself.</value>
+  </data>
+  <data name="RequireFileChooser" xml:space="preserve">
+    <value>File chooser</value>
+  </data>
+  <data name="RequireFileChooserWithout" xml:space="preserve">
+    <value>Without it you copy your own model and library files into Echo's folder by hand.</value>
+  </data>
+  <data name="RequireUnpacker" xml:space="preserve">
+    <value>xz, to unpack the NVIDIA libraries</value>
+  </data>
+  <data name="RequireUnpackerWithout" xml:space="preserve">
+    <value>Without it Echo cannot download the CUDA libraries; the processor works without them.</value>
+  </data>
+  <data name="RequireInstall" xml:space="preserve">
+    <value>Install: {0}</value>
+  </data>
+  <data name="RequireInstallPackage" xml:space="preserve">
+    <value>Install the package {0} with the package manager of your system.</value>
+  </data>
+  <data name="CudaToolsMissing" xml:space="preserve">
+    <value>To unpack the libraries Echo needs these programs: {0}. Install them and try again.</value>
+  </data>
+  <data name="SubPastePermission" xml:space="preserve">
+    <value>Pasting</value>
+  </data>
+  <data name="HotkeyDesktopQuestion" xml:space="preserve">
+    <value>On this desktop the push-to-talk key is given by the desktop itself</value>
+  </data>
+  <data name="HotkeyDesktopNote" xml:space="preserve">
+    <value>Press Enter: the desktop will show its window. Confirm the key Echo suggests ({0}) or pick another one there.</value>
+  </data>
+  <data name="HintOpenDesktopWindow" xml:space="preserve">
+    <value>open the desktop's window</value>
+  </data>
+  <data name="HintKeep" xml:space="preserve">
+    <value>keep it</value>
+  </data>
+  <data name="HotkeyDesktopWaiting" xml:space="preserve">
+    <value>Waiting for the desktop's window</value>
+  </data>
+  <data name="HotkeyDesktopRefused" xml:space="preserve">
+    <value>The desktop gave no key</value>
+  </data>
+  <data name="HotkeyDesktopRefusedNote" xml:space="preserve">
+    <value>The window was closed, or this desktop cannot give programs keys (GNOME 48 or newer and KDE Plasma can).</value>
+  </data>
+  <data name="PastePermissionQuestion" xml:space="preserve">
+    <value>Let Echo paste the text for you</value>
+  </data>
+  <data name="PastePermissionNote" xml:space="preserve">
+    <value>To paste, Echo presses Shift+Insert, and this desktop lets programs press keys only with your permission. Press Enter: the desktop will ask, and Echo asks it to remember the answer. Without it the text is copied, and you paste it yourself.</value>
+  </data>
+  <data name="PastePermissionGranted" xml:space="preserve">
+    <value>Echo may paste the text for you</value>
+  </data>
+  <data name="PastePermissionRefused" xml:space="preserve">
+    <value>No permission to press keys</value>
+  </data>
+  <data name="PastePermissionRefusedNote" xml:space="preserve">
+    <value>The text will be copied, and you paste it yourself. You can ask again with 'echooo setup'.</value>
+  </data>
+  <data name="MicrophoneNoneHelpLinux" xml:space="preserve">
+    <value>Plug one in, or check the sound settings of the desktop.</value>
+  </data>
+  <data name="RequireRecognition" xml:space="preserve">
+    <value>Library for speech recognition (libgomp)</value>
+  </data>
+  <data name="RequireRecognitionWithout" xml:space="preserve">
+    <value>Without it speech recognition does not start.</value>
+  </data>
+  <data name="AccelerationVulkanTrial" xml:space="preserve">
+    <value>Vulkan (trial)</value>
+  </data>
+  <data name="AccelerationVulkanTrialHint" xml:space="preserve">
+    <value>For AMD and Intel graphics cards. Not yet tried on Linux: if recognition fails or is slow, pick the processor.</value>
+  </data>
+  <data name="VulkanNoDriver" xml:space="preserve">
+    <value>Vulkan is not offered: no graphics driver with Vulkan was found.</value>
+  </data>
+  <data name="VulkanSoftwareOnly" xml:space="preserve">
+    <value>Vulkan is not offered: it sees no graphics card, only a software stand-in that runs on the processor and would be slower than the processor itself.</value>
+  </data>
+  <data name="HintInstall" xml:space="preserve">
+    <value>install</value>
+  </data>
+  <data name="SystemCheckInstallNote" xml:space="preserve">
+    <value>Enter installs what is missing: the system asks for your password, and Echo looks again afterwards. R looks again, S goes on without it.</value>
+  </data>
+  <data name="SystemInstalling" xml:space="preserve">
+    <value>Installing what Echo needs: {0}</value>
+  </data>
+  <data name="AdditionalSilenceThreshold" xml:space="preserve">
+    <value>Silence level</value>
+  </data>
+  <data name="AdditionalSilenceThresholdHint" xml:space="preserve">
+    <value>How loud the sound must be for Echo to start recording a phrase, from 0 to 1; anything quieter counts as silence. The sound step measures it for your room and voice. Too low lets noise into the recording; too high cuts off the quiet beginning of a phrase.</value>
+  </data>
+  <data name="TagNotRecommended" xml:space="preserve">
+    <value>Not recommended</value>
+  </data>
+  <data name="DesktopShortcutDescription" xml:space="preserve">
+    <value>Echo: hold to speak</value>
+  </data>
+  <data name="CopyFound" xml:space="preserve">
+    <value>Found on your disk: {0}</value>
+  </data>
+  <data name="CopyIntoEcho" xml:space="preserve">
+    <value>Copying into Echo's folder</value>
+  </data>
+  <data name="CopyDetails" xml:space="preserve">
+    <value>{0} of {1}</value>
+  </data>
+  <data name="CopyDone" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="CommandCopy" xml:space="preserve">
+    <value>copy the last recognized text</value>
+  </data>
+  <data name="ResponseCopied" xml:space="preserve">
+    <value>The last recognized text is in the clipboard.</value>
+  </data>
+  <data name="ResponseNothingToCopy" xml:space="preserve">
+    <value>Nothing to copy yet: no phrase has been recognized.</value>
+  </data>
+  <data name="ResponseCopyFailed" xml:space="preserve">
+    <value>The text could not be copied: {0}</value>
+  </data>
+  <data name="CalibrationMeasuring" xml:space="preserve">
+    <value>Measuring the silence level</value>
+  </data>
+  <data name="CalibrationMeasure" xml:space="preserve">
+    <value>Measure</value>
+  </data>
+  <data name="CalibrationManual" xml:space="preserve">
+    <value>Set it by hand</value>
+  </data>
+  <data name="CalibrationManualHint" xml:space="preserve">
+    <value>Type the level as a number from 0 to 1: the larger it is, the louder a sound must be for Echo to start recording.</value>
+  </data>
+  <data name="MicrophoneUnavailable" xml:space="preserve">
+    <value>unavailable</value>
+  </data>
+  <data name="MicrophoneNotConnected" xml:space="preserve">
+    <value>The microphone “{0}” is not connected. Connect it, or choose another one with /setup.</value>
+  </data>
+  <data name="MicrophoneNotOpening" xml:space="preserve">
+    <value>The microphone “{0}” does not open. Plug it in again, or choose another one with /setup.</value>
+  </data>
+  <data name="MicrophoneBack" xml:space="preserve">
+    <value>The microphone “{0}” is back: you can dictate.</value>
+  </data>
+  <data name="CommandUpdate" xml:space="preserve">
+    <value>Download the new version of Echo</value>
+  </data>
+  <data name="CommandRestart" xml:space="preserve">
+    <value>Restart Echo, in the new version if it is downloaded</value>
+  </data>
+  <data name="ListenHintUpdate" xml:space="preserve">
+    <value>download</value>
+  </data>
+  <data name="ResponseUpdateStarted" xml:space="preserve">
+    <value>Downloading Echo {0}: the top line shows how far it has got</value>
+  </data>
+  <data name="ResponseUpdateChecking" xml:space="preserve">
+    <value>Checking for a new version…</value>
+  </data>
+  <data name="ResponseUpdateDownloading" xml:space="preserve">
+    <value>Already downloading: {0}%</value>
+  </data>
+  <data name="ResponseUpdateReady" xml:space="preserve">
+    <value>{0} is already downloaded: /restart switches to it</value>
+  </data>
+  <data name="ResponseUpdateLatest" xml:space="preserve">
+    <value>You have the latest version: {0}</value>
+  </data>
+  <data name="ResponseUpdateNotInstalled" xml:space="preserve">
+    <value>This Echo was not installed by the install script, so it cannot update itself. The new version is installed with: {0}</value>
+  </data>
+  <data name="UpdateDownloaded" xml:space="preserve">
+    <value>Echo {0} is downloaded. /restart switches to it now; otherwise it starts next time</value>
+  </data>
+  <data name="UpdateDownloadFailed" xml:space="preserve">
+    <value>Could not download Echo {0}: {1}. /update tries again</value>
+  </data>
+  <data name="UpdateCheckFailed" xml:space="preserve">
+    <value>Could not find out whether a new version is out: {0}</value>
+  </data>
+  <data name="UpdateApplied" xml:space="preserve">
+    <value>Echo updated: {0} → {1}</value>
+  </data>
+  <data name="SummaryVersion" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="InfoVersionLatest" xml:space="preserve">
+    <value>{0}, the latest</value>
+  </data>
+  <data name="InfoVersionAvailable" xml:space="preserve">
+    <value>{0}, {1} is out</value>
+  </data>
+  <data name="InfoVersionDownloading" xml:space="preserve">
+    <value>{0}, downloading {1}: {2}%</value>
+  </data>
+  <data name="InfoVersionDownloaded" xml:space="preserve">
+    <value>{0}, {1} is downloaded</value>
+  </data>
+  <data name="AdditionalAutoUpdate" xml:space="preserve">
+    <value>Download updates automatically</value>
+  </data>
+  <data name="AdditionalAutoUpdateHint" xml:space="preserve">
+    <value>Echo checks for a new version at every start and once a day. When on, a new version downloads by itself; when off, it waits for the /update command. A downloaded version starts with /restart or at the next start.</value>
+  </data>
+  <data name="RestartFailed" xml:space="preserve">
+    <value>Could not start Echo again: {0}. Start it yourself with: echooo</value>
+  </data>
+  <data name="AccelerationRestartCaution" xml:space="preserve">
+    <value>Takes effect only after Echo restarts: /restart. Until then the current acceleration stays in use.</value>
+  </data>
+  <data name="ReviewChangeQuestion" xml:space="preserve">
+    <value>Choose what to change</value>
+  </data>
+  <data name="ReviewChangeSave" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="HintLeaveUnsaved" xml:space="preserve">
+    <value>leave without saving</value>
+  </data>
+  <data name="SetupUnchanged" xml:space="preserve">
+    <value>Settings left unchanged.</value>
+  </data>
+  <data name="AdditionalMemory" xml:space="preserve">
+    <value>Dictation history</value>
+  </data>
+  <data name="AdditionalMemoryHint" xml:space="preserve">
+    <value>Echo keeps the recognized phrases on this computer, in the folder /info shows. They are never sent anywhere. Turn it off if you do not want what you dictate to stay on the disk.</value>
+  </data>
+</root>

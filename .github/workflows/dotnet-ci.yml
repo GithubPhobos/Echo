@@ -6,9 +6,21 @@ on:
   pull_request:
     branches: [ "master" ]
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - os: windows-latest
+          runtime: win-x64
+        - os: ubuntu-latest
+          runtime: linux-x64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
 
     steps:
     - name: Checkout repository
@@ -19,11 +31,40 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
+    - name: Install the message bus for the Linux tests
+      if: runner.os == 'Linux'
+      run: |
+        if [ ! -x /usr/bin/dbus-daemon ]; then
+          sudo apt-get update
+          sudo apt-get install -y dbus
+        fi
+
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore Echo.sln
 
     - name: Build project
-      run: dotnet build --no-restore --configuration Release
+      run: dotnet build Echo.sln --no-restore --configuration Release
 
-    - name: Run Unit Tests
-      run: dotnet test --no-build --configuration Release --verbosity normal
+    - name: Run tests
+      run: dotnet test Echo.sln --no-build --configuration Release --logger "trx;LogFileName=tests.trx" --results-directory TestResults
+
+    - name: Keep test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: tests-${{ matrix.runtime }}
+        path: TestResults/*.trx
+        if-no-files-found: warn
+        retention-days: 7
+
+    - name: Verify the self-contained release build
+      run: dotnet publish Echo/Echo.csproj --configuration Release --runtime ${{ matrix.runtime }} --self-contained --output out
+
+    - name: Verify the published executable
+      shell: bash
+      run: |
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          out/echooo.exe --version
+        else
+          out/echooo --version
+        fi

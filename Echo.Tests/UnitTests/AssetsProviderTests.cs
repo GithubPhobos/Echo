@@ -2,16 +2,7 @@
 
 public sealed class AssetsProviderTests
 {
-    private readonly AssetsProvider _provider;
-
-    public AssetsProviderTests()
-    {
-        var loggerMock = new Mock<ILogger<AssetsProvider>>();
-
-        _provider = new AssetsProvider(loggerMock.Object);
-
-        _provider.InitializeAssetsDirectory();
-    }
+    private readonly AssetsProvider _provider = new();
 
     [Fact]
     public void GetFilePath_ValidFileName_ReturnsCorrectPath()
