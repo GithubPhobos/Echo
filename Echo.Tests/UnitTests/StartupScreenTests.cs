@@ -160,12 +160,22 @@ public sealed class StartupScreenTests
 
     private static IAnsiConsole CreateConsole(TextWriter output,
                                               InteractionSupport interactive,
-                                              AnsiSupport ansi = AnsiSupport.No) =>
-        AnsiConsole.Create(new AnsiConsoleSettings
+                                              AnsiSupport ansi = AnsiSupport.No)
+    {
+        IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
         {
             Ansi = ansi,
             ColorSystem = ansi == AnsiSupport.Yes ? ColorSystemSupport.TrueColor : ColorSystemSupport.NoColors,
             Interactive = interactive,
             Out = new AnsiConsoleOutput(output)
         });
+
+        // These tests choose the terminal capabilities, independently of the build server environment.
+        console.Profile.Capabilities.Interactive = interactive == InteractionSupport.Yes;
+        console.Profile.Capabilities.Ansi = ansi == AnsiSupport.Yes;
+        console.Profile.Capabilities.Unicode = true;
+        console.Profile.Width = 120;
+        console.Profile.Height = 40;
+        return console;
+    }
 }

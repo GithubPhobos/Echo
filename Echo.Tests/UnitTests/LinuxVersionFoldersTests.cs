@@ -72,21 +72,31 @@ public sealed class LinuxVersionFoldersTests : IDisposable
     }
 
     [LinuxFact]
-    public void TryRemove_FolderAProgramRunsFrom_StaysWhole()
+    public async Task TryRemove_FolderAProgramRunsFrom_StaysWhole()
     {
-        // Arrange: a copy of a program of the system, waiting, in the place of Echo
+        // Arrange: a copied shell reports that it has started, then waits for input in the place of Echo.
         string version = Path.Combine(_root, "versions", "2.0.1");
         Directory.CreateDirectory(version);
         File.WriteAllText(Path.Combine(version, "appsettings.json"), "{}");
 
         string program = Path.Combine(version, "echooo");
-        File.Copy("/bin/sleep", program);
+        File.Copy("/bin/sh", program);
         File.SetUnixFileMode(program, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
 
-        using Process running = Process.Start(program, "30");
+        var start = new ProcessStartInfo(program)
+        {
+            UseShellExecute = false,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true
+        };
+        start.ArgumentList.Add("-c");
+        start.ArgumentList.Add("printf 'ready\\n'; read -r line");
+        using Process running = Process.Start(start)!;
 
         try
         {
+            Assert.Equal("ready", await running.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(10)));
+
             // Act
             bool isGone = _folders.TryRemove(version);
 
