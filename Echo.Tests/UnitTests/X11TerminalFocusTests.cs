@@ -7,6 +7,17 @@ namespace Echo.Tests.UnitTests;
 [SupportedOSPlatform("linux")]
 public sealed class X11TerminalFocusTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void IsFocused_PaneReport_DoesNotConsultTheOuterWindow(bool focused)
+    {
+        var reports = new TerminalFocusReports();
+        reports.Report(focused);
+        var focus = new X11TerminalFocus(_ => throw new Exception("Must not inspect the outer window"), reports);
+        Assert.Equal(focused, focus.IsFocused());
+    }
+
     /// <summary>
     ///     A window tree: the terminal names its inner window 30, inside window 20, inside the frame 10 the desktop
     ///     made for it.
@@ -28,7 +39,7 @@ public sealed class X11TerminalFocusTests
     public void IsFocused_TerminalThatNamesNoWindowAndReportsNothing_CannotTell()
     {
         // Arrange: a terminal that sets no WINDOWID and sends no reports about its window
-        var focus = new X11TerminalFocus(_ => null, new TerminalFocusReports(TimeProvider.System));
+        var focus = new X11TerminalFocus(_ => null, new TerminalFocusReports());
 
         // Act & Assert
         Assert.Null(focus.IsFocused());
@@ -38,9 +49,9 @@ public sealed class X11TerminalFocusTests
     public void IsFocused_TerminalThatNamesNoWindowButReportsIt_TakesTheReport()
     {
         // Arrange: GNOME Terminal sets no WINDOWID, but answers the request for reports with "active"
-        var reports = new TerminalFocusReports(TimeProvider.System);
+        var reports = new TerminalFocusReports();
         reports.Started();
-        reports.Handle(new ConsoleKeyInfo('\0', ConsoleKey.PageUp, shift: false, alt: false, control: false));
+        reports.Report(true);
 
         var focus = new X11TerminalFocus(_ => null, reports);
 

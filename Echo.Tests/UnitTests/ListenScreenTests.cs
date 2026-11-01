@@ -11,6 +11,91 @@ namespace Echo.Tests.UnitTests;
 [Collection(CultureCollection.Name)]
 public sealed class ListenScreenTests : IDisposable
 {
+    [Theory]
+    [InlineData("\u001b[1;")]
+    [InlineData("\u001b[?1004;1$")]
+    public async Task RunAsync_AbandonedControlParameters_StillExecutesTheNextQuitCommand(string prefix)
+    {
+        ListenCommands commands = Commands(out ListenActivity activity, out _);
+        var console = new TestConsole().Width(100).Height(30).Interactive();
+        var reports = new TerminalFocusReports();
+        long ticks = 0;
+        var clock = new Mock<TimeProvider>();
+        clock.SetupGet(c => c.TimestampFrequency).Returns(TimeSpan.TicksPerSecond);
+        clock.Setup(c => c.GetTimestamp()).Returns(() => ticks);
+        var parser = new TerminalInputParser(reports, clock.Object);
+        parser.Feed(System.Text.Encoding.UTF8.GetBytes(prefix));
+        Assert.Null(parser.ReadKey());
+        ticks = TimeSpan.FromSeconds(5).Ticks;
+        parser.Feed("/quit\r"u8);
+        var input = new Mock<ITerminalInput>();
+        input.Setup(i => i.ReadKey()).Returns(() => parser.ReadKey());
+        var screen = new ListenScreen(console, Theme.Full, activity, commands, new ListenInfo("tiny", "`"), TimeSpan.FromMilliseconds(1), reports,
+            openInput: () => input.Object);
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+
+        Assert.Equal(ListenOutcome.Quit, await screen.RunAsync(cancellation.Token));
+        Assert.Contains(activity.Log.Snapshot(), entry => entry.Kind == EntryKind.Command && entry.Text == "/quit");
+        input.Verify(i => i.Dispose(), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("/setup", (int)ListenOutcome.Setup)]
+    [InlineData("/quit", (int)ListenOutcome.Quit)]
+    public async Task RunAsync_LeavesThroughACommand_ClosesInputAndForgetsFocus(string command, int expected)
+    {
+        ListenCommands commands = Commands(out ListenActivity activity, out _);
+        var console = new TestConsole { EmitAnsiSequences = true }.Width(100).Height(30).Interactive();
+        var reports = new TerminalFocusReports();
+        var input = new Mock<ITerminalInput>();
+        var keys = new Queue<ConsoleKeyInfo>(command.Select(c => new ConsoleKeyInfo(c, ConsoleKey.NoName, false, false, false)));
+        keys.Enqueue(new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false));
+        input.Setup(i => i.ReadKey()).Returns(() => keys.TryDequeue(out var key) ? key : null);
+        reports.Report(true);
+        var screen = new ListenScreen(console, Theme.Full, activity, commands, new ListenInfo("tiny", "`"), TimeSpan.FromMilliseconds(1), reports,
+            openInput: () => { Assert.Null(reports.IsFocused); reports.Report(false); return input.Object; });
+
+        Assert.Equal((ListenOutcome)expected, await screen.RunAsync(CancellationToken.None));
+        input.Verify(i => i.Dispose(), Times.Once);
+        Assert.Null(reports.IsFocused);
+        Assert.Contains(TerminalFocusReports.Enable, console.Output);
+        Assert.Contains(TerminalFocusReports.Disable, console.Output);
+    }
+
+    [Fact]
+    public async Task RunAsync_InputFails_StillClosesInputAndForgetsFocus()
+    {
+        ListenCommands commands = Commands(out ListenActivity activity, out _);
+        var console = new TestConsole { EmitAnsiSequences = true }.Width(100).Height(30).Interactive();
+        var reports = new TerminalFocusReports();
+        var input = new Mock<ITerminalInput>();
+        input.Setup(i => i.ReadKey()).Throws(new IOException("input failed"));
+        var screen = new ListenScreen(console, Theme.Full, activity, commands, new ListenInfo("tiny", "`"), TimeSpan.FromMilliseconds(1), reports,
+            openInput: () => { reports.Report(true); return input.Object; });
+
+        await Assert.ThrowsAsync<IOException>(() => screen.RunAsync(CancellationToken.None));
+        input.Verify(i => i.Dispose(), Times.Once);
+        Assert.Null(reports.IsFocused);
+        Assert.Contains(TerminalFocusReports.Disable, console.Output);
+    }
+
+    [Fact]
+    public async Task RunAsync_Cancelled_ClosesInputAndForgetsFocus()
+    {
+        ListenCommands commands = Commands(out ListenActivity activity, out _);
+        var console = new TestConsole { EmitAnsiSequences = true }.Width(100).Height(30).Interactive();
+        var reports = new TerminalFocusReports();
+        var input = new Mock<ITerminalInput>();
+        using var cancellation = new CancellationTokenSource();
+        input.Setup(i => i.ReadKey()).Returns(() => { cancellation.Cancel(); return null; });
+        var screen = new ListenScreen(console, Theme.Full, activity, commands, new ListenInfo("tiny", "`"), TimeSpan.FromMilliseconds(1), reports,
+            openInput: () => { reports.Report(false); return input.Object; });
+
+        await screen.RunAsync(cancellation.Token);
+        input.Verify(i => i.Dispose(), Times.Once);
+        Assert.Null(reports.IsFocused);
+    }
+
     private readonly CultureInfo _originalCulture = CultureInfo.CurrentUICulture;
 
     public ListenScreenTests()

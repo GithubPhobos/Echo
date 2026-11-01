@@ -28,7 +28,7 @@ internal sealed class X11TerminalFocus(Func<string, string?> variable, TerminalF
 
     /// <inheritdoc/>
     public bool? IsFocused() =>
-        FromDesktop() ?? _reports.IsFocused;
+        _reports.IsFocused ?? FromDesktop();
 
     /// <summary>
     ///     What the desktop says, or null when the terminal does not name its window.

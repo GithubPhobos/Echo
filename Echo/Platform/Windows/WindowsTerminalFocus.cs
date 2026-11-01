@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Echo.Listening;
 
 namespace Echo.Platform.Windows;
 
@@ -7,7 +8,7 @@ namespace Echo.Platform.Windows;
 ///     Tells from the console window of the process whether its terminal is in front.
 /// </summary>
 [SupportedOSPlatform("windows")]
-internal sealed class WindowsTerminalFocus : ITerminalFocus
+internal sealed class WindowsTerminalFocus(TerminalFocusReports? reports = null) : ITerminalFocus
 {
     /// <summary>
     ///     The window class of the stand-in console window a terminal application gives its programs.
@@ -20,6 +21,8 @@ internal sealed class WindowsTerminalFocus : ITerminalFocus
     /// <inheritdoc/>
     public bool? IsFocused()
     {
+        if (reports?.IsFocused is bool focused)
+            return focused;
         IntPtr console = GetConsoleWindow();
 
         if (console == IntPtr.Zero)

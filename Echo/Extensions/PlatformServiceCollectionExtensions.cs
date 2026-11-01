@@ -71,6 +71,7 @@ internal static class PlatformServiceCollectionExtensions
         services.TryAddSingleton<ITextClipboard, WindowsClipboard>();
         services.TryAddSingleton<IInputSimulator, InputSimulator>();
         services.TryAddSingleton<IPasteKeys, CtrlVPasteKeys>();
+        services.TryAddSingleton<TerminalFocusReports>();
         services.TryAddSingleton<ITerminalFocus, WindowsTerminalFocus>();
         services.TryAddSingleton<IFileChooser, WindowsFileChooser>();
         services.TryAddSingleton<IErrorWindow, WindowsErrorWindow>();
@@ -99,7 +100,7 @@ internal static class PlatformServiceCollectionExtensions
         bool hasX11 = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"));
 
         var programs = new LinuxPrograms(Environment.GetEnvironmentVariable);
-        var focusReports = new TerminalFocusReports(TimeProvider.System);
+        var focusReports = new TerminalFocusReports();
         DesktopPortal portal = SharedPortal(paths);
 
         // Given as ready objects, so the services do not close the portal along with themselves

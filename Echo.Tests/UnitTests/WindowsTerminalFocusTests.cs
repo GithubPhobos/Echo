@@ -1,11 +1,22 @@
 ﻿using System.Runtime.Versioning;
 using Echo.Platform.Windows;
+using Echo.Listening;
 
 namespace Echo.Tests.UnitTests;
 
 [SupportedOSPlatform("windows")]
 public sealed class WindowsTerminalFocusTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void IsFocused_SessionReport_TakesPrecedenceOverTheOuterWindow(bool focused)
+    {
+        var reports = new TerminalFocusReports();
+        reports.Report(focused);
+        Assert.Equal(focused, new WindowsTerminalFocus(reports).IsFocused());
+    }
+
     [Theory]
     // Windows Terminal: the stand-in console window is owned by the terminal window
     [InlineData(10, 20, 20, true, WindowsTerminalFocus.PseudoConsoleClass, true)]

@@ -8,6 +8,31 @@ namespace Echo.Tests.UnitTests;
 
 public sealed class EchoOrchestratorTests
 {
+    [Fact]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    public async Task ProcessRecordingPayloadAsync_TerminalFocusChanges_ProtectsOnlyEchoAndKeepsEveryPhrase()
+    {
+        var reports = new TerminalFocusReports();
+        var records = new Queue<Echo.Platform.Windows.ConsoleInputRecord>();
+        using var input = new Echo.Platform.Windows.WindowsTerminalInput(reports, () => records.TryDequeue(out var record) ? record : null);
+        var focus = new Echo.Platform.Windows.WindowsTerminalFocus(reports);
+        var activity = new ListenActivity(new ScreenLog(), () => focus.IsFocused() == true);
+        var memory = new Mock<IDictationMemory>();
+        _whisperMock.Setup(w => w.ProcessAudioAsync(It.IsAny<MemoryStream?>())).ReturnsAsync("hello");
+        using EchoOrchestrator orchestrator = CreateOrchestrator(activity, memory: memory.Object);
+
+        foreach (bool focused in new[] { true, false, true, false })
+        {
+            records.Enqueue(new Echo.Platform.Windows.ConsoleInputRecord { Type = 0x10, IsDownOrFocused = focused ? 1 : 0 });
+            Assert.Null(input.ReadKey());
+            await orchestrator.ProcessRecordingPayloadAsync(null);
+        }
+
+        _textMock.Verify(t => t.InsertTextAsync("hello"), Times.Exactly(2));
+        memory.Verify(m => m.Add("hello", TimeSpan.Zero, TimeSpan.Zero, It.IsAny<TimeSpan>()), Times.Exactly(4));
+        Assert.Equal(4, activity.Log.Snapshot().Count(e => e.Kind == EntryKind.Dictated));
+    }
+
     /// <summary>
     ///     How long a test waits for what it holds up. A fix that breaks the order fails the test instead of hanging it.
     /// </summary>

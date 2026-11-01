@@ -239,7 +239,8 @@ internal sealed class ListenCommand(
             DescribeSettings(configuration),
             ScreenTick,
             _focusReports,
-            _updater is null ? null : () => _updater.Status);
+            _updater is null ? null : () => _updater.Status,
+            _focusReports is null ? null : () => TerminalInput.Open(_console.Input, _focusReports));
 
         Task starting = Task.Run(() => StartAsync(host, activity, cancellationToken), cancellationToken);
 

@@ -15,10 +15,10 @@ namespace Echo.Listening;
 /// <param name="info">What the state line says about the settings.</param>
 /// <param name="tick">How often the screen is refreshed.</param>
 /// <param name="focusReports">
-///     Where the terminal is asked to say when its window becomes active and stops being active; null where
-///     the system itself tells (Windows).
+///     Where native or ANSI input reports the focus of this terminal session; null for a key-only screen.
 /// </param>
 /// <param name="update">What there is about the version at the moment; the version is left out when not given.</param>
+/// <param name="openInput">Opens the sole key and focus reader after the screen has taken console input.</param>
 internal sealed class ListenScreen(IAnsiConsole console,
                                   Theme theme,
                                   IListenActivity activity,
@@ -26,7 +26,8 @@ internal sealed class ListenScreen(IAnsiConsole console,
                                   ListenInfo info,
                                   TimeSpan tick,
                                   TerminalFocusReports? focusReports = null,
-                                  Func<UpdateStatus>? update = null)
+                                  Func<UpdateStatus>? update = null,
+                                  Func<ITerminalInput>? openInput = null)
 {
     private const string EnterAlternateScreen = "\u001b[?1049h";
     private const string LeaveAlternateScreen = "\u001b[?1049l";
@@ -49,6 +50,7 @@ internal sealed class ListenScreen(IAnsiConsole console,
     private readonly TimeSpan _tick = tick;
     private readonly TerminalFocusReports? _focusReports = focusReports;
     private readonly Func<UpdateStatus>? _update = update;
+    private readonly Func<ITerminalInput>? _openInput = openInput;
     private readonly ListenFrame _frame = new(theme);
     private readonly CommandLine _line = new(commands.All);
     private readonly Stopwatch _clock = Stopwatch.StartNew();
@@ -110,29 +112,22 @@ internal sealed class ListenScreen(IAnsiConsole console,
     {
         bool? treatedControlC = SetControlCAsInput(true);
 
-        Write(EnterAlternateScreen + WheelAsArrows + HideCursor);
-
-        if (_focusReports is not null)
-            Write(TerminalFocusReports.Enable);
-
+        ITerminalInput? input = null;
         try
         {
-            // The terminal answers while the first frame is drawn; the time for its answer starts only after it,
-            // so a frame that is slow to draw does not make the answer look late
-            Draw();
             _focusReports?.Started();
+            input = _openInput?.Invoke() ?? new ConsoleTerminalInput(_console.Input);
+            Write(EnterAlternateScreen + WheelAsArrows + HideCursor);
+            if (_focusReports is not null)
+                Write(TerminalFocusReports.Enable);
+            Draw();
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                while (_console.Input.IsKeyAvailable())
+                while (input.ReadKey() is ConsoleKeyInfo pressed)
                 {
-                    ConsoleKeyInfo? key = await _console.Input.ReadKeyAsync(intercept: true, cancellationToken);
-
-                    // A report of the terminal about its window, not a key of the user
-                    if (key is ConsoleKeyInfo report && _focusReports?.Handle(report) == true)
-                        continue;
-
-                    if (key is ConsoleKeyInfo pressed && Handle(pressed) is var outcome && outcome != ListenOutcome.Continue)
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (Handle(pressed) is var outcome && outcome != ListenOutcome.Continue)
                         return outcome;
 
                     // Every key shows its effect at once, even when several came together
@@ -149,16 +144,23 @@ internal sealed class ListenScreen(IAnsiConsole console,
         }
         finally
         {
-            if (_focusReports is not null)
+            try
             {
-                Write(TerminalFocusReports.Disable);
-                _focusReports.Stopped();
+                input?.Dispose();
             }
-
-            Write(ShowCursor + LeaveAlternateScreen);
-
-            if (treatedControlC is bool previous)
-                SetControlCAsInput(previous);
+            finally
+            {
+                _focusReports?.Stopped();
+                try
+                {
+                    Write((_focusReports is null ? string.Empty : TerminalFocusReports.Disable) + ShowCursor + LeaveAlternateScreen);
+                }
+                finally
+                {
+                    if (treatedControlC is bool previous)
+                        SetControlCAsInput(previous);
+                }
+            }
         }
 
         return ListenOutcome.Quit;
