@@ -28,6 +28,9 @@ internal sealed class RangeServer(byte[] content) : HttpMessageHandler
     /// </summary>
     public TimeSpan Pause { get; set; }
 
+    /// <summary>Advances controlled test time for each response piece.</summary>
+    public Action<TimeSpan>? Advance { get; set; }
+
     /// <summary>
     ///     Whether the server sends half of a part and then nothing, keeping the connection open.
     /// </summary>
@@ -51,7 +54,7 @@ internal sealed class RangeServer(byte[] content) : HttpMessageHandler
 
         var response = new HttpResponseMessage(HttpStatusCode.PartialContent)
         {
-            Content = Stalls || Pause > TimeSpan.Zero ? new StreamContent(new SlowBody(part, Pause, Stalls)) : new ByteArrayContent(part)
+            Content = Stalls || Pause > TimeSpan.Zero ? new StreamContent(new SlowBody(part, Pause, Stalls, Advance)) : new ByteArrayContent(part)
         };
 
         response.Content.Headers.ContentRange = new ContentRangeHeaderValue(from, to, _content.Length);

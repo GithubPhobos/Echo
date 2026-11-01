@@ -104,14 +104,16 @@ public sealed class FileDownloaderTests : IDisposable
         // Arrange: every piece comes well before the server would be given up on, the whole file later than that
         byte[] content = RandomNumberGenerator.GetBytes(1000);
         string target = Path.Combine(_directory, "model.bin");
-        var server = new FakeServer(content) { Pause = TimeSpan.FromMilliseconds(250) };
-        var downloader = new FileDownloader(new HttpClient(server), TimeSpan.FromMilliseconds(700));
+        var clock = new DownloadClock();
+        var server = new FakeServer(content) { Pause = TimeSpan.FromMilliseconds(250), Advance = clock.Advance };
+        var downloader = new FileDownloader(new HttpClient(server), TimeSpan.FromMilliseconds(700), clock);
 
         // Act
         await downloader.DownloadAsync(Request(content), target, new InlineProgress<DownloadProgress>(_ => { }), CancellationToken.None);
 
         // Assert
         Assert.Equal(content, File.ReadAllBytes(target));
+        Assert.True(clock.Elapsed > TimeSpan.FromMilliseconds(700));
     }
 
     [Fact]
@@ -176,6 +178,8 @@ public sealed class FileDownloaderTests : IDisposable
         /// </summary>
         public TimeSpan Pause { get; init; }
 
+        public Action<TimeSpan>? Advance { get; init; }
+
         /// <summary>
         ///     Whether the server sends half of the file and then nothing, keeping the connection open.
         /// </summary>
@@ -193,7 +197,7 @@ public sealed class FileDownloaderTests : IDisposable
 
             return Task.FromResult(new HttpResponseMessage(start > 0 ? HttpStatusCode.PartialContent : HttpStatusCode.OK)
             {
-                Content = Stalls || Pause > TimeSpan.Zero ? new StreamContent(new SlowBody(rest, Pause, Stalls)) : new ByteArrayContent(rest)
+                Content = Stalls || Pause > TimeSpan.Zero ? new StreamContent(new SlowBody(rest, Pause, Stalls, Advance)) : new ByteArrayContent(rest)
             });
         }
     }

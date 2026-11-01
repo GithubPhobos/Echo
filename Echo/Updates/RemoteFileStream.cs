@@ -12,7 +12,8 @@ namespace Echo.Updates;
 /// <param name="address">Where the file is.</param>
 /// <param name="length">The size of the file in bytes.</param>
 /// <param name="stallTimeout">How long the server may send nothing before the file is given up on.</param>
-internal sealed class RemoteFileStream(HttpClient httpClient, Uri address, long length, TimeSpan stallTimeout) : Stream
+/// <param name="time">The timer source; the system clock outside controlled tests.</param>
+internal sealed class RemoteFileStream(HttpClient httpClient, Uri address, long length, TimeSpan stallTimeout, TimeProvider? time = null) : Stream
 {
     /// <summary>
     ///     The smallest part downloaded at once. As much is downloaded of the end of the file at the first read there:
@@ -26,6 +27,7 @@ internal sealed class RemoteFileStream(HttpClient httpClient, Uri address, long 
     private readonly Uri _address = address;
     private readonly long _length = length;
     private readonly TimeSpan _stallTimeout = stallTimeout;
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
 
     /// <summary>
     ///     The part read last, and where it starts in the file.
@@ -150,7 +152,7 @@ internal sealed class RemoteFileStream(HttpClient httpClient, Uri address, long 
 
         // A server that stops sending and keeps the connection open is given up on, as a lost connection is;
         // the time counts anew with every piece that comes
-        using var stalled = new CancellationTokenSource(_stallTimeout);
+        using var stalled = new CancellationTokenSource(_stallTimeout, _time);
 
         try
         {

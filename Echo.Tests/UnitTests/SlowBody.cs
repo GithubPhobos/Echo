@@ -7,7 +7,8 @@
 /// <param name="bytes">The whole body.</param>
 /// <param name="pause">The pause before each piece.</param>
 /// <param name="stalls">Whether only the first half comes.</param>
-internal sealed class SlowBody(byte[] bytes, TimeSpan pause, bool stalls) : Stream
+/// <param name="advance">Advances controlled test time instead of waiting for a thread-pool timer.</param>
+internal sealed class SlowBody(byte[] bytes, TimeSpan pause, bool stalls, Action<TimeSpan>? advance = null) : Stream
 {
     private readonly byte[] _bytes = bytes;
     private readonly TimeSpan _pause = pause;
@@ -42,7 +43,13 @@ internal sealed class SlowBody(byte[] bytes, TimeSpan pause, bool stalls) : Stre
             await Task.Delay(Timeout.Infinite, cancellationToken);
         }
 
-        await Task.Delay(_pause, cancellationToken);
+        if (advance is null)
+            await Task.Delay(_pause, cancellationToken);
+        else
+        {
+            advance(_pause);
+            cancellationToken.ThrowIfCancellationRequested();
+        }
 
         int count = Math.Min(Math.Min(buffer.Length, _bytes.Length / 4 + 1), end - _position);
 

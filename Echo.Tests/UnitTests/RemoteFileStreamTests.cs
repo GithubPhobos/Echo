@@ -133,8 +133,9 @@ public sealed class RemoteFileStreamTests
     {
         // Arrange: every piece comes well before the server would be given up on, the whole part later than that
         byte[] content = Content(1000);
-        var server = new RangeServer(content) { Pause = TimeSpan.FromMilliseconds(250) };
-        using var stream = new RemoteFileStream(new HttpClient(server), _address, content.Length, TimeSpan.FromMilliseconds(700));
+        var clock = new DownloadClock();
+        var server = new RangeServer(content) { Pause = TimeSpan.FromMilliseconds(250), Advance = clock.Advance };
+        using var stream = new RemoteFileStream(new HttpClient(server), _address, content.Length, TimeSpan.FromMilliseconds(700), clock);
         var copy = new MemoryStream();
 
         // Act
@@ -142,6 +143,7 @@ public sealed class RemoteFileStreamTests
 
         // Assert
         Assert.Equal(content, copy.ToArray());
+        Assert.True(clock.Elapsed > TimeSpan.FromMilliseconds(700));
     }
 
     /// <summary>

@@ -7,7 +7,8 @@ namespace Echo.Setup.Downloads;
 /// <inheritdoc cref="IFileDownloader"/>
 /// <param name="httpClient">The client used for all downloads.</param>
 /// <param name="stallTimeout">How long a server may send nothing before the download is given up on.</param>
-internal sealed class FileDownloader(HttpClient httpClient, TimeSpan stallTimeout) : IFileDownloader
+/// <param name="time">The timer source; the system clock outside controlled tests.</param>
+internal sealed class FileDownloader(HttpClient httpClient, TimeSpan stallTimeout, TimeProvider? time = null) : IFileDownloader
 {
     /// <summary>
     ///     How long a server may send nothing before a download is given up on, as when the connection is lost: a
@@ -22,6 +23,7 @@ internal sealed class FileDownloader(HttpClient httpClient, TimeSpan stallTimeou
 
     private readonly HttpClient _httpClient = httpClient;
     private readonly TimeSpan _stallTimeout = stallTimeout;
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
 
     /// <inheritdoc/>
     public async Task DownloadAsync(DownloadRequest request,
@@ -83,8 +85,8 @@ internal sealed class FileDownloader(HttpClient httpClient, TimeSpan stallTimeou
             message.Headers.Range = new RangeHeaderValue(alreadyDownloaded, null);
 
         // Counts anew with every piece that comes
-        using var stalled = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        stalled.CancelAfter(_stallTimeout);
+        using var idle = new CancellationTokenSource(_stallTimeout, _time);
+        using var stalled = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, idle.Token);
 
         HttpResponseMessage response;
         try
@@ -129,7 +131,7 @@ internal sealed class FileDownloader(HttpClient httpClient, TimeSpan stallTimeou
                 int read;
                 while ((read = await source.ReadAsync(buffer, stalled.Token)) > 0)
                 {
-                    stalled.CancelAfter(_stallTimeout);
+                    idle.CancelAfter(_stallTimeout);
 
                     await target.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
 
