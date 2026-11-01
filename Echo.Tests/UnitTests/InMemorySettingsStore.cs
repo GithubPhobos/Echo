@@ -3,7 +3,7 @@
 /// <summary>
 ///     A settings file kept in memory.
 /// </summary>
-internal sealed class MemorySettings : IUserSettingsStore
+internal sealed class InMemorySettingsStore : IUserSettingsStore
 {
     private readonly Dictionary<string, string?> _values = [];
 

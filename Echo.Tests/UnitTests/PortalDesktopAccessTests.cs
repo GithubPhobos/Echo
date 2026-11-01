@@ -23,7 +23,7 @@ public sealed class PortalDesktopAccessTests : IDisposable
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("ru");
 
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
-        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var portal = new DesktopPortal(new InMemorySettingsStore(), desktop.Address);
 
         // Act
         await new PortalDesktopAccess(portal).AssignKeyAsync(HotkeyChoice.Default, CancellationToken.None);

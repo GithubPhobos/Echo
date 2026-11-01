@@ -158,7 +158,7 @@ public sealed class DesktopPortalTests
     {
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
-        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var portal = new DesktopPortal(new InMemorySettingsStore(), desktop.Address);
 
         // Act
         bool mayPress = await portal.EnsureKeyboardAsync(mayAsk: false, CancellationToken.None);
@@ -173,7 +173,7 @@ public sealed class DesktopPortalTests
     {
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
-        var settings = new MemorySettings();
+        var settings = new InMemorySettingsStore();
 
         // Act: the wizard asks; the next run of Echo renews the permission it kept
         desktop.IssuedToken = "first";
@@ -196,7 +196,7 @@ public sealed class DesktopPortalTests
     {
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
-        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var portal = new DesktopPortal(new InMemorySettingsStore(), desktop.Address);
 
         await portal.EnsureKeyboardAsync(mayAsk: true, CancellationToken.None);
 
@@ -213,7 +213,7 @@ public sealed class DesktopPortalTests
     {
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
-        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var portal = new DesktopPortal(new InMemorySettingsStore(), desktop.Address);
 
         // Act
         IReadOnlyList<string> files = await portal.OpenFilesAsync("Pick a model", ["*.bin"], CancellationToken.None);
@@ -228,7 +228,7 @@ public sealed class DesktopPortalTests
     {
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
-        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var portal = new DesktopPortal(new InMemorySettingsStore(), desktop.Address);
 
         // Act & Assert
         Assert.Equal(1u, await portal.VersionAsync(DesktopPortal.ShortcutsInterface));
@@ -242,7 +242,7 @@ public sealed class DesktopPortalTests
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         desktop.HoldsBind = true;
 
-        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var portal = new DesktopPortal(new InMemorySettingsStore(), desktop.Address);
         using var stopping = new CancellationTokenSource();
 
         Task<string?> asking = portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, stopping.Token);
@@ -262,7 +262,7 @@ public sealed class DesktopPortalTests
         // Arrange: the wizard asked once, the working screen ran, and the wizard asks again; a session takes its
         // keys once
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
-        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var portal = new DesktopPortal(new InMemorySettingsStore(), desktop.Address);
 
         await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: true, CancellationToken.None);
         string? first = desktop.ShortcutsSession;
@@ -282,7 +282,7 @@ public sealed class DesktopPortalTests
     {
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
-        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var portal = new DesktopPortal(new InMemorySettingsStore(), desktop.Address);
 
         await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
 
@@ -303,7 +303,7 @@ public sealed class DesktopPortalTests
     {
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
-        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var portal = new DesktopPortal(new InMemorySettingsStore(), desktop.Address);
 
         await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
 
@@ -328,7 +328,7 @@ public sealed class DesktopPortalTests
     {
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
-        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var portal = new DesktopPortal(new InMemorySettingsStore(), desktop.Address);
 
         await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
 
@@ -364,7 +364,7 @@ public sealed class DesktopPortalTests
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         desktop.IsBound = true;
 
-        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var portal = new DesktopPortal(new InMemorySettingsStore(), desktop.Address);
 
         await portal.EnsureShortcutAsync("grave", "Echo: hold to speak", askAgain: false, CancellationToken.None);
         string first = desktop.ShortcutsSession!;
@@ -387,7 +387,7 @@ public sealed class DesktopPortalTests
     {
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
-        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var portal = new DesktopPortal(new InMemorySettingsStore(), desktop.Address);
 
         await portal.VersionAsync(DesktopPortal.ShortcutsInterface);
 
@@ -404,7 +404,7 @@ public sealed class DesktopPortalTests
     {
         // Arrange
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
-        using var portal = new DesktopPortal(new MemorySettings(), desktop.Address);
+        using var portal = new DesktopPortal(new InMemorySettingsStore(), desktop.Address);
 
         Assert.True(await portal.EnsureKeyboardAsync(mayAsk: true, CancellationToken.None));
 

@@ -22,7 +22,7 @@ public sealed class PortalHotkeyListenerTests
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         desktop.HoldsBind = true;
 
-        var settings = new MemorySettings();
+        var settings = new InMemorySettingsStore();
         using var portal = new DesktopPortal(settings, desktop.Address);
         using PortalHotkeyListener listener = Listener(portal, settings);
         using var stopping = new CancellationTokenSource();
@@ -53,7 +53,7 @@ public sealed class PortalHotkeyListenerTests
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         desktop.IsBound = true;
 
-        var settings = new MemorySettings();
+        var settings = new InMemorySettingsStore();
         using var portal = new DesktopPortal(settings, desktop.Address);
         using PortalHotkeyListener listener = Listener(portal, settings);
 
@@ -91,7 +91,7 @@ public sealed class PortalHotkeyListenerTests
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         desktop.IsBound = true;
 
-        var settings = new MemorySettings();
+        var settings = new InMemorySettingsStore();
         using var portal = new DesktopPortal(settings, desktop.Address);
         using PortalHotkeyListener listener = Listener(portal, settings);
 
@@ -128,7 +128,7 @@ public sealed class PortalHotkeyListenerTests
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         desktop.IsBound = true;
 
-        var settings = new MemorySettings();
+        var settings = new InMemorySettingsStore();
         using var portal = new DesktopPortal(settings, desktop.Address);
         using PortalHotkeyListener listener = Listener(portal, settings);
 
@@ -156,7 +156,7 @@ public sealed class PortalHotkeyListenerTests
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         desktop.IsBound = true;
 
-        var settings = new MemorySettings();
+        var settings = new InMemorySettingsStore();
         using var portal = new DesktopPortal(settings, desktop.Address);
         var warnings = new Warnings();
         using PortalHotkeyListener listener = Listener(portal, settings, warnings.Logger);
@@ -180,7 +180,7 @@ public sealed class PortalHotkeyListenerTests
         await using FakeDesktop desktop = await FakeDesktop.StartAsync();
         desktop.IsBound = true;
 
-        var settings = new MemorySettings();
+        var settings = new InMemorySettingsStore();
         using var portal = new DesktopPortal(settings, desktop.Address);
         var warnings = new Warnings();
         using PortalHotkeyListener listener = Listener(portal, settings, warnings.Logger);

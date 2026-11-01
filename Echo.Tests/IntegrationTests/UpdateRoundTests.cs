@@ -313,7 +313,7 @@ public sealed class UpdateRoundTests : IDisposable
             new FileDownloader(_client, _stallTimeout),
             new VersionArchive(_client, _folders, _stallTimeout),
             folders ?? _folders,
-            new MemorySettings(),
+            new InMemorySettingsStore(),
             TimeProvider.System,
             _layout,
             installed,
