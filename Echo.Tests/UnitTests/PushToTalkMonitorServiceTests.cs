@@ -1,8 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Echo.Listening;
-using Echo.Setup.Hotkeys;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class PushToTalkMonitorServiceTests
 {

@@ -1,10 +1,4 @@
-﻿using Echo.Setup;
-using Echo.Setup.Audio;
-using Echo.Setup.Steps;
-using Echo.UI;
-using Spectre.Console.Testing;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 /// <summary>
 ///     The sound step page by page, where the order in which one device is opened and closed matters: the wizard as a

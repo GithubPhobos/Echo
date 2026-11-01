@@ -1,6 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Platform.Windows;
-using NAudio.CoreAudioApi;
+﻿using NAudio.CoreAudioApi;
 using NAudio.CoreAudioApi.Interfaces;
 
 namespace Echo.Tests.UnitTests;

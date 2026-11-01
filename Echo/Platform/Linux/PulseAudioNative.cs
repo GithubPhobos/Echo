@@ -1,7 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     The client library of PulseAudio, the sound server of Linux desktops. PipeWire, which newer desktops run

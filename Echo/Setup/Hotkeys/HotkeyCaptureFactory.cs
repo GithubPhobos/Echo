@@ -1,8 +1,4 @@
-﻿using System.Collections.Concurrent;
-using SharpHook;
-using SharpHook.Data;
-
-namespace Echo.Setup.Hotkeys;
+﻿namespace Echo.Setup.Hotkeys;
 
 /// <inheritdoc cref="IHotkeyCaptureFactory"/>
 /// <param name="terminalFocus">Tells whether the user is typing into the wizard or into another window.</param>

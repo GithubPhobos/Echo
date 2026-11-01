@@ -1,10 +1,4 @@
-﻿using System.Globalization;
-using Echo.Setup.Downloads;
-using Echo.UI;
-using Spectre.Console;
-using Spectre.Console.Testing;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 [Collection(CultureCollection.Name)]
 public sealed class SetupUiTests : IDisposable

@@ -1,10 +1,4 @@
-﻿using System.Text.RegularExpressions;
-using Echo.Setup;
-using Echo.Updates;
-using Serilog.Core;
-using Serilog.Events;
-
-namespace Echo.Listening;
+﻿namespace Echo.Listening;
 
 /// <summary>
 ///     The commands typed on the working screen, and what they do.

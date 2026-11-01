@@ -1,8 +1,4 @@
-﻿using Echo.UI;
-using Echo.Updates;
-using Spectre.Console;
-
-namespace Echo.Listening;
+﻿namespace Echo.Listening;
 
 /// <summary>
 ///     The working screen: it takes the whole terminal while Echo runs, shows what Echo does and lets the user

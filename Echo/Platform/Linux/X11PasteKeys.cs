@@ -1,8 +1,4 @@
-﻿using System.Runtime.Versioning;
-using SharpHook;
-using SharpHook.Data;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     Presses Shift+Insert as if the user did, through the XTest part of X11. Unlike Ctrl+V it pastes in the

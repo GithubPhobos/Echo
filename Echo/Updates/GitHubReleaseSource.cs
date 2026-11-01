@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-
-namespace Echo.Updates;
+﻿namespace Echo.Updates;
 
 /// <summary>
 ///     The releases of Echo on GitHub. The latest one is asked of the GitHub API, which answers 60 times an hour

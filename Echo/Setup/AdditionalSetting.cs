@@ -1,6 +1,4 @@
-﻿using System.Globalization;
-
-namespace Echo.Setup;
+﻿namespace Echo.Setup;
 
 /// <summary>
 ///     One setting of the "Additional settings" step.

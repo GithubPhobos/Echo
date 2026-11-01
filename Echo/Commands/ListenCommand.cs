@@ -1,21 +1,4 @@
-﻿using System.ComponentModel;
-using Echo.Extensions;
-using Echo.Listening;
-using Echo.Setup;
-using Echo.Setup.Hardware;
-using Echo.Setup.Hotkeys;
-using Echo.Setup.Steps;
-using Echo.UI;
-using Echo.Updates;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Serilog.Core;
-using Spectre.Console;
-using Spectre.Console.Cli;
-using Whisper.net.LibraryLoader;
-
-namespace Echo.Commands;
+﻿namespace Echo.Commands;
 
 /// <summary>
 ///     The default command: shows the startup screen, runs the setup wizard when it has not been completed yet,

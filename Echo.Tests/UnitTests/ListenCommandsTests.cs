@@ -1,14 +1,4 @@
-﻿using System.Globalization;
-using Echo.Extensions;
-using Echo.Listening;
-using Echo.Setup;
-using Echo.UI;
-using Echo.Updates;
-using Serilog.Core;
-using Serilog.Events;
-using Spectre.Console;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 [Collection(CultureCollection.Name)]
 public sealed class ListenCommandsTests : IDisposable

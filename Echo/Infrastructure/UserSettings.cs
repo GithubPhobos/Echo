@@ -1,6 +1,4 @@
-﻿using Echo.Setup;
-
-namespace Echo.Infrastructure;
+﻿namespace Echo.Infrastructure;
 
 /// <summary>
 ///     The choices made in the setup wizard.

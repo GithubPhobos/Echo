@@ -1,9 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Setup.Hotkeys;
-using SharpHook;
-using SharpHook.Data;
-
-namespace Echo.Platform.Windows;
+﻿namespace Echo.Platform.Windows;
 
 /// <summary>
 ///     Hears the key through a global keyboard hook. Windows lets the hook keep a key from the other programs.

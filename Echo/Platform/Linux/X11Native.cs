@@ -1,7 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     The client library of X11, asked directly for the few things Echo needs: taking one key away from the other

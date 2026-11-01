@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Downloads;
-
-namespace Echo.Setup.Hardware;
+﻿namespace Echo.Setup.Hardware;
 
 /// <inheritdoc cref="ICudaRuntime"/>
 /// <param name="paths"><see cref="IAppPaths"/></param>

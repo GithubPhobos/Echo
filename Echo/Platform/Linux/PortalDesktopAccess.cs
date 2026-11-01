@@ -1,7 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Setup.Hotkeys;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     Wayland: the key and the permission to paste come from the permission windows of the desktop.

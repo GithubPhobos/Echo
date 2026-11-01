@@ -1,6 +1,4 @@
-﻿using Whisper.net.LibraryLoader;
-
-namespace Echo.Setup.Hardware;
+﻿namespace Echo.Setup.Hardware;
 
 /// <summary>
 ///     Turns the 'HardwareBackend' setting into what the Whisper runtime should load.

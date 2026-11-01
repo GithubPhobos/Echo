@@ -1,6 +1,4 @@
-﻿using System.Globalization;
-using Serilog.Events;
-using Serilog.Formatting.Display;
+﻿using Serilog.Formatting.Display;
 
 namespace Echo.Listening;
 

@@ -1,7 +1,4 @@
-﻿using System.Runtime.Versioning;
-using TextCopy;
-
-namespace Echo.Platform.Windows;
+﻿namespace Echo.Platform.Windows;
 
 /// <summary>
 ///     The clipboard of Windows.

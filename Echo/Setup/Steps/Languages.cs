@@ -1,6 +1,4 @@
-﻿using System.Globalization;
-
-namespace Echo.Setup.Steps;
+﻿namespace Echo.Setup.Steps;
 
 /// <summary>
 ///     The languages the interface is translated into and the ones offered for dictation.

@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Hardware;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class CudaRequirementsTests
 {

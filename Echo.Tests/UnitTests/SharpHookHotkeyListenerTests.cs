@@ -1,8 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Platform.Windows;
-using Echo.Setup.Hotkeys;
-using SharpHook;
-using SharpHook.Data;
+﻿using SharpHook;
 
 namespace Echo.Tests.UnitTests;
 

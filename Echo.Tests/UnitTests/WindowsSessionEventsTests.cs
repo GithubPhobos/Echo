@@ -1,8 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using System.Text;
-using Echo.Platform.Windows;
+﻿using System.Runtime.InteropServices;
 
 namespace Echo.Tests.UnitTests;
 

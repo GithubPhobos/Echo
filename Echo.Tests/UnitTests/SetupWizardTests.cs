@@ -1,18 +1,4 @@
-﻿using System.Diagnostics;
-using System.Globalization;
-using System.Text.RegularExpressions;
-using Echo.Setup;
-using Echo.Setup.Audio;
-using Echo.Setup.Check;
-using Echo.Setup.Downloads;
-using Echo.Setup.Hardware;
-using Echo.Setup.Hotkeys;
-using Echo.Setup.Steps;
-using Echo.UI;
-using Spectre.Console;
-using Spectre.Console.Rendering;
-using Spectre.Console.Testing;
-using Whisper.net.LibraryLoader;
+﻿using Spectre.Console.Rendering;
 
 namespace Echo.Tests.UnitTests;
 

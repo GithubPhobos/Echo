@@ -1,6 +1,4 @@
-﻿using Echo.Platform.Linux;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class DesktopKeyNamesTests
 {

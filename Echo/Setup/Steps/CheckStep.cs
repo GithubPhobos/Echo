@@ -1,12 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Echo.Setup.Audio;
-using Echo.Setup.Check;
-using Echo.Setup.Hardware;
-using Echo.Setup.Hotkeys;
-using Echo.UI;
-using Spectre.Console;
-
-namespace Echo.Setup.Steps;
+﻿namespace Echo.Setup.Steps;
 
 /// <summary>
 ///     Step 5: sound. The input device is chosen from a list in which every device shows how loud its sound is,

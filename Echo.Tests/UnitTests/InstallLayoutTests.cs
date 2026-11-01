@@ -1,8 +1,4 @@
-﻿using Echo.Platform.Linux;
-using Echo.Platform.Windows;
-using Echo.Updates;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class InstallLayoutTests : IDisposable
 {

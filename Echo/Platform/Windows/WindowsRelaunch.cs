@@ -1,8 +1,4 @@
-﻿using System.ComponentModel;
-using System.Runtime.Versioning;
-using Echo.Updates;
-
-namespace Echo.Platform.Windows;
+﻿namespace Echo.Platform.Windows;
 
 /// <inheritdoc cref="IRelaunch"/>
 /// <remarks>

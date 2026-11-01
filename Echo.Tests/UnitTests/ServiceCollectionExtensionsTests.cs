@@ -1,9 +1,4 @@
-﻿using Echo.Extensions;
-using Echo.Setup;
-using Microsoft.Extensions.DependencyInjection;
-using System.Text.Json;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 /// <summary>
 ///     Checks the history's configuration through the same registration paths as dictation and setup.

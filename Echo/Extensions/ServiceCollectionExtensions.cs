@@ -1,20 +1,5 @@
-﻿using Echo.Listening;
-using Echo.Services.BackgroundServices;
-using Echo.Setup;
-using Echo.Setup.Audio;
-using Echo.Setup.Check;
-using Echo.Setup.Downloads;
-using Echo.Setup.Hardware;
-using Echo.Setup.Hotkeys;
-using Echo.Setup.Steps;
-using Echo.UI;
-using Echo.Updates;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Serilog.Core;
-using Serilog.Events;
+﻿using Echo.Services.BackgroundServices;
 using Serilog.Sinks.SystemConsole.Themes;
-using Spectre.Console;
 
 namespace Echo.Extensions;
 

@@ -1,7 +1,4 @@
-﻿using Echo.Setup.Hardware;
-using Echo.Setup.Models;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class ModelRecommenderTests
 {

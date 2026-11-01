@@ -1,9 +1,4 @@
-﻿using System.Globalization;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using Echo.Listening;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     Compares the window of the terminal with the window the desktop says is in front. Many X11 terminals

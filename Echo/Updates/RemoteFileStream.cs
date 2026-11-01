@@ -1,7 +1,4 @@
-﻿using System.Net;
-using System.Net.Http.Headers;
-
-namespace Echo.Updates;
+﻿namespace Echo.Updates;
 
 /// <summary>
 ///     A file on a server, read as if it lay on the disk: whatever is read is downloaded then, with a request for just

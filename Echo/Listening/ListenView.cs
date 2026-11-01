@@ -1,6 +1,4 @@
-﻿using Echo.Updates;
-
-namespace Echo.Listening;
+﻿namespace Echo.Listening;
 
 /// <summary>
 ///     Everything the working screen shows at one moment.

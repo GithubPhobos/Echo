@@ -1,11 +1,5 @@
 ﻿using Echo.Commands;
-using Echo.Listening;
-using Echo.Resources;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Serilog.Core;
-using Spectre.Console.Testing;
 
 namespace Echo.Tests.UnitTests;
 

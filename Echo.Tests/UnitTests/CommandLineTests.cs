@@ -1,10 +1,4 @@
-﻿using System.Globalization;
-using Echo.Listening;
-using Serilog.Core;
-using Serilog.Events;
-using Spectre.Console;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 [Collection(CultureCollection.Name)]
 public sealed class CommandLineTests : IDisposable

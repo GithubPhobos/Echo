@@ -1,7 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using Spectre.Console;
-
-namespace Echo.UI;
+﻿namespace Echo.UI;
 
 /// <summary>
 ///     The look of the interface: colors and the symbols a particular terminal can actually draw.

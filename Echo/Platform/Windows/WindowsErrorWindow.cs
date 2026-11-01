@@ -1,7 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-
-namespace Echo.Platform.Windows;
+﻿namespace Echo.Platform.Windows;
 
 /// <summary>
 ///     Provides a wrapper around the native Windows API to display modal message boxes.

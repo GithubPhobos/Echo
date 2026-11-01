@@ -1,7 +1,4 @@
-﻿using System.Diagnostics;
-using Echo.Updates;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class InstallLockTests : IDisposable
 {

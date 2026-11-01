@@ -1,6 +1,4 @@
-﻿using System.Globalization;
-
-namespace Echo.Listening;
+﻿namespace Echo.Listening;
 
 /// <summary>Decodes UTF-8 and terminal sequences before the key-only API can confuse focus with Page Up or F3.</summary>
 /// <param name="reports">The session's focus reports.</param>

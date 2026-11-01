@@ -1,5 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 
 namespace Echo.Platform.Windows;
 

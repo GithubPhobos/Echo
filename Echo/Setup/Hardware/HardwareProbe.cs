@@ -1,6 +1,4 @@
-﻿using System.Globalization;
-
-namespace Echo.Setup.Hardware;
+﻿namespace Echo.Setup.Hardware;
 
 /// <inheritdoc cref="IHardwareProbe"/>
 /// <param name="processRunner"><see cref="IProcessRunner"/></param>

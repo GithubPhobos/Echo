@@ -1,7 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Platform.Linux;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 [SupportedOSPlatform("linux")]
 public sealed class LinuxClipboardTests

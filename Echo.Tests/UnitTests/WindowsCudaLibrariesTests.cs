@@ -1,9 +1,4 @@
-﻿using System.IO.Compression;
-using Echo.Platform.Windows;
-using Echo.Setup.Downloads;
-using Echo.Setup.Hardware;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class WindowsCudaLibrariesTests : IDisposable
 {

@@ -1,14 +1,4 @@
-﻿using System.Globalization;
-using System.Text.RegularExpressions;
-using Echo.Listening;
-using Echo.UI;
-using Echo.Updates;
-using Serilog.Core;
-using Serilog.Events;
-using Spectre.Console;
-using Spectre.Console.Testing;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 [Collection(CultureCollection.Name)]
 public sealed class ListenFrameTests : IDisposable

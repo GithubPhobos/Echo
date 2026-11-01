@@ -1,7 +1,4 @@
-﻿using System.Globalization;
-using Echo.Setup.Steps;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class LanguagesTests
 {

@@ -1,7 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using Echo.Setup.Hardware;
-
-namespace Echo.Platform.Windows;
+﻿namespace Echo.Platform.Windows;
 
 /// <summary>
 ///     Echo ships the Vulkan build of Whisper for Windows, so Vulkan is there whenever its driver is.

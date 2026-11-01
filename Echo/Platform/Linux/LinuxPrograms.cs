@@ -1,6 +1,4 @@
-﻿using System.Runtime.Versioning;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     The small programs of the system Echo leans on (xsel, wl-copy, tar and the like): whether one is installed,

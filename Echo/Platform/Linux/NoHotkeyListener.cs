@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Hotkeys;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     For sessions without windows, such as a text console or a remote shell: there is no keyboard of a desktop

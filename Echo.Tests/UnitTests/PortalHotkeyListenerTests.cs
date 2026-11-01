@@ -1,8 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Platform.Linux;
-using Echo.Setup.Hotkeys;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 /// <summary>
 ///     The push-to-talk key on Wayland, given by a stand-in desktop on a message bus of its own.

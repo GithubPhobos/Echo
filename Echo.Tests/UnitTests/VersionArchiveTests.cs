@@ -1,9 +1,4 @@
-﻿using System.IO.Compression;
-using System.Text;
-using Echo.Setup.Downloads;
-using Echo.Updates;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class VersionArchiveTests : IDisposable
 {

@@ -1,6 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Platform.Windows;
-using GregsStack.InputSimulatorStandard;
+﻿using GregsStack.InputSimulatorStandard;
 using GregsStack.InputSimulatorStandard.Native;
 
 namespace Echo.Tests.UnitTests;

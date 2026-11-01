@@ -1,8 +1,4 @@
-﻿using System.Globalization;
-using Serilog.Core;
-using Serilog.Events;
-
-namespace Echo.Listening;
+﻿namespace Echo.Listening;
 
 /// <summary>
 ///     Writes the log into one file a day in the logs folder and keeps only the latest days.

@@ -1,6 +1,4 @@
-﻿using System.Runtime.Versioning;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     Wayland: presses Shift+Insert through the remote control permission of the desktop. The permission kept from

@@ -1,6 +1,4 @@
-﻿using Whisper.net.LibraryLoader;
-
-namespace Echo.Setup.Hardware.Contracts;
+﻿namespace Echo.Setup.Hardware.Contracts;
 
 /// <summary>
 ///     The native library recognition runs on in this process. It is loaded once per process, the first time

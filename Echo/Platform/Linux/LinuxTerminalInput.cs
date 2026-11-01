@@ -1,9 +1,4 @@
-﻿using System.ComponentModel;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using Echo.Listening;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>Reads the terminal's UTF-8 stream in noncanonical mode, restoring termios on exit.</summary>
 [SupportedOSPlatform("linux")]

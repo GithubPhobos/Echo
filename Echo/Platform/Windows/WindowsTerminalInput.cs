@@ -1,9 +1,4 @@
-﻿using System.ComponentModel;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using Echo.Listening;
-
-namespace Echo.Platform.Windows;
+﻿namespace Echo.Platform.Windows;
 
 /// <summary>Reads console keys and focus records together, before Console.KeyAvailable can discard the latter.</summary>
 [SupportedOSPlatform("windows")]

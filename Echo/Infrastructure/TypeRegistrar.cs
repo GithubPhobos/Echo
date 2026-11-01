@@ -1,7 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Spectre.Console.Cli;
-
-namespace Echo.Infrastructure;
+﻿namespace Echo.Infrastructure;
 
 /// <summary>
 ///     Lets the command line framework create commands through the application's dependency injection container.

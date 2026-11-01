@@ -1,6 +1,4 @@
-﻿using NAudio.Wave;
-
-namespace Echo.Platform.Contracts;
+﻿namespace Echo.Platform.Contracts;
 
 /// <summary>
 ///     The loudspeakers of the system.

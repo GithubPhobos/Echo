@@ -1,9 +1,4 @@
-﻿using Echo.Setup.Hardware;
-using Echo.Setup.Steps;
-using Echo.UI;
-using Spectre.Console;
-
-namespace Echo.Setup;
+﻿namespace Echo.Setup;
 
 /// <summary>
 ///     Shows the pages of the setup steps in order, lets the user move back and forth between them,

@@ -1,9 +1,4 @@
-﻿using System.Globalization;
-using Echo.Setup.Models;
-using Echo.UI;
-using Spectre.Console;
-
-namespace Echo.Setup.Steps;
+﻿namespace Echo.Setup.Steps;
 
 /// <summary>
 ///     Step 6: the settings nobody has to touch, listed in blocks. Space moves the highlighted setting on

@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Hotkeys;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     Turns the desktop's description of Echo's key into the name Echo shows everywhere else. GNOME describes the

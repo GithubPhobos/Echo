@@ -1,8 +1,4 @@
-﻿using System.Runtime.Versioning;
-using NAudio.CoreAudioApi;
-using NAudio.Wave;
-
-namespace Echo.Platform.Windows;
+﻿namespace Echo.Platform.Windows;
 
 /// <summary>
 ///     The loudspeakers of Windows, through the shared mode of the Windows audio engine.

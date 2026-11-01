@@ -1,6 +1,4 @@
-﻿using Echo.Listening;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class ListenActivityTests
 {

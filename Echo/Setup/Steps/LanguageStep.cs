@@ -1,7 +1,4 @@
-﻿using System.Globalization;
-using Echo.UI;
-
-namespace Echo.Setup.Steps;
+﻿namespace Echo.Setup.Steps;
 
 /// <summary>
 ///     Step 1: the language of the interface and the language of dictation.

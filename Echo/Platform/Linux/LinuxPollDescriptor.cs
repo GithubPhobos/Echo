@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>One descriptor passed to poll to check the terminal without waiting.</summary>
 [StructLayout(LayoutKind.Sequential)]

@@ -1,10 +1,4 @@
-﻿using System.Diagnostics;
-using System.Formats.Tar;
-using System.IO.Compression;
-using System.Runtime.Versioning;
-using System.Text;
-using Echo.Tests.UnitTests;
-using Echo.Updates;
+﻿using System.Formats.Tar;
 
 namespace Echo.Tests.IntegrationTests;
 

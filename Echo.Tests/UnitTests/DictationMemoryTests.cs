@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 /// <summary>
 ///     The history uses real monthly files, including failures and two independent writers.

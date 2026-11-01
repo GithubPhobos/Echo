@@ -1,6 +1,4 @@
-﻿using Echo.UI;
-
-namespace Echo.Setup;
+﻿namespace Echo.Setup;
 
 /// <summary>
 ///     One screen of the setup wizard. The wizard remembers the pages it has shown, so going back always

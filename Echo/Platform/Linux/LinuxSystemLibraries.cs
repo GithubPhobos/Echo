@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     The Linux build of Whisper needs the C++ library and the OpenMP library of the system ('libstdc++6' and

@@ -1,9 +1,4 @@
-﻿using Echo.Listening;
-using Serilog.Events;
-using Serilog.Parsing;
-using Spectre.Console;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class ScreenLogSinkTests
 {

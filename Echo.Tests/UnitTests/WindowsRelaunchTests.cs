@@ -1,9 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Constants;
-using Echo.Platform.Windows;
-using Echo.Updates;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 [SupportedOSPlatform("windows")]
 public sealed class WindowsRelaunchTests : IDisposable

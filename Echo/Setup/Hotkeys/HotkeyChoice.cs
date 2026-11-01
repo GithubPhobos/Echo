@@ -1,6 +1,4 @@
-﻿using SharpHook.Data;
-
-namespace Echo.Setup.Hotkeys;
+﻿namespace Echo.Setup.Hotkeys;
 
 /// <summary>
 ///     A push-to-talk key as it is stored in the settings.

@@ -1,9 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Platform.Linux;
-using Echo.Setup.Hotkeys;
-using Tmds.DBus.Protocol;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 /// <summary>
 ///     The talk with the permission windows of a Linux desktop. The tests that need a desktop run against a stand-in

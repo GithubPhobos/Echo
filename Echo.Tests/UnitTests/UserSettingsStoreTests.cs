@@ -1,7 +1,4 @@
-﻿using Echo.Setup;
-using Microsoft.Extensions.Configuration;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class UserSettingsStoreTests : IDisposable
 {

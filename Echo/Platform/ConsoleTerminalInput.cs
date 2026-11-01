@@ -1,6 +1,4 @@
-﻿using Spectre.Console;
-
-namespace Echo.Platform;
+﻿namespace Echo.Platform;
 
 /// <summary>The existing key-only input for redirected streams, unsupported consoles and scripted screens.</summary>
 /// <param name="input">The console input already in use.</param>

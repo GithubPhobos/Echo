@@ -1,6 +1,4 @@
-﻿using Whisper.net;
-
-/// <summary>
+﻿/// <summary>
 ///     Provides fluent extension methods for <see cref="WhisperProcessorBuilder"/> 
 ///     to easily map custom configuration settings.
 /// </summary>

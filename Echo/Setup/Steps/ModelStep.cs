@@ -1,9 +1,4 @@
-﻿using Echo.Setup.Downloads;
-using Echo.Setup.Models;
-using Echo.UI;
-using Spectre.Console;
-
-namespace Echo.Setup.Steps;
+﻿namespace Echo.Setup.Steps;
 
 /// <summary>
 ///     Step 3: the Whisper model. The one that suits the machine and the dictation language is suggested;

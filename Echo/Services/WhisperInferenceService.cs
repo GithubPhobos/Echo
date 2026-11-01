@@ -1,7 +1,4 @@
-﻿using Echo.Setup.Hardware;
-using Whisper.net;
-using Whisper.net.LibraryLoader;
-using Whisper.net.Logger;
+﻿using Whisper.net.Logger;
 
 namespace Echo.Services;
 

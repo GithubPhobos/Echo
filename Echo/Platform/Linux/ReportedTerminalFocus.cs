@@ -1,6 +1,4 @@
-﻿using Echo.Listening;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     For sessions where the system does not tell which window is in front (Wayland keeps that from programs on

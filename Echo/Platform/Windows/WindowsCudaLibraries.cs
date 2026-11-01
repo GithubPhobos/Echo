@@ -1,8 +1,4 @@
-﻿using System.IO.Compression;
-using Echo.Setup.Downloads;
-using Echo.Setup.Hardware;
-
-namespace Echo.Platform.Windows;
+﻿namespace Echo.Platform.Windows;
 
 /// <summary>
 ///     The CUDA libraries of Windows: DLL files in ZIP archives, found next to the executable or on the search path.

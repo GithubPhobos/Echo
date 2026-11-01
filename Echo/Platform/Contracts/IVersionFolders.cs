@@ -1,6 +1,4 @@
-﻿using System.IO.Compression;
-
-namespace Echo.Platform.Contracts;
+﻿namespace Echo.Platform.Contracts;
 
 /// <summary>
 ///     How this system keeps the installed versions of Echo: the archive a version comes in, the link to the version

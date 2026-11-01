@@ -1,6 +1,4 @@
-﻿using Echo.Platform.Linux;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 /// <summary>
 ///     A sound server whose reads and writes wait until the test lets them go, the way a server that stopped

@@ -1,11 +1,4 @@
-﻿using System.Globalization;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using Echo.Listening;
-using Echo.Setup.Hardware;
-using Whisper.net.LibraryLoader;
-
-namespace Echo.Services;
+﻿namespace Echo.Services;
 
 /// <inheritdoc cref="IDictationMemory"/>
 /// <remarks>

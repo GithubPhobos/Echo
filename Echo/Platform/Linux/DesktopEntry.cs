@@ -1,6 +1,4 @@
-﻿using System.Runtime.Versioning;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     Echo's launcher in the applications menu: a '.desktop' file named after Echo's application ID. A Wayland

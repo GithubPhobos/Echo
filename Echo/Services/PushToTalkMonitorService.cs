@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Hotkeys;
-
-namespace Echo.Services;
+﻿namespace Echo.Services;
 
 /// <inheritdoc cref="IPushToTalkMonitorService"/>
 internal sealed class PushToTalkMonitorService : IPushToTalkMonitorService

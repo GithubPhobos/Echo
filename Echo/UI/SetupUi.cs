@@ -1,8 +1,4 @@
-﻿using Echo.Setup.Downloads;
-using Spectre.Console;
-using Spectre.Console.Rendering;
-
-namespace Echo.UI;
+﻿namespace Echo.UI;
 
 /// <summary>
 ///     Draws the setup wizard screens and reads the keyboard. Every screen replaces the previous one in place.

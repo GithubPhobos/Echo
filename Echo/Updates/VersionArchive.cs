@@ -1,7 +1,4 @@
-﻿using System.IO.Compression;
-using System.IO.Hashing;
-using Echo.Listening;
-using Echo.Setup.Downloads;
+﻿using System.IO.Hashing;
 
 namespace Echo.Updates;
 

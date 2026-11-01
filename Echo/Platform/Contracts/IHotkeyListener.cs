@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Hotkeys;
-
-namespace Echo.Platform.Contracts;
+﻿namespace Echo.Platform.Contracts;
 
 /// <summary>
 ///     Hears the push-to-talk key anywhere in the system and says when it goes down and comes up.

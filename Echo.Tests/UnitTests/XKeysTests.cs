@@ -1,7 +1,4 @@
-﻿using Echo.Platform.Linux;
-using SharpHook.Data;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class XKeysTests
 {

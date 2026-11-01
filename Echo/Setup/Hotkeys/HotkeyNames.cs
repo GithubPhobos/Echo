@@ -1,7 +1,4 @@
-﻿using System.Text.RegularExpressions;
-using SharpHook.Data;
-
-namespace Echo.Setup.Hotkeys;
+﻿namespace Echo.Setup.Hotkeys;
 
 /// <summary>
 ///     Converts between keyboard hook values, setting values and what is shown to the user.

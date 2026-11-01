@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Hardware;
-
-namespace Echo.Setup.Models;
+﻿namespace Echo.Setup.Models;
 
 /// <summary>
 ///     Picks the model to suggest for a machine. The thresholds are a starting point taken from the model

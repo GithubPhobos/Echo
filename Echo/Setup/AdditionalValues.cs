@@ -1,6 +1,4 @@
-﻿using System.Globalization;
-
-namespace Echo.Setup;
+﻿namespace Echo.Setup;
 
 /// <summary>
 ///     The values of the additional settings the user has set. Every value is kept as text written

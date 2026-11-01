@@ -1,9 +1,4 @@
-﻿using Echo.Listening;
-using Echo.Platform.Linux;
-using Echo.Platform.Windows;
-using Spectre.Console;
-
-namespace Echo.Platform;
+﻿namespace Echo.Platform;
 
 /// <summary>Selects input by operating system and console capability, never by terminal brand.</summary>
 internal static class TerminalInput

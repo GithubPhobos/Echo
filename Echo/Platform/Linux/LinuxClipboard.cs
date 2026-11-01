@@ -1,6 +1,4 @@
-﻿using System.Runtime.Versioning;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     The two clipboards of Linux: the ordinary one (Ctrl+C) and the selection (what was last highlighted).

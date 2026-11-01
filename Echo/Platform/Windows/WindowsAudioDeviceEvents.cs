@@ -1,7 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using NAudio.CoreAudioApi;
-using NAudio.CoreAudioApi.Interfaces;
+﻿using NAudio.CoreAudioApi.Interfaces;
 
 namespace Echo.Platform.Windows;
 

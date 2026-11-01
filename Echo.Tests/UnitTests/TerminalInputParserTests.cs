@@ -1,7 +1,4 @@
-﻿using System.Text;
-using Echo.Listening;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class TerminalInputParserTests
 {

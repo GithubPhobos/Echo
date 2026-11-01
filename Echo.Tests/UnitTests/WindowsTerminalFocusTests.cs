@@ -1,8 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Platform.Windows;
-using Echo.Listening;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 [SupportedOSPlatform("windows")]
 public sealed class WindowsTerminalFocusTests

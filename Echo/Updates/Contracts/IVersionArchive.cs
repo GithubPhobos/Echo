@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Downloads;
-
-namespace Echo.Updates.Contracts;
+﻿namespace Echo.Updates.Contracts;
 
 /// <summary>
 ///     Unpacks the archive a version of Echo comes in, a zip archive. Its table of contents, at the end, names every

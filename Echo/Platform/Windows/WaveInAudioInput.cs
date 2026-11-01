@@ -1,8 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Setup.Audio;
-using NAudio.Wave;
-
-namespace Echo.Platform.Windows;
+﻿namespace Echo.Platform.Windows;
 
 /// <summary>
 ///     The microphones of Windows, through the classic recording interface of the system.

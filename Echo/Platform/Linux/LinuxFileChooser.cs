@@ -1,6 +1,4 @@
-﻿using System.Runtime.Versioning;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     The file chooser of the desktop: through its permission window when the desktop has one (FileChooser

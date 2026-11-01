@@ -1,10 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Echo.Setup.Downloads;
-using Echo.Setup.Hardware;
-using Echo.UI;
-using Spectre.Console;
-
-namespace Echo.Setup.Steps;
+﻿namespace Echo.Setup.Steps;
 
 /// <summary>
 ///     Step 2: what the model runs on. The hardware is detected and the best option is suggested; when that is

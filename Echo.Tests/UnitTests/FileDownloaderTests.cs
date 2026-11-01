@@ -1,8 +1,4 @@
-﻿using System.Net;
-using System.Security.Cryptography;
-using Echo.Setup.Downloads;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class FileDownloaderTests : IDisposable
 {

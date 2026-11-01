@@ -1,8 +1,4 @@
-﻿using System.Globalization;
-using Serilog.Core;
-using Serilog.Events;
-
-namespace Echo.Listening;
+﻿namespace Echo.Listening;
 
 /// <summary>
 ///     Shows log messages on the working screen.

@@ -1,8 +1,4 @@
-﻿using System.ComponentModel;
-using System.IO.Compression;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using Microsoft.Win32.SafeHandles;
+﻿using Microsoft.Win32.SafeHandles;
 
 namespace Echo.Platform.Windows;
 

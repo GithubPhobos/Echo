@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Hotkeys;
-
-namespace Echo.Platform;
+﻿namespace Echo.Platform;
 
 /// <summary>
 ///     For systems where Echo hears the key and presses keys without asking: Windows, and Linux with X11.

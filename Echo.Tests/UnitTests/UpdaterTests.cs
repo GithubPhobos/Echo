@@ -1,12 +1,4 @@
-﻿using System.Diagnostics;
-using System.IO.Compression;
-using Echo.Platform.Linux;
-using Echo.Platform.Windows;
-using Echo.Setup;
-using Echo.Setup.Downloads;
-using Echo.Updates;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class UpdaterTests : IDisposable
 {

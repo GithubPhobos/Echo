@@ -1,6 +1,4 @@
-﻿using System.Reflection;
-
-namespace Echo.Constants;
+﻿namespace Echo.Constants;
 
 /// <summary>
 ///     Application identity shown in the command line interface.

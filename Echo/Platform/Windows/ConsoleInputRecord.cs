@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-namespace Echo.Platform.Windows;
+﻿namespace Echo.Platform.Windows;
 
 /// <summary>A Win32 INPUT_RECORD, with its keyboard/focus union beginning at byte four.</summary>
 [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode, Size = 20)]

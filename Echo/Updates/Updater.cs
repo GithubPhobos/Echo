@@ -1,8 +1,4 @@
-﻿using Echo.Listening;
-using Echo.Setup;
-using Echo.Setup.Downloads;
-
-namespace Echo.Updates;
+﻿namespace Echo.Updates;
 
 /// <inheritdoc cref="IUpdater"/>
 /// <param name="source">Where the releases are.</param>

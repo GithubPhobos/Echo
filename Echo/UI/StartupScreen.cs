@@ -1,6 +1,4 @@
-﻿using Spectre.Console;
-
-namespace Echo.UI;
+﻿namespace Echo.UI;
 
 /// <summary>
 ///     The screen shown when the application starts: the animated logo, the tagline and the version.

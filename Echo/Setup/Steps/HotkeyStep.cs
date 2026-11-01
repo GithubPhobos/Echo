@@ -1,8 +1,4 @@
-﻿using Echo.Setup.Hotkeys;
-using Echo.UI;
-using Spectre.Console;
-
-namespace Echo.Setup.Steps;
+﻿namespace Echo.Setup.Steps;
 
 /// <summary>
 ///     Step 4: the push-to-talk key. The user presses the key instead of typing its name. On desktops that give

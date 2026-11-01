@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Hardware;
-
-namespace Echo.Platform.Contracts;
+﻿namespace Echo.Platform.Contracts;
 
 /// <summary>
 ///     The NVIDIA libraries the CUDA build of Whisper needs, as this system names them, ships them

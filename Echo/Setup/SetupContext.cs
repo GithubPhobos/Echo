@@ -1,8 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using Echo.Setup.Audio;
-using Echo.Setup.Hardware;
-using Echo.Setup.Hotkeys;
 
 namespace Echo.Setup;
 

@@ -1,9 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.Versioning;
-using Echo.Platform.Linux;
-using Tmds.DBus.Protocol;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 /// <summary>
 ///     A desktop that answers like the XDG portals do, on a message bus started for the test alone. It keeps the rules

@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Audio;
-
-namespace Echo.Platform.Contracts;
+﻿namespace Echo.Platform.Contracts;
 
 /// <summary>
 ///     The microphones of the system. Everything is recorded in the format Whisper takes:

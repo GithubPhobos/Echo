@@ -1,8 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Echo.Listening;
-using Echo.Services.BackgroundServices;
-using Echo.Setup.Audio;
-using NAudio.Wave;
+﻿using Echo.Services.BackgroundServices;
 
 namespace Echo.Tests.UnitTests;
 

@@ -1,6 +1,4 @@
-﻿using Whisper.net.LibraryLoader;
-
-namespace Echo.Setup.Check.Contracts;
+﻿namespace Echo.Setup.Check.Contracts;
 
 /// <summary>
 ///     A running dictation pipeline that reports what it hears instead of typing it.

@@ -1,7 +1,4 @@
-﻿using Echo.Setup.Hotkeys;
-using SharpHook.Data;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class HotkeyNamesTests
 {

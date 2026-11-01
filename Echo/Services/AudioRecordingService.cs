@@ -1,7 +1,4 @@
-﻿using Echo.Listening;
-using Echo.Setup.Audio;
-using NAudio.Utils;
-using NAudio.Wave;
+﻿using NAudio.Utils;
 using Serilog.Context;
 
 namespace Echo.Services;

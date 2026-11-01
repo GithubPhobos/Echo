@@ -1,7 +1,4 @@
-﻿using System.Runtime.Versioning;
-using NAudio.Wave;
-
-namespace Echo.Platform.Windows;
+﻿namespace Echo.Platform.Windows;
 
 /// <inheritdoc cref="IAudioInputStream"/>
 [SupportedOSPlatform("windows")]

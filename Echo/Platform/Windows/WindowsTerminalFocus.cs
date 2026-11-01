@@ -1,8 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using Echo.Listening;
-
-namespace Echo.Platform.Windows;
+﻿namespace Echo.Platform.Windows;
 
 /// <summary>
 ///     Tells from the console window of the process whether its terminal is in front.

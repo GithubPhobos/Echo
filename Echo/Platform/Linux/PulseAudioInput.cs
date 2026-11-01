@@ -1,8 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using Echo.Setup.Audio;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     The microphones of Linux, as the sound server lists them, under the names the desktop shows in its own

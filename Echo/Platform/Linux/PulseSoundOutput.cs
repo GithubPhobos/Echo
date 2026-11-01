@@ -1,7 +1,4 @@
-﻿using System.Runtime.Versioning;
-using NAudio.Wave;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     The loudspeakers of Linux, through the sound server.

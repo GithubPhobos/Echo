@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Audio;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class ThresholdCalculatorTests
 {

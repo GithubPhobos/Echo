@@ -1,8 +1,4 @@
-﻿using Echo.Constants;
-using Echo.UI;
-using Spectre.Console;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class StartupScreenTests
 {

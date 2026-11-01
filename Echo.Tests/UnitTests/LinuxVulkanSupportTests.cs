@@ -1,8 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Platform.Linux;
-using Echo.Setup.Hardware;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 [SupportedOSPlatform("linux")]
 public sealed class LinuxVulkanSupportTests

@@ -1,10 +1,4 @@
-﻿using System.Globalization;
-using Echo.Commands;
-using Echo.Extensions;
-using Echo.Setup.Steps;
-using Echo.Updates;
-using Microsoft.Extensions.DependencyInjection;
-using Spectre.Console.Cli;
+﻿using Echo.Commands;
 
 IRelaunch relaunch = PlatformServiceCollectionExtensions.CreateRelaunch();
 

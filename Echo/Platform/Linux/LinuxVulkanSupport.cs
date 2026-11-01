@@ -1,7 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Setup.Hardware;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     The Vulkan build of Whisper for Linux, for graphics cards of AMD and Intel. It has not yet been tried on

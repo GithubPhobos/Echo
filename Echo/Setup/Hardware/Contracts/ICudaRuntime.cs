@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Downloads;
-
-namespace Echo.Setup.Hardware.Contracts;
+﻿namespace Echo.Setup.Hardware.Contracts;
 
 /// <summary>
 ///     The NVIDIA libraries the CUDA backend needs at run time.

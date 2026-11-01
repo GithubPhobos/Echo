@@ -1,7 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Setup.Hotkeys;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     Wayland: the desktop holds the key and tells Echo when it goes down and comes up. The key never reaches

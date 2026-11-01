@@ -1,12 +1,4 @@
-﻿using System.Diagnostics;
-using System.IO.Compression;
-using System.Runtime.Versioning;
-using System.Text;
-using Echo.Platform.Windows;
-using Echo.Tests.UnitTests;
-using Echo.Updates;
-
-namespace Echo.Tests.IntegrationTests;
+﻿namespace Echo.Tests.IntegrationTests;
 
 /// <summary>
 ///     install.ps1, run by Windows PowerShell against a server that plays GitHub, with a folder of programs of its own.

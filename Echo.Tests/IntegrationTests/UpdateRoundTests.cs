@@ -1,14 +1,4 @@
-﻿using System.Diagnostics;
-using System.IO.Compression;
-using System.Runtime.Versioning;
-using System.Text;
-using Echo.Platform.Linux;
-using Echo.Platform.Windows;
-using Echo.Setup.Downloads;
-using Echo.Tests.UnitTests;
-using Echo.Updates;
-
-namespace Echo.Tests.IntegrationTests;
+﻿namespace Echo.Tests.IntegrationTests;
 
 /// <summary>
 ///     The whole round of an update with the parts Echo runs with: the releases over HTTP, the folders of the

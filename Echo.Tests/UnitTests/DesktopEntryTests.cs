@@ -1,8 +1,4 @@
-﻿using System.Runtime.Versioning;
-using System.Text;
-using Echo.Platform.Linux;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 [SupportedOSPlatform("linux")]
 public sealed class DesktopEntryTests : IDisposable

@@ -1,6 +1,4 @@
-﻿using Echo.Setup;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class AdditionalValuesTests
 {

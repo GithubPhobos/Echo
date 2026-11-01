@@ -1,6 +1,4 @@
-﻿using System.Runtime.Versioning;
-using GregsStack.InputSimulatorStandard;
-using GregsStack.InputSimulatorStandard.Native;
+﻿using GregsStack.InputSimulatorStandard.Native;
 
 namespace Echo.Platform.Windows;
 

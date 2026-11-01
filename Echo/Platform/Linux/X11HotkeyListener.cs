@@ -1,8 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using Echo.Setup.Hotkeys;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     Takes the key away from the other programs of an X11 session (XGrabKey): while Echo runs, the key and

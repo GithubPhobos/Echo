@@ -1,7 +1,4 @@
-﻿using Echo.Setup.Hardware;
-using Whisper.net.LibraryLoader;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class AccelerationTests
 {

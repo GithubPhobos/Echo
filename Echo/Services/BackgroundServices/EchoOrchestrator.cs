@@ -1,10 +1,4 @@
-﻿using System.Globalization;
-using System.Reflection;
-using Echo.Listening;
-using Microsoft.Extensions.Hosting;
-using Whisper.net.LibraryLoader;
-
-namespace Echo.Services.BackgroundServices;
+﻿namespace Echo.Services.BackgroundServices;
 
 /// <summary>
 ///     The central background service that is responsible for bootstrapping hardware initialization, loading AI models, 

@@ -1,9 +1,4 @@
-﻿using Echo.Listening;
-using Echo.Resources;
-using Echo.Setup.Audio;
-using NAudio.Wave;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class AudioRecordingServiceTests
 {

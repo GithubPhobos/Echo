@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-
-namespace Echo.Services;
+﻿namespace Echo.Services;
 
 /// <summary>
 ///     Stable codes for the history. Codes are explicit, never derived from catalog order or reused.

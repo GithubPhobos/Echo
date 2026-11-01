@@ -1,5 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Tmds.DBus.Protocol;
+﻿using Tmds.DBus.Protocol;
 
 namespace Echo.Platform.Linux;
 

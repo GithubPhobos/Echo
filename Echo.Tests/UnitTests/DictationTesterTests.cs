@@ -1,10 +1,4 @@
-﻿using Echo.Extensions;
-using Echo.Setup;
-using Echo.Setup.Check;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 public sealed class DictationTesterTests : IDisposable
 {

@@ -1,6 +1,4 @@
-﻿using Echo.Platform.Linux;
-
-namespace Echo.Platform.Contracts;
+﻿namespace Echo.Platform.Contracts;
 
 /// <summary>
 ///     The simple API of the Linux sound server (pa_simple): a stream that is opened, read or written piece by

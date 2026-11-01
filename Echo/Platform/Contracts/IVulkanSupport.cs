@@ -1,6 +1,4 @@
-﻿using Echo.Setup.Hardware;
-
-namespace Echo.Platform.Contracts;
+﻿namespace Echo.Platform.Contracts;
 
 /// <summary>
 ///     Whether Whisper can run on Vulkan here: the system needs a Vulkan driver, and Echo needs to ship

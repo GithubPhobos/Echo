@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>The Linux x64 termios layout, the platform supported by Echo's Linux build.</summary>
 [StructLayout(LayoutKind.Sequential)]

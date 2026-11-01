@@ -1,10 +1,4 @@
-﻿using System.ComponentModel;
-using Echo.Setup;
-using Echo.UI;
-using Spectre.Console;
-using Spectre.Console.Cli;
-
-namespace Echo.Commands;
+﻿namespace Echo.Commands;
 
 /// <summary>
 ///     Runs the setup wizard again, with the current choices preselected.

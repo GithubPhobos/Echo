@@ -1,6 +1,4 @@
-﻿using SharpHook.Data;
-
-namespace Echo.Platform.Linux;
+﻿namespace Echo.Platform.Linux;
 
 /// <summary>
 ///     The keys of the settings as Linux names them: by their "keysym", a number with a name, such as 0x60 "grave"

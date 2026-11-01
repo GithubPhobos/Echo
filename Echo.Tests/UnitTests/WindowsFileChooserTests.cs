@@ -1,7 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Platform.Windows;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 [SupportedOSPlatform("windows")]
 public sealed class WindowsFileChooserTests

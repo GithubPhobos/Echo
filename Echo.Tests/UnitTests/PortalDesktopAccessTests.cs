@@ -1,9 +1,4 @@
-﻿using System.Globalization;
-using System.Runtime.Versioning;
-using Echo.Platform.Linux;
-using Echo.Setup.Hotkeys;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 [SupportedOSPlatform("linux")]
 [Collection(CultureCollection.Name)]

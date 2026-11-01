@@ -1,12 +1,4 @@
-﻿using System.Runtime.Versioning;
-using Echo.Listening;
-using Echo.Platform.Linux;
-using Echo.Platform.Windows;
-using Echo.Setup.Hardware;
-using GregsStack.InputSimulatorStandard;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using TextCopy;
+﻿using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Echo.Extensions;
 

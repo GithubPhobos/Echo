@@ -1,10 +1,4 @@
-﻿using System.Globalization;
-using Echo.UI;
-using Echo.Updates;
-using Spectre.Console;
-using Spectre.Console.Rendering;
-
-namespace Echo.Listening;
+﻿namespace Echo.Listening;
 
 /// <summary>
 ///     Lays out the working screen: the state on top, the log, the command line, the panel of choices

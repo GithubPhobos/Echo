@@ -1,9 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.Versioning;
-using Echo.Platform.Linux;
-using NAudio.Wave;
-
-namespace Echo.Tests.UnitTests;
+﻿namespace Echo.Tests.UnitTests;
 
 [SupportedOSPlatform("linux")]
 public sealed class PulseSoundOutputTests

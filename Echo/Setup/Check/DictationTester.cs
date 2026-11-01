@@ -1,11 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Globalization;
-using Echo.Extensions;
-using Echo.Setup.Hardware;
-using Microsoft.Extensions.DependencyInjection;
-using Whisper.net.LibraryLoader;
-
-namespace Echo.Setup.Check;
+﻿namespace Echo.Setup.Check;
 
 /// <inheritdoc cref="IDictationTester"/>
 internal sealed class DictationTester : IDictationTester
