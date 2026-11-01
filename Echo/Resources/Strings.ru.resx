@@ -957,4 +957,10 @@
   <data name="SetupUnchanged" xml:space="preserve">
     <value>Настройки не изменены.</value>
   </data>
+  <data name="AdditionalMemory" xml:space="preserve">
+    <value>История диктовки</value>
+  </data>
+  <data name="AdditionalMemoryHint" xml:space="preserve">
+    <value>Echo сохраняет распознанные фразы на этом компьютере, в папке, которую показывает /info. Они никуда не отправляются. Выключите, если не хотите, чтобы продиктованное оставалось на диске.</value>
+  </data>
 </root>

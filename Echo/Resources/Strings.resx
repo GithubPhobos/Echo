@@ -957,4 +957,10 @@
   <data name="SetupUnchanged" xml:space="preserve">
     <value>Settings left unchanged.</value>
   </data>
+  <data name="AdditionalMemory" xml:space="preserve">
+    <value>Dictation history</value>
+  </data>
+  <data name="AdditionalMemoryHint" xml:space="preserve">
+    <value>Echo keeps the recognized phrases on this computer, in the folder /info shows. They are never sent anywhere. Turn it off if you do not want what you dictate to stay on the disk.</value>
+  </data>
 </root>

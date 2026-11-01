@@ -25,4 +25,9 @@ internal interface IAppPaths
     ///     Where the log is written, one file a day.
     /// </summary>
     string LogsDirectory { get; }
+
+    /// <summary>
+    ///     Where the dictation history is kept, one file a month.
+    /// </summary>
+    string MemoryDirectory { get; }
 }

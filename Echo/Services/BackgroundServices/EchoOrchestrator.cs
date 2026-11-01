@@ -20,6 +20,7 @@ namespace Echo.Services.BackgroundServices;
 /// <param name="activity">The working screen, when Echo runs with one.</param>
 /// <param name="sessionEvents">Says when the user comes back to this session, where the system tells about that.</param>
 /// <param name="deviceEvents">Says when the sound devices change, where the system tells about that.</param>
+/// <param name="memory">Keeps the recognized phrases, when there is a dictation history.</param>
 internal sealed class EchoOrchestrator(
     ILogger<EchoOrchestrator> logger,
     ISoundPlayService soundPlayService,
@@ -30,11 +31,23 @@ internal sealed class EchoOrchestrator(
     IErrorWindow errorWindow,
     IListenActivity? activity = null,
     ISessionEvents? sessionEvents = null,
-    IAudioDeviceEvents? deviceEvents = null) : BackgroundService
+    IAudioDeviceEvents? deviceEvents = null,
+    IDictationMemory? memory = null) : BackgroundService
 {
+    /// <summary>
+    ///     What the recordings are: 16 kHz, 16 bits, one channel, after a header of 44 bytes.
+    /// </summary>
+    private const int WavHeaderBytes = 44;
+
+    /// <summary>
+    ///     The bytes in a second of the microphone's 16 kHz, 16-bit mono samples.
+    /// </summary>
+    private const int AudioBytesPerSecond = 16000 * 2;
+
     private readonly IListenActivity? _activity = activity;
     private readonly ISessionEvents? _sessionEvents = sessionEvents;
     private readonly IAudioDeviceEvents? _deviceEvents = deviceEvents;
+    private readonly IDictationMemory? _memory = memory;
 
     private readonly ILogger<EchoOrchestrator> _logger = logger;
     private readonly ISoundPlayService _soundPlayService = soundPlayService;
@@ -224,7 +237,8 @@ internal sealed class EchoOrchestrator(
                 return;
         }
 
-        string seconds = Stopwatch.GetElapsedTime(_pressedAt).TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture);
+        TimeSpan held = Stopwatch.GetElapsedTime(_pressedAt);
+        string seconds = held.TotalSeconds.ToString("0.0", CultureInfo.InvariantCulture);
 
         MemoryStream? audioStream = _audioRecordingService.StopRecording();
 
@@ -253,7 +267,7 @@ internal sealed class EchoOrchestrator(
             if (_reopensMicrophoneAfterRecording)
                 ReopenMicrophone();
 
-            Task recognition = Task.Run(() => RecognizeAsync(audioStream));
+            Task recognition = Task.Run(() => RecognizeAsync(audioStream, held));
             _recognitions.Add(recognition);
 
             _ = recognition.ContinueWith(
@@ -401,14 +415,15 @@ internal sealed class EchoOrchestrator(
     /// <summary>
     ///     Recognizes the phrase just said, then tells the screen whether anything is still under way.
     /// </summary>
-    private async Task RecognizeAsync(MemoryStream? audioStream)
+    /// <param name="held">How long the key was held.</param>
+    private async Task RecognizeAsync(MemoryStream? audioStream, TimeSpan held)
     {
         try
         {
             // A phrase said while the model was loading waits for it
             if (await _ready.Task)
             {
-                await ProcessRecordingPayloadAsync(audioStream);
+                await ProcessRecordingPayloadAsync(audioStream, held);
             }
             else
             {
@@ -515,7 +530,8 @@ internal sealed class EchoOrchestrator(
     ///     Recognizes a finished recording and types the text, one phrase at a time.
     /// </summary>
     /// <param name="audioStream">The recording, taken from the microphone when the key was let go.</param>
-    internal async Task ProcessRecordingPayloadAsync(MemoryStream? audioStream)
+    /// <param name="held">How long the key was held.</param>
+    internal async Task ProcessRecordingPayloadAsync(MemoryStream? audioStream, TimeSpan held = default)
     {
         try
         {
@@ -525,7 +541,25 @@ internal sealed class EchoOrchestrator(
             {
                 Stopwatch stopwatch = Stopwatch.StartNew();
 
+                // Measured before recognition, which may leave the stream behind it
+                TimeSpan audio = TimeSpan.FromSeconds(Math.Max(0, (audioStream?.Length ?? 0) - WavHeaderBytes) / (double)AudioBytesPerSecond);
+
                 string? textFromAudio = await _whisperInferenceService.ProcessAudioAsync(audioStream);
+                stopwatch.Stop();
+
+                // Kept before it is typed, so a phrase whose typing fails is kept all the same
+                if (!string.IsNullOrWhiteSpace(textFromAudio))
+                {
+                    try
+                    {
+                        _memory?.Add(textFromAudio, held, audio, stopwatch.Elapsed);
+                    }
+                    catch (OutOfMemoryException)
+                    {
+                        // The optional history must not lose an already recognized phrase when memory is tight.
+                        // Logging here could itself need memory; the phrase still goes to the screen and insertion.
+                    }
+                }
 
                 if (_activity is not null && !string.IsNullOrWhiteSpace(textFromAudio))
                 {

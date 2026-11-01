@@ -658,4 +658,8 @@ internal static class Strings
     public static string HintLeaveUnsaved => Get(nameof(HintLeaveUnsaved));
 
     public static string SetupUnchanged => Get(nameof(SetupUnchanged));
+
+    public static string AdditionalMemory => Get(nameof(AdditionalMemory));
+
+    public static string AdditionalMemoryHint => Get(nameof(AdditionalMemoryHint));
 }

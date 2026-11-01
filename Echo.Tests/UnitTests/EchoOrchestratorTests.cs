@@ -126,6 +126,91 @@ public sealed class EchoOrchestratorTests
             Times.Once);
     }
 
+    [Fact]
+    public async Task ProcessRecordingPayloadAsync_PastingFails_KeepsTheRecognizedPhraseAndItsDurations()
+    {
+        // Arrange: recognition can close its input, so the audio length must be captured beforehand
+        var memory = new Mock<IDictationMemory>();
+        using var stream = new MemoryStream(new byte[44 + 32000]);
+        TimeSpan held = TimeSpan.FromSeconds(2);
+        bool kept = false;
+
+        _whisperMock.Setup(w => w.ProcessAudioAsync(stream)).Returns(() =>
+        {
+            stream.Dispose();
+            return Task.FromResult<string?>("Продолжение следует...");
+        });
+        memory.Setup(m => m.Add("Продолжение следует...", held, TimeSpan.FromSeconds(1), It.IsAny<TimeSpan>()))
+            .Callback(() => kept = true);
+        _textMock.Setup(t => t.InsertTextAsync("Продолжение следует..."))
+            .Callback(() => Assert.True(kept))
+            .ThrowsAsync(new IOException("pasting failed"));
+        using EchoOrchestrator orchestrator = CreateOrchestrator(new ListenActivity(new ScreenLog(), () => false), memory: memory.Object);
+
+        // Act
+        await orchestrator.ProcessRecordingPayloadAsync(stream, held);
+
+        // Assert
+        Assert.True(kept);
+        memory.Verify(m => m.Add("Продолжение следует...", held, TimeSpan.FromSeconds(1), It.Is<TimeSpan>(t => t >= TimeSpan.Zero)), Times.Once);
+        _textMock.Verify(t => t.InsertTextAsync("Продолжение следует..."), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessRecordingPayloadAsync_EchoHasTheKeyboard_KeepsThePhraseWithoutPastingIt()
+    {
+        // Arrange: history is independent of the window receiving the phrase
+        var memory = new Mock<IDictationMemory>();
+        var activity = new ListenActivity(new ScreenLog(), () => true);
+        _whisperMock.Setup(w => w.ProcessAudioAsync(It.IsAny<MemoryStream?>())).ReturnsAsync("hello");
+        using EchoOrchestrator orchestrator = CreateOrchestrator(activity, memory: memory.Object);
+
+        // Act
+        await orchestrator.ProcessRecordingPayloadAsync(null);
+
+        // Assert
+        memory.Verify(m => m.Add("hello", TimeSpan.Zero, TimeSpan.Zero, It.IsAny<TimeSpan>()), Times.Once);
+        Assert.Contains(activity.Log.Snapshot(), entry => entry.Kind == EntryKind.Dictated && entry.Text == "hello");
+        _textMock.Verify(t => t.InsertTextAsync(It.IsAny<string?>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public async Task ProcessRecordingPayloadAsync_NoRecognizedPhrase_AddsNothingToTheHistory(string? text)
+    {
+        // Arrange
+        var memory = new Mock<IDictationMemory>();
+        _whisperMock.Setup(w => w.ProcessAudioAsync(It.IsAny<MemoryStream?>())).ReturnsAsync(text);
+        using EchoOrchestrator orchestrator = CreateOrchestrator(new ListenActivity(new ScreenLog(), () => false), memory: memory.Object);
+
+        // Act
+        await orchestrator.ProcessRecordingPayloadAsync(null);
+
+        // Assert
+        memory.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task ProcessRecordingPayloadAsync_HistoryRunsOutOfMemory_StillShowsAndPastesTheRecognizedPhrase()
+    {
+        // Arrange: inject the failure instead of actually exhausting the test process
+        var memory = new Mock<IDictationMemory>();
+        var activity = new ListenActivity(new ScreenLog(), () => false);
+        _whisperMock.Setup(w => w.ProcessAudioAsync(It.IsAny<MemoryStream?>())).ReturnsAsync("keep this phrase");
+        memory.Setup(m => m.Add(It.IsAny<string>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>()))
+            .Throws(new OutOfMemoryException());
+        using EchoOrchestrator orchestrator = CreateOrchestrator(activity, memory: memory.Object);
+
+        // Act
+        await orchestrator.ProcessRecordingPayloadAsync(null);
+
+        // Assert
+        Assert.Contains(activity.Log.Snapshot(), entry => entry.Kind == EntryKind.Dictated && entry.Text == "keep this phrase");
+        _textMock.Verify(t => t.InsertTextAsync("keep this phrase"), Times.Once);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -826,7 +911,7 @@ public sealed class EchoOrchestratorTests
         await orchestrator.ExecuteTask!;
     }
 
-    private EchoOrchestrator CreateOrchestrator(IListenActivity activity, IPushToTalkMonitorService? monitor = null) =>
+    private EchoOrchestrator CreateOrchestrator(IListenActivity activity, IPushToTalkMonitorService? monitor = null, IDictationMemory? memory = null) =>
         new(
             _loggerMock.Object,
             _soundMock.Object,
@@ -835,7 +920,8 @@ public sealed class EchoOrchestratorTests
             _whisperMock.Object,
             monitor ?? _monitorMock.Object,
             Mock.Of<IErrorWindow>(),
-            activity);
+            activity,
+            memory: memory);
 
     /// <summary>
     ///     The monitor itself, for the tests of how the notices of the key and Echo meet.

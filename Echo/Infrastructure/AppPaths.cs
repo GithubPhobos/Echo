@@ -22,6 +22,9 @@ internal sealed class AppPaths(string configRoot, string dataRoot, string? state
 
     public string LogsDirectory { get; } = Path.Combine(stateRoot ?? configRoot, "logs");
 
+    /// <inheritdoc/>
+    public string MemoryDirectory { get; } = Path.Combine(dataRoot, "memory");
+
     /// <summary>
     ///     Resolves the per-user directories of the current operating system.
     /// </summary>

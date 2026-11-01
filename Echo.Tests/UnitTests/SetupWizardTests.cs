@@ -711,6 +711,7 @@ public sealed partial class SetupWizardTests : IDisposable
             .Press(ConsoleKey.UpArrow).Press(ConsoleKey.UpArrow)                    // round from the first setting to the last one
             .Press(ConsoleKey.Spacebar)                                             // automatic updates: on
             .Press(ConsoleKey.UpArrow).Press(ConsoleKey.Spacebar)                   // log detail: from Debug on to Information
+            .Press(ConsoleKey.UpArrow).Press(ConsoleKey.Spacebar)                   // dictation history: off
             .Press(ConsoleKey.UpArrow).Press(ConsoleKey.Spacebar)                   // automatic insertion: off
             .Press(ConsoleKey.UpArrow).Press(ConsoleKey.Enter)                      // sound volume: open the field, which holds "10"
             .Type("00").Press(ConsoleKey.Enter)                                     // "1000" is out of range: the field stays open
@@ -749,6 +750,7 @@ public sealed partial class SetupWizardTests : IDisposable
                 AdditionalSettings.SilenceThreshold,
                 AdditionalSettings.Volume,
                 AdditionalSettings.AutoInsert,
+                AdditionalSettings.Memory,
                 AdditionalSettings.LogLevel,
                 AdditionalSettings.AutoUpdate,
             ],
@@ -759,6 +761,7 @@ public sealed partial class SetupWizardTests : IDisposable
         Assert.Equal("2", saved.Additional.Get(AdditionalSettings.Threads));
         Assert.Equal("0.5", saved.Additional.Get(AdditionalSettings.Volume));
         Assert.False(saved.Additional.IsOn(AdditionalSettings.AutoInsert));
+        Assert.False(saved.Additional.IsOn(AdditionalSettings.Memory));
         Assert.True(saved.Additional.IsOn(AdditionalSettings.PlaySound));
         Assert.Equal("Information", saved.Additional.Get(AdditionalSettings.LogLevel));
         Assert.True(saved.Additional.IsOn(AdditionalSettings.AutoUpdate));

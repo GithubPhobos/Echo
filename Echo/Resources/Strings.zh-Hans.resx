@@ -957,4 +957,10 @@
   <data name="SetupUnchanged" xml:space="preserve">
     <value>设置未更改。</value>
   </data>
+  <data name="AdditionalMemory" xml:space="preserve">
+    <value>听写记录</value>
+  </data>
+  <data name="AdditionalMemoryHint" xml:space="preserve">
+    <value>Echo 会把识别出的语句保存在这台电脑上，所在文件夹可用 /info 查看。它们不会被发送到任何地方。如果不想让听写内容留在磁盘上，请关闭此项。</value>
+  </data>
 </root>

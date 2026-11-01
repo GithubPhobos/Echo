@@ -1,12 +1,50 @@
 ﻿using Echo.Commands;
 using Echo.Listening;
+using Echo.Resources;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Serilog.Core;
+using Spectre.Console.Testing;
 
 namespace Echo.Tests.UnitTests;
 
 public sealed class ListenCommandTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SummarizeSettings_HistoryIsOnOrOff_AlwaysShowsWhereItsFilesAre(bool enabled)
+    {
+        // Arrange: existing history files remain useful after recording more phrases is disabled
+        string directory = Path.Combine(Path.GetTempPath(), "echooo-tests", Guid.NewGuid().ToString("N"));
+        var paths = new AppPaths(directory, directory);
+        var command = new ListenCommand(new TestConsole(), paths, null!, Mock.Of<IAudioInput>(), Mock.Of<ITerminalFocus>());
+        IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Memory:Enabled"] = enabled.ToString(),
+        }).Build();
+
+        try
+        {
+            // Act
+            List<(string Label, string Value)> rows = command.SummarizeSettings(
+                configuration, new ListenActivity(new ScreenLog(), () => false), new LoggingLevelSwitch());
+
+            // Assert
+            string value = Assert.Single(rows, row => row.Label == Strings.AdditionalMemory).Value;
+            Assert.Contains(paths.MemoryDirectory, value);
+
+            if (!enabled)
+                Assert.Contains(Strings.ValueOff, value);
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+                Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task StartAsync_ServicesThatCannotBeMade_AreShownAsAFailedStart()
     {

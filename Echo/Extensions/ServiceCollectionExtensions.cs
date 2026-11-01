@@ -179,6 +179,7 @@ internal static class ServiceCollectionExtensions
         services.Configure<PushToTalkSettings>(config.GetSection(nameof(PushToTalkSettings)));
         services.Configure<TextInsertionSettings>(config.GetSection(nameof(TextInsertionSettings)));
         services.Configure<RecordingDeviceSettings>(config.GetSection(nameof(RecordingDeviceSettings)));
+        services.Configure<MemorySettings>(config.GetSection(AdditionalSettings.MemorySection));
     }
 
     /// <summary>
@@ -189,6 +190,14 @@ internal static class ServiceCollectionExtensions
     internal static void RegisterServices(this IServiceCollection services)
     {
         services.AddHostedService<EchoOrchestrator>();
+
+        // Dictation keeps its phrases; the test dictation of the wizard, which has the services below alone, does not
+        services.AddSingleton<IDictationMemory>(provider => new DictationMemory(
+            provider.GetRequiredService<IAppPaths>(),
+            provider.GetRequiredService<IOptions<MemorySettings>>(),
+            provider.GetRequiredService<IOptions<WhisperSettings>>(),
+            provider.GetRequiredService<IOptions<RecordingDeviceSettings>>(),
+            TimeProvider.System));
 
         services.RegisterDictationServices();
     }

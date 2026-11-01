@@ -19,6 +19,11 @@ internal static class AdditionalSettings
     /// </summary>
     public const string UpdatesSection = "Updates";
 
+    /// <summary>
+    ///     Where the settings of the dictation history live in the settings file.
+    /// </summary>
+    public const string MemorySection = "Memory";
+
     public static readonly AdditionalSetting Translate = new(
         "Translate", SettingGroup.Recognition, nameof(WhisperSettings), nameof(WhisperSettings.Translate), SettingKind.Switch, Off)
     {
@@ -91,6 +96,12 @@ internal static class AdditionalSettings
     public static readonly AdditionalSetting AutoInsert = new(
         "AutoInsert", SettingGroup.General, nameof(TextInsertionSettings), nameof(TextInsertionSettings.UseAutoInsert), SettingKind.Switch, On);
 
+    /// <summary>
+    ///     Whether every recognized phrase is kept on this computer, in the dictation history.
+    /// </summary>
+    public static readonly AdditionalSetting Memory = new(
+        "Memory", SettingGroup.General, MemorySection, nameof(MemorySettings.Enabled), SettingKind.Switch, On);
+
     public static readonly AdditionalSetting LogLevel = new(
         "LogLevel", SettingGroup.General, LogLevelSection, "Default", SettingKind.Choice, "Debug")
     {
@@ -122,6 +133,7 @@ internal static class AdditionalSettings
         PlaySound,
         Volume,
         AutoInsert,
+        Memory,
         LogLevel,
         AutoUpdate,
     ];

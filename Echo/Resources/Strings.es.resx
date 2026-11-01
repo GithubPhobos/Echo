@@ -957,4 +957,10 @@
   <data name="SetupUnchanged" xml:space="preserve">
     <value>Los ajustes no han cambiado.</value>
   </data>
+  <data name="AdditionalMemory" xml:space="preserve">
+    <value>Historial de dictado</value>
+  </data>
+  <data name="AdditionalMemoryHint" xml:space="preserve">
+    <value>Echo guarda las frases reconocidas en este equipo, en la carpeta que muestra /info. Nunca se envían a ningún sitio. Desactívalo si no quieres que lo que dictas quede en el disco.</value>
+  </data>
 </root>

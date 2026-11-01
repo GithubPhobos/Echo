@@ -318,7 +318,7 @@ internal sealed class ListenCommand(
     /// <summary>
     ///     The main settings Echo runs with, for the /info command.
     /// </summary>
-    private List<(string Label, string Value)> SummarizeSettings(IConfiguration configuration,
+    internal List<(string Label, string Value)> SummarizeSettings(IConfiguration configuration,
                                                                 IListenActivity activity,
                                                                 LoggingLevelSwitch levelSwitch)
     {
@@ -335,6 +335,7 @@ internal sealed class ListenCommand(
         bool isAutoUpdate = new UserSettingsStore(_paths).Load().Additional.IsOn(AdditionalSettings.AutoUpdate);
         UpdateStatus version = _updater?.Status ?? new UpdateStatus(UpdateStage.Unknown, ApplicationInfo.Version);
         bool isSoundOn = IsOn(nameof(PushToTalkSettings), nameof(PushToTalkSettings.PlaySound));
+        bool isMemoryOn = IsOn(AdditionalSettings.MemorySection, nameof(MemorySettings.Enabled));
 
         double volume = double.TryParse(
             Setting(configuration, nameof(PushToTalkSettings), nameof(PushToTalkSettings.Volume)),
@@ -368,6 +369,9 @@ internal sealed class ListenCommand(
             (Strings.AdditionalAutoUpdate, isAutoUpdate ? Strings.ValueOn : Strings.ValueOff),
             (Strings.InfoSettingsFile, _paths.SettingsFile),
             (Strings.InfoLogsFolder, _paths.LogsDirectory),
+
+            // Turning history off does not remove its files; their location remains useful
+            (Strings.AdditionalMemory, isMemoryOn ? _paths.MemoryDirectory : $"{Strings.ValueOff} ({_paths.MemoryDirectory})"),
         ];
 
         bool IsOn(string section, string key) =>

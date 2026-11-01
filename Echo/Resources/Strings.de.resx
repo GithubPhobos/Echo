@@ -957,4 +957,10 @@
   <data name="SetupUnchanged" xml:space="preserve">
     <value>Einstellungen unverändert.</value>
   </data>
+  <data name="AdditionalMemory" xml:space="preserve">
+    <value>Diktatverlauf</value>
+  </data>
+  <data name="AdditionalMemoryHint" xml:space="preserve">
+    <value>Echo speichert die erkannten Sätze auf diesem Computer, in dem Ordner, den /info zeigt. Sie werden nirgendwohin gesendet. Schalte es aus, wenn das Diktierte nicht auf der Festplatte bleiben soll.</value>
+  </data>
 </root>

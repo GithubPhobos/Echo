@@ -13,6 +13,7 @@ public sealed class AppPathsTests
         // Assert
         Assert.Equal(Path.Combine(UserHome, ".config", "echooo", "settings.json"), paths.SettingsFile);
         Assert.Equal(Path.Combine(UserHome, ".local", "share", "echooo", "models"), paths.ModelsDirectory);
+        Assert.Equal(Path.Combine(UserHome, ".local", "share", "echooo", "memory"), paths.MemoryDirectory);
         Assert.Equal(Path.Combine(UserHome, ".local", "share", "echooo", "runtimes", "cuda"), paths.CudaDirectory);
         Assert.Equal(Path.Combine(UserHome, ".local", "state", "echooo", "logs"), paths.LogsDirectory);
     }
@@ -34,6 +35,7 @@ public sealed class AppPathsTests
         // Assert
         Assert.Equal(Path.Combine("/cfg", "echooo", "settings.json"), paths.SettingsFile);
         Assert.Equal(Path.Combine("/data", "echooo", "models"), paths.ModelsDirectory);
+        Assert.Equal(Path.Combine("/data", "echooo", "memory"), paths.MemoryDirectory);
         Assert.Equal(Path.Combine("/state", "echooo", "logs"), paths.LogsDirectory);
     }
 
@@ -57,5 +59,6 @@ public sealed class AppPathsTests
 
         // Assert
         Assert.Equal(Path.Combine("/one", "logs"), paths.LogsDirectory);
+        Assert.Equal(Path.Combine("/two", "memory"), paths.MemoryDirectory);
     }
 }
