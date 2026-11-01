@@ -29,6 +29,7 @@ jobs:
           echo "::error::The tag $GITHUB_REF_NAME is not the version of Echo/Echo.csproj, which is $version."
           exit 1
         fi
+        test -s "docs/changelog/$version.md" || { echo "::error::Missing release notes for $version"; exit 1; }
 
     - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
@@ -105,6 +106,9 @@ jobs:
       contents: write
 
     steps:
+    - name: Checkout release notes
+      uses: actions/checkout@v4
+
     - name: Collect the archives
       uses: actions/download-artifact@v4
       with:
@@ -122,5 +126,6 @@ jobs:
         gh release create "$GITHUB_REF_NAME" dist/*
         --repo "$GITHUB_REPOSITORY"
         --title "Echo ${GITHUB_REF_NAME#v}"
-        --generate-notes
+        --notes-file "docs/changelog/${GITHUB_REF_NAME#v}.md"
+        --latest
         --verify-tag
